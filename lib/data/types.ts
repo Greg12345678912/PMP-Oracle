@@ -23,7 +23,7 @@ export interface TierState {
   position: Position
 }
 
-export const DEFAULT_TIER_LABELS = ['S', 'A', 'B', 'C', 'D', 'F'] as const
+export const DEFAULT_TIER_LABELS = ['S', 'A', 'B', 'C', 'D', 'E'] as const
 
 export const POSITION_PLAYER_LIMITS: Record<Position, number> = {
   QB: 30,
