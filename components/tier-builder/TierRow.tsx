@@ -23,6 +23,7 @@ const TIER_COLORS: Record<string, string> = {
   D: '#4A90E2',
   E: '#8B5CF6',
   F: '#6B6B6B',
+  G: '#475569',
 }
 
 function getTierLabelColor(label: string): string {
