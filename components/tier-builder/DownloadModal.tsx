@@ -45,10 +45,14 @@ export function DownloadModal({ open, onClose, tiers, players, position, shareUr
   }
 
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(shareUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-    analytics.tierListShared('copy_link', position)
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+      analytics.tierListShared('copy_link', position)
+    } catch {
+      // clipboard unavailable — fail silently
+    }
   }
 
   const handleShareX = () => {
@@ -84,7 +88,7 @@ export function DownloadModal({ open, onClose, tiers, players, position, shareUr
       </Modal>
 
       {/* Off-screen render target */}
-      <TierImage ref={imageRef} tiers={tiers} players={players} position={position} />
+      {open && <TierImage ref={imageRef} tiers={tiers} players={players} position={position} />}
     </>
   )
 }
