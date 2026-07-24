@@ -36,9 +36,6 @@ export const TierImage = forwardRef<HTMLDivElement, TierImageProps>(
           display: 'flex',
           flexDirection: 'column',
           gap: 0,
-          position: 'absolute',
-          top: -9999,
-          left: -9999,
           overflow: 'hidden',
         }}
       >

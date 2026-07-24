@@ -87,8 +87,13 @@ export function DownloadModal({ open, onClose, tiers, players, position, shareUr
         </div>
       </Modal>
 
-      {/* Off-screen render target */}
-      {open && <TierImage ref={imageRef} tiers={tiers} players={players} position={position} />}
+      {/* Off-screen render target — fixed wrapper keeps element in render tree */}
+      <div
+        aria-hidden="true"
+        style={{ position: 'fixed', top: 0, left: '-200vw', pointerEvents: 'none' }}
+      >
+        {open && <TierImage ref={imageRef} tiers={tiers} players={players} position={position} />}
+      </div>
     </>
   )
 }
