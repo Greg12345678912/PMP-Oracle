@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* PMP brand colors */
+  --color-pmp-black: #0B0B0B;
+  --color-pmp-white: #FFFFFF;
+  --color-pmp-red: #E10600;
+  --color-pmp-gray-900: #111111;
+  --color-pmp-gray-800: #1A1A1A;
+  --color-pmp-gray-700: #2A2A2A;
+  --color-pmp-gray-600: #3A3A3A;
+  --color-pmp-gray-500: #555555;
+
+  /* Font families */
+  --font-sans: var(--font-inter), sans-serif;
+  --font-display: var(--font-geist-sans), sans-serif;
+
+  /* Custom animations */
+  --animate-card-snap: cardSnap 200ms ease-out;
+  --animate-skeleton-pulse: pulse 1.5s ease-in-out infinite;
+
+  @keyframes cardSnap {
+    0% { transform: scale(1.05); }
+    60% { transform: scale(0.97); }
+    100% { transform: scale(1); }
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--color-pmp-black);
+  color: var(--color-pmp-white);
+  font-family: var(--font-sans);
+}
