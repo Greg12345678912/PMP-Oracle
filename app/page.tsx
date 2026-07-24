@@ -73,7 +73,7 @@ export default function HomePage() {
         {/* Official Rankings */}
         <section className="mb-16">
           <h2 className="text-pmp-gray-500 text-sm uppercase tracking-widest mb-6">
-            Official PMP Rankings
+            Official PMP Rankings (PPR)
           </h2>
           <div className="grid grid-cols-5 gap-3">
             {POSITIONS.map((pos) => (
