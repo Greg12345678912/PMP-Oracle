@@ -27,11 +27,11 @@ export function DownloadModal({ open, onClose, tiers, players, position, shareUr
     setDownloading(true)
     setExportError(false)
     try {
-      const dataUrl = await toPng(imageRef.current, {
-        width: 1080,
-        height: 1350,
-        pixelRatio: 1,
-      })
+      const options = { width: 1080, height: 1350, pixelRatio: 1, cacheBust: true }
+      // First pass: pre-load cross-origin images into cache
+      await toPng(imageRef.current, options)
+      // Second pass: render with all images loaded
+      const dataUrl = await toPng(imageRef.current, options)
       const link = document.createElement('a')
       link.download = `pmp-${position.toLowerCase()}-tier-list.png`
       link.href = dataUrl
