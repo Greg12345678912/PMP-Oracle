@@ -138,11 +138,13 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
     setHistory(prev => [...prev.slice(-19), current]) // keep last 20
   }, [])
 
-  const sensors = useSensors(
+  const editSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
+  const lockedSensors = useSensors() // no sensors = drag disabled
+  const sensors = viewMode ? lockedSensors : editSensors
 
   const handleDragStart = ({ active }: DragStartEvent) => {
     const playerId = String(active.data.current?.playerId ?? active.id)

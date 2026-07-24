@@ -41,6 +41,7 @@ export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete
     .filter((p): p is Player => p !== undefined)
 
   const handleLabelClick = () => {
+    if (readOnly) return
     setEditing(true)
     setTimeout(() => inputRef.current?.focus(), 0)
   }
@@ -72,9 +73,9 @@ export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete
     )}>
       {/* Tier label */}
       <div
-        className="flex items-center justify-center w-14 shrink-0 border-r border-pmp-gray-800 cursor-pointer group"
+        className={cn('flex items-center justify-center w-14 shrink-0 border-r border-pmp-gray-800 group', readOnly ? 'cursor-default' : 'cursor-pointer')}
         onClick={handleLabelClick}
-        title="Click to rename"
+        title={readOnly ? undefined : 'Click to rename'}
       >
         {editing ? (
           <input
