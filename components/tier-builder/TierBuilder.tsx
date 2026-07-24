@@ -20,6 +20,7 @@ import { OfficialPMPButton } from './OfficialPMPButton'
 import { Button } from '@/components/ui/Button'
 import { PlayerCard } from './PlayerCard'
 import { encodeTierState, decodeTierState } from '@/lib/share/encode'
+import { loadPMPRankings } from '@/lib/data/pmp-rankings'
 import { analytics } from '@/lib/analytics/events'
 import type { Player, Tier, TierState, Position } from '@/lib/data/types'
 import { DEFAULT_TIER_LABELS } from '@/lib/data/types'
@@ -106,6 +107,25 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
       }
     }
   }, [])
+
+  // Auto-load official rankings when ?loadOfficial=true
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('loadOfficial') !== 'true') return
+    loadPMPRankings(position).then(rankings => {
+      const tiers: Tier[] = Object.entries(rankings.tiers).map(([label, playerIds]) => ({
+        id: uuid(),
+        label,
+        playerIds,
+      }))
+      setState(prev => {
+        const rankedIds = new Set(tiers.flatMap(t => t.playerIds))
+        const newPool = prev.pool.filter(id => !rankedIds.has(id))
+        return { ...prev, tiers, pool: newPool }
+      })
+      analytics.officialRankingsLoaded(position)
+    }).catch(() => { /* fail silently — button still available */ })
+  }, [position])
 
   // Notify parent when tiers change
   useEffect(() => {
