@@ -21,6 +21,7 @@ const TIER_COLORS: Record<string, string> = {
   B: '#FFB800',
   C: '#9ACD32',
   D: '#4A90E2',
+  E: '#8B5CF6',
   F: '#6B6B6B',
 }
 

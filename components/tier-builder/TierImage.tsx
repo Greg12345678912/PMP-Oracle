@@ -10,7 +10,7 @@ interface TierImageProps {
 
 const LABEL_COLORS: Record<string, string> = {
   S: '#E10600', A: '#FF6B00', B: '#FFB800',
-  C: '#9ACD32', D: '#4A90E2', F: '#6B6B6B',
+  C: '#9ACD32', D: '#4A90E2', E: '#8B5CF6', F: '#6B6B6B',
 }
 
 export const TierImage = forwardRef<HTMLDivElement, TierImageProps>(
