@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, memo } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { cn } from '@/lib/utils'
@@ -27,7 +27,7 @@ function getTierLabelColor(label: string): string {
   return TIER_COLORS[label.toUpperCase()] ?? '#E10600'
 }
 
-export function TierRow({ tier, players, onRename, onDelete }: TierRowProps) {
+export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete }: TierRowProps) {
   const [editing, setEditing] = useState(false)
   const [labelValue, setLabelValue] = useState(tier.label)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -133,4 +133,4 @@ export function TierRow({ tier, players, onRename, onDelete }: TierRowProps) {
       </button>
     </div>
   )
-}
+})

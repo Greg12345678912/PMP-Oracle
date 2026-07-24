@@ -159,23 +159,25 @@ export function TierBuilder({ players, position, loading }: TierBuilderProps) {
     }))
   }
 
-  const handleRenameTier = (tierId: string, newLabel: string) => {
+  const handleRenameTier = useCallback((tierId: string, newLabel: string) => {
     setState(prev => ({
       ...prev,
       tiers: prev.tiers.map(t => t.id === tierId ? { ...t, label: newLabel } : t),
     }))
-  }
+  }, [])
 
-  const handleDeleteTier = (tierId: string) => {
-    const tier = state.tiers.find(t => t.id === tierId)
-    if (!tier) return
+  const handleDeleteTier = useCallback((tierId: string) => {
     pushHistory(state)
-    setState(prev => ({
-      ...prev,
-      tiers: prev.tiers.filter(t => t.id !== tierId),
-      pool: [...prev.pool, ...tier.playerIds],
-    }))
-  }
+    setState(prev => {
+      const tier = prev.tiers.find(t => t.id === tierId)
+      if (!tier) return prev
+      return {
+        ...prev,
+        tiers: prev.tiers.filter(t => t.id !== tierId),
+        pool: [...prev.pool, ...tier.playerIds],
+      }
+    })
+  }, [pushHistory, state])
 
   const handleAddTier = () => {
     setState(prev => ({
