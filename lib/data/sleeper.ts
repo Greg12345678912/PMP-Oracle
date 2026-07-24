@@ -20,6 +20,9 @@ const EXCLUDED_PLAYER_IDS = new Set([
   '954',   // Cam Newton
   '12524', // Shedeur Sanders
   '7527',  // Mac Jones
+  '13337', // Emmett Johnson (no headshot)
+  '13405', // Kaytron Allen (no headshot)
+  '13347', // Demond Claiborne (no headshot)
 ])
 
 // Players to always include regardless of search_rank (Sleeper doesn't rank them but they're relevant)
