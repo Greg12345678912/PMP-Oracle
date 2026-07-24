@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
@@ -24,12 +25,23 @@ export default function HomePage() {
 
         {/* Brand */}
         <div className="mb-16">
-          <div className="text-pmp-red text-xs font-bold uppercase tracking-widest mb-3">
-            Pretty Much Picks
+          <div className="flex items-center gap-4 mb-6">
+            <Image
+              src="/logo.png"
+              alt="Pretty Much Picks"
+              width={80}
+              height={80}
+              className="rounded-xl"
+            />
+            <div>
+              <div className="text-pmp-red text-xs font-bold uppercase tracking-widest mb-1">
+                Pretty Much Picks
+              </div>
+              <h1 className="font-display text-5xl font-black text-pmp-white leading-tight">
+                Fantasy Football<br />Tier List Builder
+              </h1>
+            </div>
           </div>
-          <h1 className="font-display text-5xl font-black text-pmp-white leading-tight mb-4">
-            Fantasy Football<br />Tier List Builder
-          </h1>
           <p className="text-pmp-gray-500 text-lg">
             Build. Download. Share.{' '}
             <span className="text-pmp-white">No signup required.</span>
@@ -109,10 +121,9 @@ export default function HomePage() {
         <footer className="border-t border-pmp-gray-800 pt-8 flex justify-between items-center">
           <span className="text-pmp-red font-bold text-sm">Pretty Much Picks</span>
           <div className="flex gap-4 text-pmp-gray-600 text-sm">
-            <a href="#" className="hover:text-pmp-white transition-colors">Instagram</a>
-            <a href="#" className="hover:text-pmp-white transition-colors">TikTok</a>
-            <a href="#" className="hover:text-pmp-white transition-colors">YouTube</a>
-            <a href="#" className="hover:text-pmp-white transition-colors">X</a>
+            <a href="https://www.instagram.com/prettymuchpickss" target="_blank" rel="noopener noreferrer" className="hover:text-pmp-white transition-colors">Instagram</a>
+            <a href="https://www.tiktok.com/@prettymuchpickss" target="_blank" rel="noopener noreferrer" className="hover:text-pmp-white transition-colors">TikTok</a>
+            <a href="https://www.youtube.com/@prettymuchpicks" target="_blank" rel="noopener noreferrer" className="hover:text-pmp-white transition-colors">YouTube</a>
           </div>
         </footer>
       </div>
