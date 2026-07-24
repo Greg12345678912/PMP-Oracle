@@ -26,7 +26,7 @@ export interface TierState {
 export const DEFAULT_TIER_LABELS = ['S', 'A', 'B', 'C', 'D', 'F'] as const
 
 export const POSITION_PLAYER_LIMITS: Record<Position, number> = {
-  QB: 40,
+  QB: 30,
   RB: 80,
   WR: 80,
   TE: 40,
