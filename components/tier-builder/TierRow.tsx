@@ -125,7 +125,7 @@ export function TierRow({ tier, players, onRename, onDelete }: TierRowProps) {
       {/* Delete tier button */}
       <button
         onClick={() => onDelete(tier.id)}
-        className="px-2 text-pmp-gray-600 hover:text-red-400 transition-colors duration-200 shrink-0"
+        className="px-2 text-pmp-gray-600 hover:text-pmp-red transition-colors duration-200 shrink-0"
         aria-label={`Delete tier ${tier.label}`}
         title="Delete tier"
       >
