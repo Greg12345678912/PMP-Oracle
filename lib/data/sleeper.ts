@@ -22,6 +22,13 @@ const EXCLUDED_PLAYER_IDS = new Set([
   '7527',  // Mac Jones
 ])
 
+// Players to always include regardless of search_rank (Sleeper doesn't rank them but they're relevant)
+const ALWAYS_INCLUDE_IDS = new Set([
+  '96',   // Aaron Rodgers
+  '1166', // Kirk Cousins
+  '4017', // Deshaun Watson
+])
+
 interface SleeperPlayer {
   player_id: string
   full_name: string
@@ -70,7 +77,7 @@ export class SleeperProvider implements DataProvider {
 
     const limit = POSITION_PLAYER_LIMITS[position]
 
-    const players = Array.from(all.values())
+    const ranked = Array.from(all.values())
       .filter(p =>
         p.status === 'Active' &&
         p.search_rank !== null &&
@@ -80,7 +87,17 @@ export class SleeperProvider implements DataProvider {
       )
       .sort((a, b) => (a.search_rank ?? 9999) - (b.search_rank ?? 9999))
       .slice(0, limit)
-      .map(toPlayer)
+
+    const alwaysInclude = Array.from(all.values()).filter(p =>
+      ALWAYS_INCLUDE_IDS.has(p.player_id) &&
+      targetPositions.includes(p.position)
+    )
+
+    const seen = new Set(ranked.map(p => p.player_id))
+    const players = [
+      ...ranked,
+      ...alwaysInclude.filter(p => !seen.has(p.player_id)),
+    ].map(toPlayer)
 
     setCached(position, players)
     return players
