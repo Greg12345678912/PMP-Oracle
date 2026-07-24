@@ -83,9 +83,10 @@ interface TierBuilderProps {
   players: Player[]
   position: Position
   loading?: boolean
+  onTiersChange?: (tiers: Tier[]) => void
 }
 
-export function TierBuilder({ players, position, loading }: TierBuilderProps) {
+export function TierBuilder({ players, position, loading, onTiersChange }: TierBuilderProps) {
   const [state, setState] = useState<TierState>(() => buildInitialState(players, position))
   const [history, setHistory] = useState<TierState[]>([])
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null)
@@ -97,10 +98,19 @@ export function TierBuilder({ players, position, loading }: TierBuilderProps) {
     if (share) {
       const decoded = decodeTierState(share)
       if (decoded) {
-        setState(prev => ({ ...prev, tiers: decoded, pool: [] }))
+        setState(prev => {
+          const rankedIds = new Set(decoded.flatMap(t => t.playerIds))
+          const remainingPool = prev.pool.filter(id => !rankedIds.has(id))
+          return { ...prev, tiers: decoded, pool: remainingPool }
+        })
       }
     }
   }, [])
+
+  // Notify parent when tiers change
+  useEffect(() => {
+    onTiersChange?.(state.tiers)
+  }, [state.tiers, onTiersChange])
 
   const pushHistory = useCallback((current: TierState) => {
     setHistory(prev => [...prev.slice(-19), current]) // keep last 20

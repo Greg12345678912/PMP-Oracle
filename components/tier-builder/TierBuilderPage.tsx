@@ -1,7 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { TierBuilder } from './TierBuilder'
+import { DownloadModal } from './DownloadModal'
 import { Button } from '@/components/ui/Button'
+import { encodeTierState } from '@/lib/share/encode'
 import type { Player, Position, Tier } from '@/lib/data/types'
 
 interface TierBuilderPageProps {
@@ -18,11 +20,19 @@ const POSITION_LABELS: Record<Position, string> = {
 }
 
 export function TierBuilderPage({ players, position }: TierBuilderPageProps) {
-  const [currentTiers] = useState<Tier[]>([])
+  const [currentTiers, setCurrentTiers] = useState<Tier[]>([])
+  const [showDownload, setShowDownload] = useState(false)
+
+  const handleTiersChange = useCallback((tiers: Tier[]) => {
+    setCurrentTiers(tiers)
+  }, [])
+
+  const shareUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}?share=${encodeTierState(currentTiers)}`
+    : ''
 
   const handleDownload = () => {
-    // DownloadModal (Task 15) not yet implemented — stub
-    console.log('Download coming soon', currentTiers)
+    setShowDownload(true)
   }
 
   if (players.length === 0) {
@@ -52,15 +62,24 @@ export function TierBuilderPage({ players, position }: TierBuilderPageProps) {
           </p>
         </div>
 
-        <TierBuilder players={players} position={position} />
+        <TierBuilder players={players} position={position} onTiersChange={handleTiersChange} />
 
         {/* Download CTA */}
         <div className="mt-8 flex justify-center">
           <Button size="lg" onClick={handleDownload}>
-            Download (Coming Soon)
+            Download PNG
           </Button>
         </div>
       </div>
+
+      <DownloadModal
+        open={showDownload}
+        onClose={() => setShowDownload(false)}
+        tiers={currentTiers}
+        players={players}
+        position={position}
+        shareUrl={shareUrl}
+      />
     </main>
   )
 }
