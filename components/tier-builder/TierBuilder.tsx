@@ -167,8 +167,8 @@ export function TierBuilder({ players, position, loading }: TierBuilderProps) {
   }, [])
 
   const handleDeleteTier = useCallback((tierId: string) => {
-    pushHistory(state)
     setState(prev => {
+      pushHistory(prev)
       const tier = prev.tiers.find(t => t.id === tierId)
       if (!tier) return prev
       return {
@@ -177,7 +177,7 @@ export function TierBuilder({ players, position, loading }: TierBuilderProps) {
         pool: [...prev.pool, ...tier.playerIds],
       }
     })
-  }, [pushHistory, state])
+  }, [pushHistory])
 
   const handleAddTier = () => {
     setState(prev => ({
