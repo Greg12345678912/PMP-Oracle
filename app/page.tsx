@@ -88,6 +88,26 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Divider */}
+        <div className="h-px bg-pmp-gray-800 mb-12" />
+
+        {/* Coming Soon */}
+        <section className="mb-16">
+          <h2 className="text-pmp-gray-500 text-sm uppercase tracking-widest mb-6">
+            Coming Soon
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            {['Weekly Rankings', 'Mock Drafts', 'Trade Analyzer'].map((item) => (
+              <div
+                key={item}
+                className="px-4 py-2 rounded-lg bg-pmp-gray-900 border border-pmp-gray-800 text-pmp-gray-600 text-sm"
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Footer */}
         <footer className="border-t border-pmp-gray-800 pt-8 flex justify-between items-center">
           <span className="text-pmp-red font-bold text-sm">Pretty Much Picks</span>
