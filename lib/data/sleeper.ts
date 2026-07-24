@@ -6,6 +6,22 @@ import { getCached, setCached } from './cache'
 const SLEEPER_API = 'https://api.sleeper.app/v1/players/nfl'
 const HEADSHOT_BASE = 'https://sleepercdn.com/content/nfl/players/thumb'
 
+// Players excluded from all position pools (retired, irrelevant, etc.)
+const EXCLUDED_PLAYER_IDS = new Set([
+  '13269', // Fernando Mendoza
+  '167',   // Tom Brady
+  '13275', // Ty Simpson
+  '138',   // Ben Roethlisberger
+  '11559', // Michael Penix
+  '11565', // J.J. McCarthy
+  '2028',  // Derek Carr
+  '4179',  // Joshua Dobbs
+  '1837',  // Jimmy Garoppolo
+  '954',   // Cam Newton
+  '12524', // Shedeur Sanders
+  '7527',  // Mac Jones
+])
+
 interface SleeperPlayer {
   player_id: string
   full_name: string
@@ -58,6 +74,7 @@ export class SleeperProvider implements DataProvider {
       .filter(p =>
         p.status === 'Active' &&
         p.search_rank !== null &&
+        !EXCLUDED_PLAYER_IDS.has(p.player_id) &&
         targetPositions.includes(p.position) &&
         p.fantasy_positions?.some(fp => targetPositions.includes(fp))
       )
