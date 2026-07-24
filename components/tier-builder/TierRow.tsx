@@ -12,6 +12,7 @@ interface TierRowProps {
   onRename: (tierId: string, newLabel: string) => void
   onDelete: (tierId: string) => void
   isOver?: boolean
+  readOnly?: boolean
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -27,7 +28,7 @@ function getTierLabelColor(label: string): string {
   return TIER_COLORS[label.toUpperCase()] ?? '#E10600'
 }
 
-export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete }: TierRowProps) {
+export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete, readOnly }: TierRowProps) {
   const [editing, setEditing] = useState(false)
   const [labelValue, setLabelValue] = useState(tier.label)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -123,14 +124,16 @@ export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete
       </SortableContext>
 
       {/* Delete tier button */}
-      <button
-        onClick={() => onDelete(tier.id)}
-        className="px-2 text-pmp-gray-600 hover:text-pmp-red transition-colors duration-200 shrink-0"
-        aria-label={`Delete tier ${tier.label}`}
-        title="Delete tier"
-      >
-        ✕
-      </button>
+      {!readOnly && (
+        <button
+          onClick={() => onDelete(tier.id)}
+          className="px-2 text-pmp-gray-600 hover:text-pmp-red transition-colors duration-200 shrink-0"
+          aria-label={`Delete tier ${tier.label}`}
+          title="Delete tier"
+        >
+          ✕
+        </button>
+      )}
     </div>
   )
 })

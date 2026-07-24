@@ -91,6 +91,7 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
   const [state, setState] = useState<TierState>(() => buildInitialState(players, position))
   const [history, setHistory] = useState<TierState[]>([])
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState(false)
 
   // Load from share URL on mount
   useEffect(() => {
@@ -123,6 +124,7 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
         const newPool = prev.pool.filter(id => !rankedIds.has(id))
         return { ...prev, tiers, pool: newPool }
       })
+      setViewMode(true)
       analytics.officialRankingsLoaded(position)
     }).catch(() => { /* fail silently — button still available */ })
   }, [position])
@@ -244,20 +246,24 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
       <div className="flex flex-col gap-4">
         {/* Controls */}
         <div className="flex flex-wrap items-center gap-2">
-          <OfficialPMPButton position={position} onLoad={handleOfficialLoad} />
+          {!viewMode && <OfficialPMPButton position={position} onLoad={handleOfficialLoad} />}
           <div className="flex gap-2 ml-auto">
-            <Button variant="ghost" size="sm" onClick={handleUndo} disabled={history.length === 0}>
-              Undo
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleClearAll}>
-              Clear All
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleReset}>
-              Reset
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleAddTier}>
-              + Tier
-            </Button>
+            {!viewMode && (
+              <>
+                <Button variant="ghost" size="sm" onClick={handleUndo} disabled={history.length === 0}>
+                  Undo
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleClearAll}>
+                  Clear All
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleReset}>
+                  Reset
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleAddTier}>
+                  + Tier
+                </Button>
+              </>
+            )}
             <Button variant="ghost" size="sm" onClick={handleCopyLink}>
               Copy Link
             </Button>
@@ -273,6 +279,7 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
               players={players}
               onRename={handleRenameTier}
               onDelete={handleDeleteTier}
+              readOnly={viewMode}
             />
           ))}
         </div>
