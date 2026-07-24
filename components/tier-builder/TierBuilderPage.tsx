@@ -48,13 +48,13 @@ export function TierBuilderPage({ players, position }: TierBuilderPageProps) {
 
   return (
     <main className="min-h-screen bg-pmp-black">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-5 sm:mb-8">
           <a href="/" className="text-pmp-red text-sm font-medium hover:underline">
             ← Pretty Much Picks
           </a>
-          <h1 className="font-display text-3xl font-bold text-pmp-white mt-2">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-pmp-white mt-2">
             {POSITION_LABELS[position]} Tier List
           </h1>
           <p className="text-pmp-gray-500 text-sm mt-1">

@@ -67,14 +67,14 @@ export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete
 
   return (
     <div className={cn(
-      'flex items-stretch rounded-xl border transition-colors duration-200 min-h-[72px]',
+      'flex items-stretch rounded-xl border transition-colors duration-200 min-h-[60px] sm:min-h-[72px]',
       isOver
         ? 'border-pmp-red bg-pmp-red/5'
         : 'border-pmp-gray-800 bg-pmp-gray-900'
     )}>
       {/* Tier label */}
       <div
-        className={cn('flex items-center justify-center w-14 shrink-0 border-r border-pmp-gray-800 group', readOnly ? 'cursor-default' : 'cursor-pointer')}
+        className={cn('flex items-center justify-center w-11 sm:w-14 shrink-0 border-r border-pmp-gray-800 group', readOnly ? 'cursor-default' : 'cursor-pointer')}
         onClick={handleLabelClick}
         title={readOnly ? undefined : 'Click to rename'}
       >
@@ -106,7 +106,7 @@ export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete
       >
         <div
           ref={setNodeRef}
-          className="flex items-center gap-2 px-3 py-2 overflow-x-auto flex-1 min-w-0 scrollbar-hide"
+          className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 overflow-x-auto flex-1 min-w-0 scrollbar-hide"
           role="group"
           aria-label={`Tier ${tier.label} — ${tierPlayers.length} players`}
         >

@@ -247,9 +247,9 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
     >
       <div className="flex flex-col gap-4">
         {/* Controls */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           {!viewMode && <OfficialPMPButton position={position} onLoad={handleOfficialLoad} />}
-          <div className="flex gap-2 ml-auto">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 sm:ml-auto">
             {!viewMode && (
               <>
                 <Button variant="ghost" size="sm" onClick={handleUndo} disabled={history.length === 0}>

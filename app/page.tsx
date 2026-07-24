@@ -19,7 +19,7 @@ const POSITIONS = [
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-pmp-black">
-      <div className="max-w-2xl mx-auto px-4 py-16">
+      <div className="max-w-2xl mx-auto px-4 py-8 sm:py-16">
 
         {/* Brand */}
         <div className="mb-16">
@@ -57,11 +57,11 @@ export default function HomePage() {
           <div className="grid grid-cols-5 gap-3">
             {POSITIONS.map((pos) => (
               <Link key={pos.label} href={pos.href}>
-                <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-pmp-gray-900 border border-pmp-gray-800 hover:border-pmp-red hover:bg-pmp-gray-800 transition-all duration-200 cursor-pointer group">
-                  <span className="font-display font-bold text-xl text-pmp-white group-hover:text-pmp-red transition-colors duration-200">
+                <div className="flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-4 rounded-xl bg-pmp-gray-900 border border-pmp-gray-800 hover:border-pmp-red hover:bg-pmp-gray-800 transition-all duration-200 cursor-pointer group">
+                  <span className="font-display font-bold text-base sm:text-xl text-pmp-white group-hover:text-pmp-red transition-colors duration-200">
                     {pos.label}
                   </span>
-                  <span className="text-[10px] text-pmp-gray-600 text-center leading-tight">
+                  <span className="text-[10px] text-pmp-gray-600 text-center leading-tight hidden sm:block">
                     {pos.description}
                   </span>
                 </div>

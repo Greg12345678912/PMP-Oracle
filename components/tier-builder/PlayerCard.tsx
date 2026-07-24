@@ -37,7 +37,7 @@ export function PlayerCard({ player, draggableId, compact = false }: PlayerCardP
         'relative flex flex-col items-center rounded-lg bg-pmp-gray-900 border border-pmp-gray-800 cursor-grab active:cursor-grabbing select-none shrink-0 transition-all duration-200',
         'hover:border-pmp-gray-600 hover:scale-105',
         isDragging && 'opacity-50 scale-105 z-50 shadow-2xl',
-        compact ? 'w-16 p-1.5' : 'w-20 p-2',
+        compact ? 'w-14 sm:w-16 p-1' : 'w-16 sm:w-20 p-1.5 sm:p-2',
       )}
       role="button"
       aria-label={`${player.name}, ${player.team}, ${player.position}`}
@@ -49,7 +49,7 @@ export function PlayerCard({ player, draggableId, compact = false }: PlayerCardP
       />
 
       {/* Headshot */}
-      <div className={cn('relative', compact ? 'w-10 h-10' : 'w-12 h-12')}>
+      <div className={cn('relative', compact ? 'w-9 h-9 sm:w-10 sm:h-10' : 'w-10 h-10 sm:w-12 sm:h-12')}>
         {!imageLoaded && <PlayerCardSkeleton />}
         <Image
           src={player.headshotUrl}
@@ -61,7 +61,7 @@ export function PlayerCard({ player, draggableId, compact = false }: PlayerCardP
           )}
           onLoad={() => setImageLoaded(true)}
           onError={() => setImageLoaded(true)} // show nothing on error, don't break
-          sizes={compact ? '40px' : '48px'}
+          sizes={compact ? '36px' : '48px'}
           unoptimized // Sleeper CDN handles its own optimization
         />
       </div>
