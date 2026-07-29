@@ -22,4 +22,10 @@ export const analytics = {
     track('player_searched', { query }),
   officialRankingsLoaded: (position: string) =>
     track('official_rankings_loaded', { position }),
+  mockDraftStarted: (settings: { numTeams: number; scoring: string; speed: string }) => {
+    track('mock_draft_started', settings)
+  },
+  mockDraftShared: () => {
+    track('mock_draft_shared', {})
+  },
 }
