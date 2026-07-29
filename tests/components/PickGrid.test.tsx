@@ -5,9 +5,9 @@ import type { PickSlot } from '@/lib/draft/types'
 import type { Player } from '@/lib/data/types'
 
 const PICKS: PickSlot[] = [
-  { overallPick: 1, round: 1, pickInRound: 1, teamSlot: 1, isUser: false, playerId: 'p1' },
-  { overallPick: 2, round: 1, pickInRound: 2, teamSlot: 2, isUser: true, playerId: 'p2' },
-  { overallPick: 3, round: 1, pickInRound: 3, teamSlot: 3, isUser: false, playerId: null },
+  { overallPick: 1, round: 1, pickInRound: 1, teamSlot: 1, currentOwnerTeamSlot: 1, playerId: 'p1' },
+  { overallPick: 2, round: 1, pickInRound: 2, teamSlot: 2, currentOwnerTeamSlot: 2, playerId: 'p2' },
+  { overallPick: 3, round: 1, pickInRound: 3, teamSlot: 3, currentOwnerTeamSlot: 3, playerId: null },
 ]
 
 const PLAYER_MAP = new Map<string, Player>([
@@ -26,6 +26,7 @@ describe('PickGrid', () => {
         onAssign={vi.fn()}
         onSelectCell={vi.fn()}
         numTeams={3}
+        userSlot={2}
       />
     )
     expect(screen.getByText('Alpha RB')).toBeDefined()
@@ -42,6 +43,7 @@ describe('PickGrid', () => {
         onAssign={vi.fn()}
         onSelectCell={vi.fn()}
         numTeams={3}
+        userSlot={2}
       />
     )
     // Pick 3 has no player — should show round.pick label
@@ -59,6 +61,7 @@ describe('PickGrid', () => {
         onAssign={onAssign}
         onSelectCell={vi.fn()}
         numTeams={3}
+        userSlot={2}
       />
     )
     // Click pick 0 (completed)

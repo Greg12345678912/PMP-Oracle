@@ -70,7 +70,7 @@ describe('computeDraftAnalytics', () => {
       currentPickIndex: state.picks.length,
       picks: state.picks.map((p, i) => ({
         ...p,
-        playerId: i === 14 && p.isUser ? '1' : (PLAYERS[i] ? PLAYERS[i].id : null),
+        playerId: i === 14 && p.currentOwnerTeamSlot === state.settings.userSlot ? '1' : (PLAYERS[i] ? PLAYERS[i].id : null),
       })),
     }
     const analytics = computeDraftAnalytics(manualState, playerMap)

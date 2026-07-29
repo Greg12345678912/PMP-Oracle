@@ -13,10 +13,11 @@ interface PickGridProps {
   onAssign: (pickIndex: number, playerId: string) => void
   onSelectCell: (pickIndex: number) => void
   numTeams: number
+  userSlot: number
 }
 
 export function PickGrid({
-  picks, playerMap, currentPickIndex, selectedPoolPlayerId, onAssign, onSelectCell, numTeams,
+  picks, playerMap, currentPickIndex, selectedPoolPlayerId, onAssign, onSelectCell, numTeams, userSlot,
 }: PickGridProps) {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -31,8 +32,6 @@ export function PickGrid({
     if (srcPlayerId) onAssign(dstIndex, srcPlayerId)
     if (dstPlayerId) onAssign(srcIndex, dstPlayerId)
   }
-
-  const userTeamSlot = picks.find(p => p.isUser)?.teamSlot
 
   // Sort picks into grid order: row-major by round, each round sorted by teamSlot (1..N)
   // Preserve original array index so engine calls (onAssign, onSelectCell) stay correct.
@@ -56,9 +55,9 @@ export function PickGrid({
             <div
               key={i}
               className="sticky top-0 z-20 text-center py-2 text-[11px] font-semibold bg-[#0d0d0d] border-b border-[#1e1e1e]"
-              style={i + 1 === userTeamSlot ? { color: '#ef4444' } : { color: '#4b5563' }}
+              style={i + 1 === userSlot ? { color: '#ef4444' } : { color: '#4b5563' }}
             >
-              {i + 1 === userTeamSlot ? '⭐ YOU' : `${i + 1}`}
+              {i + 1 === userSlot ? '⭐ YOU' : `${i + 1}`}
             </div>
           ))}
 
@@ -72,6 +71,7 @@ export function PickGrid({
               selectedPoolPlayerId={selectedPoolPlayerId}
               onAssign={onAssign}
               onSelectCell={onSelectCell}
+              userSlot={userSlot}
             />
           ))}
         </div>

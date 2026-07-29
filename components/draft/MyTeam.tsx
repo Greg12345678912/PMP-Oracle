@@ -8,6 +8,7 @@ interface MyTeamProps {
   picks: PickSlot[]
   playerMap: Map<string, Player>
   lineup: LineupConfig
+  userSlot: number
 }
 
 function assignToRoster(
@@ -25,9 +26,9 @@ function assignToRoster(
   })
 }
 
-export function MyTeam({ picks, playerMap, lineup }: MyTeamProps) {
+export function MyTeam({ picks, playerMap, lineup, userSlot }: MyTeamProps) {
   const userPicks = picks
-    .filter(p => p.isUser && p.playerId !== null)
+    .filter(p => p.currentOwnerTeamSlot === userSlot && p.playerId !== null)
     .map(pick => {
       const player = playerMap.get(pick.playerId!)
       return player ? { player, pick } : null

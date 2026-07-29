@@ -7,7 +7,6 @@ import {
   resetToADP,
   selectBestAvailable,
   computeDraftAnalytics,
-  tradePickSlots,
 } from '@/lib/draft/engine'
 import { saveDraft } from '@/lib/draft/supabase'
 import { DRAFT_SPEED_MS, DEFAULT_LINEUP } from '@/lib/draft/types'
@@ -39,27 +38,28 @@ function reducer(state: DraftState, action: Action): DraftState {
   }
 }
 
-type PickTrade = { roundA: number; slotA: number; roundB: number; slotB: number }
-
 interface DraftBoardProps {
   settings: DraftSettings
   players: Player[]
   initialState: DraftState | null
-  initialTrades?: PickTrade[]
+  ownershipMap?: Map<string, number>  // keyed "${round}_${teamSlot}" → currentOwnerTeamSlot
 }
 
-export function DraftBoard({ settings, players, initialState, initialTrades }: DraftBoardProps) {
+export function DraftBoard({ settings, players, initialState, ownershipMap }: DraftBoardProps) {
   const [state, dispatch] = useReducer(
     reducer,
     undefined,
     () => {
-      let initial = initialState ?? buildInitialState(settings, players)
-      for (const trade of (initialTrades ?? [])) {
-        const idxA = initial.picks.findIndex(p => p.round === trade.roundA && p.teamSlot === trade.slotA)
-        const idxB = initial.picks.findIndex(p => p.round === trade.roundB && p.teamSlot === trade.slotB)
-        if (idxA !== -1 && idxB !== -1) initial = tradePickSlots(initial, idxA, idxB)
+      const initial = initialState ?? buildInitialState(settings, players)
+      if (!ownershipMap?.size) return initial
+      return {
+        ...initial,
+        picks: initial.picks.map(p => {
+          const key = `${p.round}_${p.teamSlot}`
+          const owner = ownershipMap.get(key)
+          return owner !== undefined ? { ...p, currentOwnerTeamSlot: owner } : p
+        }),
       }
-      return initial
     }
   )
   const [undoStack, setUndoStack] = useState<DraftState[]>([])
@@ -91,7 +91,7 @@ export function DraftBoard({ settings, players, initialState, initialTrades }: D
     const currentPick = state.picks[state.currentPickIndex]
     if (!currentPick) return
 
-    if (currentPick.isUser) {
+    if (currentPick.currentOwnerTeamSlot === state.settings.userSlot) {
       dispatch({ type: 'SET_STATUS', status: 'paused' })
       return
     }
@@ -172,7 +172,9 @@ export function DraftBoard({ settings, players, initialState, initialTrades }: D
     : null
 
   const currentPick = state.picks[state.currentPickIndex]
-  const isUserTurn = currentPick?.isUser === true && state.status === 'paused'
+  const isUserTurn =
+    currentPick?.currentOwnerTeamSlot === state.settings.userSlot &&
+    state.status === 'paused'
 
   return (
     <div className="min-h-screen bg-pmp-black flex flex-col">
@@ -223,6 +225,7 @@ export function DraftBoard({ settings, players, initialState, initialTrades }: D
                 onAssign={handleAssign}
                 onSelectCell={() => {}}
                 numTeams={state.settings.numTeams}
+                userSlot={state.settings.userSlot}
               />
             </div>
 
@@ -232,6 +235,7 @@ export function DraftBoard({ settings, players, initialState, initialTrades }: D
                 picks={state.picks}
                 playerMap={playerMap}
                 lineup={state.settings.lineup ?? DEFAULT_LINEUP}
+                userSlot={state.settings.userSlot}
               />
             </div>
           </div>

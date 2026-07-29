@@ -6,10 +6,8 @@ import {
   resetToADP,
   generateShareId,
   computeDraftAnalytics,
-  tradePickSlots,
 } from '@/lib/draft/engine'
 import type { DraftSettings, Player } from '@/lib/draft/types'
-import { DEFAULT_LINEUP } from '@/lib/draft/types'
 
 const SETTINGS: DraftSettings = {
   numTeams: 10,
@@ -47,10 +45,10 @@ describe('buildInitialState', () => {
     expect(state.picks[19].teamSlot).toBe(1)
   })
 
-  it('userSlot 3 means picks at overall positions 3, 18, 23, ... are isUser', () => {
+  it('userSlot 3 means picks at overall positions 3, 18, 23, ... belong to teamSlot 3', () => {
     const state = buildInitialState(SETTINGS, PLAYERS)
-    expect(state.picks[2].isUser).toBe(true)   // pick 3 of round 1
-    expect(state.picks[17].isUser).toBe(true)  // round 2 reverses: slot 3 is pick 18
+    expect(state.picks[2].currentOwnerTeamSlot).toBe(3)   // pick 3 of round 1
+    expect(state.picks[17].currentOwnerTeamSlot).toBe(3)  // round 2 reverses: slot 3 is pick 18
   })
 
   it('allPlayerIds equals availablePlayerIds at start', () => {
@@ -135,37 +133,6 @@ describe('generateShareId', () => {
   })
 })
 
-describe('tradePickSlots', () => {
-  const baseSettings = { numTeams: 4, numRounds: 15 as const, userSlot: 1, scoring: 'ppr' as const, speed: 'fast' as const, lineup: DEFAULT_LINEUP }
-
-  it('swaps teamSlot and isUser between two picks', () => {
-    const state = buildInitialState(baseSettings, [])
-    const slot0 = state.picks[0].teamSlot  // slot 1, isUser true
-    const slot3 = state.picks[3].teamSlot  // slot 4, isUser false
-    const next = tradePickSlots(state, 0, 3)
-    expect(next.picks[0].teamSlot).toBe(slot3)
-    expect(next.picks[0].isUser).toBe(false)
-    expect(next.picks[3].teamSlot).toBe(slot0)
-    expect(next.picks[3].isUser).toBe(true)
-  })
-
-  it('is a no-op when indices are equal', () => {
-    const state = buildInitialState(baseSettings, [])
-    expect(tradePickSlots(state, 2, 2)).toBe(state)
-  })
-
-  it('is a no-op for out-of-range index', () => {
-    const state = buildInitialState(baseSettings, [])
-    expect(tradePickSlots(state, 0, 9999)).toBe(state)
-  })
-
-  it('does not mutate original state', () => {
-    const state = buildInitialState(baseSettings, [])
-    const original = state.picks[0].teamSlot
-    tradePickSlots(state, 0, 1)
-    expect(state.picks[0].teamSlot).toBe(original)
-  })
-})
 
 describe('computeDraftAnalytics', () => {
   it('computes positional breakdown for user picks', () => {

@@ -4,7 +4,7 @@ import type { DraftState, DraftSettings, PickSlot, DraftAnalytics } from './type
 import type { Player } from '@/lib/data/types'
 
 /** Build the pick grid for a snake draft */
-function buildPickSlots(numTeams: number, numRounds: number, userSlot: number): PickSlot[] {
+function buildPickSlots(numTeams: number, numRounds: number): PickSlot[] {
   const picks: PickSlot[] = []
   let overall = 1
   for (let round = 1; round <= numRounds; round++) {
@@ -16,7 +16,7 @@ function buildPickSlots(numTeams: number, numRounds: number, userSlot: number): 
         round,
         pickInRound: pick,
         teamSlot,
-        isUser: teamSlot === userSlot,
+        currentOwnerTeamSlot: teamSlot,
         playerId: null,
       })
     }
@@ -30,7 +30,7 @@ export function buildInitialState(settings: DraftSettings, players: Player[]): D
     schemaVersion: 1,
     shareId: null,
     settings,
-    picks: buildPickSlots(settings.numTeams, settings.numRounds, settings.userSlot),
+    picks: buildPickSlots(settings.numTeams, settings.numRounds),
     currentPickIndex: 0,
     availablePlayerIds: [...allPlayerIds],
     allPlayerIds,
@@ -84,27 +84,6 @@ export function assignPlayerToSlot(
   return { ...state, picks: newPicks, availablePlayerIds: newAvailable }
 }
 
-/**
- * Trade two pick slots — swap their teamSlot and isUser fields.
- * Used at draft initialization to apply pre-draft trades from setup.
- * NOT called during the draft — only called once when initializing state.
- */
-export function tradePickSlots(
-  state: DraftState,
-  indexA: number,
-  indexB: number,
-): DraftState {
-  if (indexA === indexB) return state
-  if (indexA < 0 || indexB < 0) return state
-  if (indexA >= state.picks.length || indexB >= state.picks.length) return state
-
-  const picks = state.picks.map((p, i) => {
-    if (i === indexA) return { ...p, teamSlot: state.picks[indexB].teamSlot, isUser: state.picks[indexB].isUser }
-    if (i === indexB) return { ...p, teamSlot: state.picks[indexA].teamSlot, isUser: state.picks[indexA].isUser }
-    return p
-  })
-  return { ...state, picks }
-}
 
 export function resetToADP(state: DraftState): DraftState {
   return {
@@ -135,7 +114,9 @@ export function computeDraftAnalytics(
   state: DraftState,
   playerMap: Map<string, Player>
 ): DraftAnalytics {
-  const userPicks = state.picks.filter(p => p.isUser && p.playerId !== null)
+  const userPicks = state.picks.filter(
+    p => p.currentOwnerTeamSlot === state.settings.userSlot && p.playerId !== null
+  )
   const positionBreakdown: Record<string, number> = {}
   let totalADP = 0
   let earliestReach: DraftAnalytics['earliestReach'] = null

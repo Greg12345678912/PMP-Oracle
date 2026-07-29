@@ -26,7 +26,7 @@ const mockPlayer = (id: string, name: string, pos: Player['position']): Player =
   headshotUrl: '', firstName: name.split(' ')[0], lastName: name.split(' ')[1] ?? ''
 })
 const mockPick = (overall: number, round: number, slot: number): PickSlot => ({
-  overallPick: overall, round, pickInRound: slot, teamSlot: 1, isUser: true, playerId: null
+  overallPick: overall, round, pickInRound: slot, teamSlot: 1, currentOwnerTeamSlot: 1, playerId: null
 })
 
 describe('assignToRoster', () => {
@@ -68,8 +68,8 @@ describe('assignToRoster', () => {
 // ---- React rendering tests ----
 
 const USER_PICKS: PickSlot[] = [
-  { overallPick: 3, round: 1, pickInRound: 3, teamSlot: 3, isUser: true, playerId: 'p1' },
-  { overallPick: 18, round: 2, pickInRound: 3, teamSlot: 3, isUser: true, playerId: null },
+  { overallPick: 3, round: 1, pickInRound: 3, teamSlot: 3, currentOwnerTeamSlot: 3, playerId: 'p1' },
+  { overallPick: 18, round: 2, pickInRound: 3, teamSlot: 3, currentOwnerTeamSlot: 3, playerId: null },
 ]
 
 const PLAYER_MAP = new Map<string, Player>([
@@ -88,23 +88,23 @@ const PLAYER_MAP = new Map<string, Player>([
 
 describe('MyTeam (render)', () => {
   it('shows drafted player name', () => {
-    render(<MyTeam picks={USER_PICKS} playerMap={PLAYER_MAP} lineup={DEFAULT_LINEUP} />)
+    render(<MyTeam picks={USER_PICKS} playerMap={PLAYER_MAP} lineup={DEFAULT_LINEUP} userSlot={3} />)
     expect(screen.getByText('Christian McCaffrey')).toBeDefined()
   })
 
   it('shows player team in the rendered row', () => {
-    render(<MyTeam picks={USER_PICKS} playerMap={PLAYER_MAP} lineup={DEFAULT_LINEUP} />)
+    render(<MyTeam picks={USER_PICKS} playerMap={PLAYER_MAP} lineup={DEFAULT_LINEUP} userSlot={3} />)
     expect(screen.getByText('SF')).toBeDefined()
   })
 
   it('shows slot labels from lineup', () => {
-    render(<MyTeam picks={USER_PICKS} playerMap={PLAYER_MAP} lineup={DEFAULT_LINEUP} />)
+    render(<MyTeam picks={USER_PICKS} playerMap={PLAYER_MAP} lineup={DEFAULT_LINEUP} userSlot={3} />)
     // QB slot label should appear
     expect(screen.getByText('QB')).toBeDefined()
   })
 
   it('shows empty dash for unfilled slots', () => {
-    render(<MyTeam picks={USER_PICKS} playerMap={PLAYER_MAP} lineup={DEFAULT_LINEUP} />)
+    render(<MyTeam picks={USER_PICKS} playerMap={PLAYER_MAP} lineup={DEFAULT_LINEUP} userSlot={3} />)
     // Empty slots render with "—"
     const dashes = screen.getAllByText('—')
     expect(dashes.length).toBeGreaterThan(0)
@@ -113,7 +113,7 @@ describe('MyTeam (render)', () => {
   it('only shows user picks (not CPU picks)', () => {
     const mixed: PickSlot[] = [
       ...USER_PICKS,
-      { overallPick: 1, round: 1, pickInRound: 1, teamSlot: 1, isUser: false, playerId: 'p2' },
+      { overallPick: 1, round: 1, pickInRound: 1, teamSlot: 1, currentOwnerTeamSlot: 1, playerId: 'p2' },
     ]
     const extendedPlayerMap = new Map(PLAYER_MAP)
     extendedPlayerMap.set('p2', {
@@ -127,7 +127,7 @@ describe('MyTeam (render)', () => {
       byeWeek: 8,
       headshotUrl: ''
     })
-    render(<MyTeam picks={mixed} playerMap={extendedPlayerMap} lineup={DEFAULT_LINEUP} />)
+    render(<MyTeam picks={mixed} playerMap={extendedPlayerMap} lineup={DEFAULT_LINEUP} userSlot={3} />)
     // Should not see CPU Player (isUser: false)
     expect(screen.queryByText('CPU Player')).toBeNull()
     // Should see the user's drafted player

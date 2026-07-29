@@ -12,11 +12,13 @@ interface PickCellProps {
   selectedPoolPlayerId: string | null
   onAssign: (pickIndex: number, playerId: string) => void
   onSelectCell: (pickIndex: number) => void
+  userSlot: number
 }
 
 export function PickCell({
-  pick, pickIndex, player, currentPickIndex, selectedPoolPlayerId, onAssign, onSelectCell,
+  pick, pickIndex, player, currentPickIndex, selectedPoolPlayerId, onAssign, onSelectCell, userSlot,
 }: PickCellProps) {
+  const isUser = pick.currentOwnerTeamSlot === userSlot
   const isCompleted = pickIndex < currentPickIndex
   const isCurrent = pickIndex === currentPickIndex
   const label = `${pick.round}.${String(pick.teamSlot).padStart(2, '0')}`
@@ -57,7 +59,7 @@ export function PickCell({
 
   const cellBg = (() => {
     if (isCurrent)                  return 'bg-[#1a0505] border-pmp-red animate-pulse'
-    if (isCompleted && pick.isUser) return 'bg-[#1a0505] border-pmp-red/20'
+    if (isCompleted && isUser) return 'bg-[#1a0505] border-pmp-red/20'
     if (isCompleted)                return 'bg-[#1e1e1e] border-[#2a2a2a]'
     return 'bg-[#111111] border-[#1e1e1e]'
   })()

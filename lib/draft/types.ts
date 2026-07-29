@@ -28,12 +28,19 @@ export interface DraftSettings {
 }
 
 export interface PickSlot {
-  overallPick: number   // 1-indexed
-  round: number         // 1-indexed
-  pickInRound: number   // 1-indexed
-  teamSlot: number      // 1-indexed
-  isUser: boolean
+  overallPick: number          // 1-indexed
+  round: number                // 1-indexed
+  pickInRound: number          // 1-indexed
+  teamSlot: number             // original draft position (NEVER changes)
+  currentOwnerTeamSlot: number // who owns this pick — starts equal to teamSlot
   playerId: string | null
+}
+
+export interface TradeRecord {
+  id: string           // crypto.randomUUID() or `trade-${Date.now()}`
+  opponentSlot: number // which team you traded with
+  youGive: { round: number; teamSlot: number }[]    // picks going to opponent
+  youReceive: { round: number; teamSlot: number }[] // picks coming to you
 }
 
 export interface DraftState {
