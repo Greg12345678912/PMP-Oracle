@@ -3,12 +3,28 @@ import type { Player } from '@/lib/data/types'
 
 export type { Player }
 
+export interface LineupConfig {
+  QB: number
+  RB: number
+  WR: number
+  TE: number
+  FLEX: number   // RB/WR/TE eligible
+  K: number
+  DEF: number
+  BN: number     // bench — any position
+}
+
+export const DEFAULT_LINEUP: LineupConfig = {
+  QB: 1, RB: 2, WR: 3, TE: 1, FLEX: 1, K: 0, DEF: 1, BN: 6,
+}
+
 export interface DraftSettings {
   numTeams: number            // 8, 10, or 12
   numRounds: 15               // only supported value
   userSlot: number            // 1-indexed
   scoring: 'ppr' | 'half_ppr' | 'standard'
   speed: 'instant' | 'fast' | 'normal'
+  lineup?: LineupConfig
 }
 
 export interface PickSlot {

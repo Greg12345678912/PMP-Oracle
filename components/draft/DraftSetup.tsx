@@ -1,8 +1,23 @@
 'use client'
 import { useState } from 'react'
 import { SleeperProvider } from '@/lib/data/sleeper'
-import type { DraftSettings, Player } from '@/lib/draft/types'
-import { DRAFT_TEAM_OPTIONS } from '@/lib/draft/types'
+import type { DraftSettings, Player, LineupConfig } from '@/lib/draft/types'
+import { DRAFT_TEAM_OPTIONS, DEFAULT_LINEUP } from '@/lib/draft/types'
+
+const LINEUP_PRESETS: Record<string, { label: string; icon: string; lineup: LineupConfig }> = {
+  espn: {
+    label: 'ESPN Standard', icon: '🏈',
+    lineup: { QB:1, RB:2, WR:2, TE:1, FLEX:1, K:1, DEF:1, BN:6 },
+  },
+  sleeper: {
+    label: 'Sleeper Default', icon: '🔥',
+    lineup: { QB:1, RB:2, WR:3, TE:1, FLEX:1, K:0, DEF:1, BN:6 },
+  },
+  yahoo: {
+    label: 'Yahoo Default', icon: '👑',
+    lineup: { QB:1, RB:2, WR:2, TE:1, FLEX:1, K:1, DEF:1, BN:6 },
+  },
+}
 
 interface DraftSetupProps {
   onStart: (settings: DraftSettings, players: Player[]) => void
@@ -26,6 +41,8 @@ export function DraftSetup({ onStart }: DraftSetupProps) {
   const [scoring, setScoring] = useState<DraftSettings['scoring']>('ppr')
   const [speed, setSpeed] = useState<DraftSettings['speed']>('normal')
   const [loading, setLoading] = useState(false)
+  const [lineup, setLineup] = useState<LineupConfig>(DEFAULT_LINEUP)
+  const [customizing, setCustomizing] = useState(false)
 
   const handleTeamsChange = (v: number) => {
     setNumTeams(v)
@@ -37,7 +54,7 @@ export function DraftSetup({ onStart }: DraftSetupProps) {
     try {
       const provider = new SleeperProvider()
       const players = await provider.getDraftPlayers()
-      const settings: DraftSettings = { numTeams, numRounds: 15, userSlot, scoring, speed }
+      const settings: DraftSettings = { numTeams, numRounds: 15, userSlot, scoring, speed, lineup }
       onStart(settings, players)
     } finally {
       setLoading(false)
@@ -108,6 +125,70 @@ export function DraftSetup({ onStart }: DraftSetupProps) {
               ))}
             </select>
           </label>
+        </div>
+
+        {/* Lineup preset selector */}
+        <div className="w-full">
+          <p className="text-pmp-gray-600 text-xs uppercase tracking-widest mb-2">LINEUP PRESET</p>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {Object.entries(LINEUP_PRESETS).map(([key, preset]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => { setLineup(preset.lineup); setCustomizing(false) }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+                  !customizing && JSON.stringify(lineup) === JSON.stringify(preset.lineup)
+                    ? 'border-pmp-red bg-[#1a0505] text-pmp-white'
+                    : 'border-[#2a2a2a] bg-[#111111] text-pmp-gray-400 hover:border-pmp-gray-600'
+                }`}
+              >
+                <span>{preset.icon}</span>
+                <span>{preset.label}</span>
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setCustomizing(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors col-span-2 ${
+                customizing
+                  ? 'border-pmp-red bg-[#1a0505] text-pmp-white'
+                  : 'border-[#2a2a2a] bg-[#111111] text-pmp-gray-400 hover:border-pmp-gray-600'
+              }`}
+            >
+              <span>⚙️</span><span>Custom</span>
+            </button>
+          </div>
+
+          {/* Custom stepper rows — only shown when customizing */}
+          {customizing && (() => {
+            const total = Object.values(lineup).reduce((s, n) => s + n, 0)
+            return (
+              <div>
+                <p className="text-pmp-gray-600 text-xs uppercase tracking-widest mb-3">LINEUP</p>
+                {(['QB','RB','WR','TE','FLEX','K','DEF','BN'] as const).map(pos => (
+                  <div key={pos} className="flex items-center justify-between py-1.5">
+                    <span className="text-pmp-white text-sm w-12">{pos}</span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setLineup(l => ({ ...l, [pos]: Math.max(0, l[pos] - 1) }))}
+                        className="w-7 h-7 rounded-full bg-[#1e1e1e] text-pmp-white text-lg leading-none flex items-center justify-center hover:bg-[#2a2a2a]"
+                      >−</button>
+                      <span className="text-pmp-white text-sm w-4 text-center">{lineup[pos]}</span>
+                      <button
+                        type="button"
+                        onClick={() => setLineup(l => ({ ...l, [pos]: l[pos] + 1 }))}
+                        className="w-7 h-7 rounded-full bg-[#1e1e1e] text-pmp-white text-lg leading-none flex items-center justify-center hover:bg-[#2a2a2a]"
+                      >+</button>
+                    </div>
+                  </div>
+                ))}
+                <p className={`text-xs mt-2 ${total === 15 ? 'text-pmp-gray-600' : 'text-yellow-500'}`}>
+                  {total} / 15 slots {total !== 15 ? '— adjust to match 15 rounds' : '✓'}
+                </p>
+              </div>
+            )
+          })()}
         </div>
 
         <button
