@@ -41,7 +41,7 @@ describe('DraftBoard', () => {
     render(<DraftBoard settings={SETTINGS} players={PLAYERS} initialState={state} />)
     // With speed=instant (0ms), CPU should pick immediately and then pause at user turn
     await act(async () => { vi.advanceTimersByTime(100) })
-    // After CPU picks slot 1, it's now user's turn (slot 2) — DraftControls shows "Continue Draft"
-    expect(screen.getByText(/continue draft/i)).toBeDefined()
+    // After CPU picks slot 1, it's now user's turn (slot 2) — banner shows "Your pick"
+    expect(screen.getByText(/your pick/i)).toBeDefined()
   })
 })

@@ -58,10 +58,11 @@ export function PickCell({
   }
 
   const cellBg = (() => {
-    if (isCurrent)                  return 'bg-[#1a0505] border-pmp-red animate-pulse'
+    if (isCurrent)             return 'bg-[#1a0505] border-pmp-red animate-pulse'
     if (isCompleted && isUser) return 'bg-[#1a0505] border-pmp-red/20'
-    if (isCompleted)                return 'bg-[#1e1e1e] border-[#2a2a2a]'
-    return 'bg-[#111111] border-[#1e1e1e]'
+    if (isCompleted)           return 'bg-[#1e1e1e] border-[#2a2a2a]'
+    if (isUser)                return 'bg-[#111111] border-pmp-red/20'
+    return                            'bg-[#111111] border-[#1e1e1e]'
   })()
 
   const hoverClass = isCompleted

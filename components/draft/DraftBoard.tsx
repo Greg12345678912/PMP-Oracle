@@ -201,15 +201,21 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
             numTeams={state.settings.numTeams}
           />
 
-          {/* Continue Draft banner */}
-          {isUserTurn && (
+          {/* Draft paused banner — shows when user must act or resume CPU */}
+          {state.status === 'paused' && (
             <div className="bg-pmp-red px-4 py-3 flex items-center justify-center shrink-0">
-              <button
-                onClick={handleContinueDraft}
-                className="text-white font-bold text-lg tracking-wide w-full text-center"
-              >
-                ▶ Continue Draft
-              </button>
+              {isUserTurn ? (
+                <p className="text-white font-bold text-base tracking-wide text-center">
+                  Your pick — select a player from the left panel
+                </p>
+              ) : (
+                <button
+                  onClick={handleContinueDraft}
+                  className="text-white font-bold text-lg tracking-wide w-full text-center"
+                >
+                  ▶ Continue Draft
+                </button>
+              )}
             </div>
           )}
 
