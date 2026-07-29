@@ -9,6 +9,7 @@ export interface Player {
   position: Exclude<Position, 'FLEX'>  // actual position, never FLEX
   headshotUrl: string
   searchRank: number
+  byeWeek: number | null
 }
 
 export interface Tier {

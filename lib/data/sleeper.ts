@@ -42,6 +42,7 @@ interface SleeperPlayer {
   fantasy_positions: string[]
   status: string
   search_rank: number | null
+  bye_week?: number
 }
 
 function toPlayer(raw: SleeperPlayer): Player {
@@ -54,6 +55,7 @@ function toPlayer(raw: SleeperPlayer): Player {
     position: raw.position as Player['position'],
     headshotUrl: `${HEADSHOT_BASE}/${raw.player_id}.jpg`,
     searchRank: raw.search_rank ?? 9999,
+    byeWeek: raw.bye_week ?? null,
   }
 }
 
@@ -104,6 +106,30 @@ export class SleeperProvider implements DataProvider {
 
     setCached(position, players)
     return players
+  }
+
+  async getDraftPlayers(): Promise<Player[]> {
+    const raw = await this.fetchAll()
+    const LIMITS: Partial<Record<string, number>> = {
+      QB: 30, RB: 80, WR: 80, TE: 40, K: 15, DEF: 15,
+    }
+    const counts: Partial<Record<string, number>> = {}
+    const pool: Player[] = []
+
+    const sorted = Array.from(raw.values())
+      .filter(p => p.search_rank && p.search_rank < 9999999 && LIMITS[p.position] !== undefined)
+      .sort((a, b) => (a.search_rank ?? 9999) - (b.search_rank ?? 9999))
+
+    for (const p of sorted) {
+      const limit = LIMITS[p.position] ?? 0
+      const count = counts[p.position] ?? 0
+      if (count < limit) {
+        pool.push(toPlayer(p))
+        counts[p.position] = count + 1
+      }
+    }
+
+    return pool.sort((a, b) => (a.searchRank ?? 9999) - (b.searchRank ?? 9999))
   }
 }
 
