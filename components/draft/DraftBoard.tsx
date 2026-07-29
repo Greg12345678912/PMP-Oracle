@@ -204,6 +204,7 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
             {/* Player pool — left on desktop, "Players" tab on mobile */}
             <div className={`w-full md:w-72 flex-shrink-0 border-r border-pmp-gray-800 ${mobileTab !== 'players' ? 'hidden md:flex md:flex-col' : 'flex flex-col'}`}>
               <DraftPlayerPool
+                players={players}
                 availablePlayerIds={state.availablePlayerIds}
                 playerMap={playerMap}
                 selectedPoolPlayerId={selectedPoolPlayerId}

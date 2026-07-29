@@ -42,6 +42,7 @@ const PLAYERS: Player[] = [
 const PLAYER_MAP = new Map(PLAYERS.map(p => [p.id, p]))
 
 const defaultProps = {
+  players: PLAYERS,
   availablePlayerIds: ['1', '2', '3'],
   playerMap: PLAYER_MAP,
   selectedPoolPlayerId: null,
@@ -217,5 +218,76 @@ describe('DraftPlayerPool', () => {
     expect(screen.getByText('Patrick Mahomes')).toBeDefined()
     expect(screen.getByText('CMC')).toBeDefined()
     expect(screen.queryByText('Justin Jefferson')).toBeNull()
+  })
+
+  it('renders a search input', () => {
+    render(<DraftPlayerPool {...defaultProps} />)
+    expect(screen.getByPlaceholderText('Search players...')).toBeDefined()
+  })
+
+  it('filters players by search text', () => {
+    render(<DraftPlayerPool {...defaultProps} />)
+    const searchInput = screen.getByPlaceholderText('Search players...')
+    fireEvent.change(searchInput, { target: { value: 'mahomes' } })
+    expect(screen.getByText('Patrick Mahomes')).toBeDefined()
+    expect(screen.queryByText('CMC')).toBeNull()
+    expect(screen.queryByText('Justin Jefferson')).toBeNull()
+  })
+
+  it('search is case-insensitive', () => {
+    render(<DraftPlayerPool {...defaultProps} />)
+    const searchInput = screen.getByPlaceholderText('Search players...')
+    fireEvent.change(searchInput, { target: { value: 'JEFFERSON' } })
+    expect(screen.getByText('Justin Jefferson')).toBeDefined()
+    expect(screen.queryByText('Patrick Mahomes')).toBeNull()
+  })
+
+  it('shows no players when search matches nothing', () => {
+    render(<DraftPlayerPool {...defaultProps} />)
+    const searchInput = screen.getByPlaceholderText('Search players...')
+    fireEvent.change(searchInput, { target: { value: 'xyzzy' } })
+    expect(screen.queryByText('Patrick Mahomes')).toBeNull()
+    expect(screen.queryByText('CMC')).toBeNull()
+    expect(screen.queryByText('Justin Jefferson')).toBeNull()
+  })
+
+  it('displays ADP rank numbers for each player', () => {
+    render(<DraftPlayerPool {...defaultProps} />)
+    // Players are in ADP order: Mahomes=1, CMC=2, Jefferson=3
+    expect(screen.getByText('1')).toBeDefined()
+    expect(screen.getByText('2')).toBeDefined()
+    expect(screen.getByText('3')).toBeDefined()
+  })
+
+  it('shows player initial as fallback when headshotUrl is empty', () => {
+    render(<DraftPlayerPool {...defaultProps} availablePlayerIds={['1']} />)
+    // headshotUrl is '' so we expect the initial 'P' for Patrick Mahomes
+    expect(screen.getByText('P')).toBeDefined()
+  })
+
+  it('shows headshot img when headshotUrl is provided', () => {
+    const playersWithHeadshot: Player[] = [
+      { ...PLAYERS[0], headshotUrl: 'https://example.com/mahomes.jpg' },
+    ]
+    render(
+      <DraftPlayerPool
+        {...defaultProps}
+        players={playersWithHeadshot}
+        playerMap={new Map(playersWithHeadshot.map(p => [p.id, p]))}
+        availablePlayerIds={['1']}
+      />
+    )
+    const img = screen.getByRole('img', { name: 'Patrick Mahomes' })
+    expect(img).toBeDefined()
+  })
+
+  it('ADP rank is based on position in players array, not filtered position', () => {
+    // Players array: [QB(rank1), RB(rank2), WR(rank3)]
+    // When filtered to WR only, Jefferson should still show rank 3
+    render(<DraftPlayerPool {...defaultProps} />)
+    fireEvent.click(screen.getByRole('button', { name: 'WR' }))
+    // Jefferson is rank 3 in the ADP-sorted array
+    expect(screen.getByText('Justin Jefferson')).toBeDefined()
+    expect(screen.getByText('3')).toBeDefined()
   })
 })
