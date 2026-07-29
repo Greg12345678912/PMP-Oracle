@@ -5,6 +5,9 @@ import { PickCell } from './PickCell'
 import type { PickSlot } from '@/lib/draft/types'
 import type { Player } from '@/lib/data/types'
 
+const ZOOM_WIDTHS = { compact: 60, normal: 76, large: 96 } as const
+type ZoomLevel = keyof typeof ZOOM_WIDTHS
+
 interface PickGridProps {
   picks: PickSlot[]
   playerMap: Map<string, Player>
@@ -14,10 +17,11 @@ interface PickGridProps {
   onSelectCell: (pickIndex: number) => void
   numTeams: number
   userSlot: number
+  zoom?: ZoomLevel
 }
 
 export function PickGrid({
-  picks, playerMap, currentPickIndex, selectedPoolPlayerId, onAssign, onSelectCell, numTeams, userSlot,
+  picks, playerMap, currentPickIndex, selectedPoolPlayerId, onAssign, onSelectCell, numTeams, userSlot, zoom = 'normal',
 }: PickGridProps) {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -48,7 +52,7 @@ export function PickGrid({
       <div className="overflow-auto">
         <div
           className="grid gap-0.5 min-w-max"
-          style={{ gridTemplateColumns: `repeat(${numTeams}, minmax(72px, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${numTeams}, minmax(${ZOOM_WIDTHS[zoom]}px, 1fr))` }}
         >
           {/* Header row */}
           {Array.from({ length: numTeams }, (_, i) => (

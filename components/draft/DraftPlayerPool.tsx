@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import type { Player } from '@/lib/data/types'
 
 type PositionFilter = 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DEF'
@@ -28,6 +28,17 @@ export function DraftPlayerPool({
 }: DraftPlayerPoolProps) {
   const [search, setSearch] = useState('')
   const [selectedPosition, setSelectedPosition] = useState<PositionFilter | null>(null)
+  const [justPicked, setJustPicked] = useState(false)
+  const prevIsUserTurnRef = useRef(isUserTurn)
+
+  useEffect(() => {
+    if (!isUserTurn && prevIsUserTurnRef.current) {
+      setJustPicked(true)
+      const t = setTimeout(() => setJustPicked(false), 400)
+      return () => clearTimeout(t)
+    }
+    prevIsUserTurnRef.current = isUserTurn
+  }, [isUserTurn])
 
   // ADP rank map: position in the original players array (1-indexed)
   const rankMap = useMemo(() => {
@@ -85,7 +96,7 @@ export function DraftPlayerPool({
       </div>
 
       {/* Player list */}
-      <div className="flex-1 overflow-y-auto">
+      <div className={`flex-1 overflow-y-auto transition-opacity duration-300 ${justPicked ? 'opacity-50' : 'opacity-100'}`}>
         {visiblePlayers.map(player => {
           const isSelected = selectedPoolPlayerId === player.id
           const isLocked = lockedPlayerIds.includes(player.id)
