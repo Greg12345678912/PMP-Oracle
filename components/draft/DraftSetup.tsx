@@ -1,8 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { SleeperProvider } from '@/lib/data/sleeper'
-import type { DraftSettings, Player, LineupConfig } from '@/lib/draft/types'
+import type { DraftSettings, Player, LineupConfig, TradeRecord } from '@/lib/draft/types'
 import { DRAFT_TEAM_OPTIONS, DEFAULT_LINEUP } from '@/lib/draft/types'
+import { DraftPickTradesPanel, buildOwnershipMapFromTrades } from './DraftPickTradesPanel'
 
 const LINEUP_PRESETS: Record<string, { label: string; icon: string; lineup: LineupConfig }> = {
   espn: {
@@ -19,10 +20,8 @@ const LINEUP_PRESETS: Record<string, { label: string; icon: string; lineup: Line
   },
 }
 
-type PickTrade = { roundA: number; slotA: number; roundB: number; slotB: number }
-
 interface DraftSetupProps {
-  onStart: (settings: DraftSettings, players: Player[], trades: PickTrade[]) => void
+  onStart: (settings: DraftSettings, players: Player[], ownershipMap: Map<string, number>) => void
 }
 
 const SCORING_LABELS: Record<DraftSettings['scoring'], string> = {
@@ -45,13 +44,8 @@ export function DraftSetup({ onStart }: DraftSetupProps) {
   const [loading, setLoading] = useState(false)
   const [lineup, setLineup] = useState<LineupConfig>(DEFAULT_LINEUP)
   const [customizing, setCustomizing] = useState(false)
-  const [customizePicks, setCustomizePicks] = useState(false)
-  const [pickTrades, setPickTrades] = useState<PickTrade[]>([])
-
-  const updateTrade = (i: number, field: string, value: number) =>
-    setPickTrades(trades => trades.map((t, idx) => idx === i ? { ...t, [field]: value } : t))
-  const removeTrade = (i: number) =>
-    setPickTrades(trades => trades.filter((_, idx) => idx !== i))
+  const [showTradeBuilder, setShowTradeBuilder] = useState(false)
+  const [trades, setTrades] = useState<TradeRecord[]>([])
 
   const handleTeamsChange = (v: number) => {
     setNumTeams(v)
@@ -64,7 +58,8 @@ export function DraftSetup({ onStart }: DraftSetupProps) {
       const provider = new SleeperProvider()
       const players = await provider.getDraftPlayers()
       const settings: DraftSettings = { numTeams, numRounds: 15, userSlot, scoring, speed, lineup }
-      onStart(settings, players, pickTrades)
+      const ownershipMap = buildOwnershipMapFromTrades(trades, numTeams, 15, userSlot)
+      onStart(settings, players, ownershipMap)
     } finally {
       setLoading(false)
     }
@@ -200,66 +195,31 @@ export function DraftSetup({ onStart }: DraftSetupProps) {
           })()}
         </div>
 
-        {/* Customize Draft Order — pre-draft pick trading */}
+        {/* Pre-draft pick trading */}
         <div className="w-full">
           <button
             type="button"
-            onClick={() => setCustomizePicks(v => !v)}
+            onClick={() => setShowTradeBuilder(v => !v)}
             className="flex items-center gap-2 text-pmp-gray-500 text-sm hover:text-pmp-gray-300 transition-colors"
           >
-            <span className={`text-xs transition-transform ${customizePicks ? 'rotate-90' : ''}`}>▶</span>
-            Customize Draft Order
+            <span className={`text-xs transition-transform ${showTradeBuilder ? 'rotate-90' : ''}`}>▶</span>
+            Pre-Draft Pick Trades
+            {trades.length > 0 && (
+              <span className="bg-pmp-red text-white text-[10px] px-1.5 py-0.5 rounded-full font-semibold">
+                {trades.length}
+              </span>
+            )}
           </button>
 
-          {customizePicks && (
-            <div className="mt-3 space-y-2">
-              <p className="text-pmp-gray-600 text-xs">
-                Trade pick slots before the draft — e.g. trade your 1.01 to T4 and receive their 1.04.
-              </p>
-
-              {pickTrades.map((trade, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  {/* Round A */}
-                  <select value={trade.roundA} onChange={e => updateTrade(i, 'roundA', +e.target.value)}
-                    className="bg-[#1e1e1e] border border-[#2a2a2a] rounded px-2 py-1 text-pmp-white text-xs">
-                    {Array.from({length: 15}, (_, r) => (
-                      <option key={r+1} value={r+1}>Rd {r+1}</option>
-                    ))}
-                  </select>
-                  {/* Slot A */}
-                  <select value={trade.slotA} onChange={e => updateTrade(i, 'slotA', +e.target.value)}
-                    className="bg-[#1e1e1e] border border-[#2a2a2a] rounded px-2 py-1 text-pmp-white text-xs">
-                    {Array.from({length: numTeams}, (_, s) => (
-                      <option key={s+1} value={s+1}>{s+1 === userSlot ? 'YOU' : `T${s+1}`}</option>
-                    ))}
-                  </select>
-                  <span className="text-pmp-gray-500 text-xs">↔</span>
-                  {/* Round B */}
-                  <select value={trade.roundB} onChange={e => updateTrade(i, 'roundB', +e.target.value)}
-                    className="bg-[#1e1e1e] border border-[#2a2a2a] rounded px-2 py-1 text-pmp-white text-xs">
-                    {Array.from({length: 15}, (_, r) => (
-                      <option key={r+1} value={r+1}>Rd {r+1}</option>
-                    ))}
-                  </select>
-                  {/* Slot B */}
-                  <select value={trade.slotB} onChange={e => updateTrade(i, 'slotB', +e.target.value)}
-                    className="bg-[#1e1e1e] border border-[#2a2a2a] rounded px-2 py-1 text-pmp-white text-xs">
-                    {Array.from({length: numTeams}, (_, s) => (
-                      <option key={s+1} value={s+1}>{s+1 === userSlot ? 'YOU' : `T${s+1}`}</option>
-                    ))}
-                  </select>
-                  <button type="button" onClick={() => removeTrade(i)}
-                    className="text-pmp-gray-600 hover:text-pmp-red text-xs">✕</button>
-                </div>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => setPickTrades(t => [...t, { roundA: 1, slotA: userSlot, roundB: 1, slotB: userSlot === 1 ? 2 : 1 }])}
-                className="text-pmp-red text-xs hover:text-red-400 transition-colors"
-              >
-                + Add Pick Trade
-              </button>
+          {showTradeBuilder && (
+            <div className="mt-3">
+              <DraftPickTradesPanel
+                numTeams={numTeams}
+                numRounds={15}
+                userSlot={userSlot}
+                trades={trades}
+                onTradesChange={setTrades}
+              />
             </div>
           )}
         </div>

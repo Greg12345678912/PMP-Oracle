@@ -6,8 +6,6 @@ import { buildInitialState } from '@/lib/draft/engine'
 import { analytics } from '@/lib/analytics/events'
 import type { DraftSettings, DraftState, Player } from '@/lib/draft/types'
 
-type PickTrade = { roundA: number; slotA: number; roundB: number; slotB: number }
-
 interface StartedDraft {
   settings: DraftSettings
   players: Player[]
@@ -15,23 +13,10 @@ interface StartedDraft {
   ownershipMap: Map<string, number>
 }
 
-function buildOwnershipMap(trades: PickTrade[]): Map<string, number> {
-  const map = new Map<string, number>()
-  for (const trade of trades) {
-    const keyA = `${trade.roundA}_${trade.slotA}`
-    const keyB = `${trade.roundB}_${trade.slotB}`
-    const ownerA = map.get(keyA) ?? trade.slotA
-    const ownerB = map.get(keyB) ?? trade.slotB
-    map.set(keyA, ownerB)
-    map.set(keyB, ownerA)
-  }
-  return map
-}
-
 export default function MockDraftPage() {
   const [draftState, setDraftState] = useState<StartedDraft | null>(null)
 
-  const handleStart = (settings: DraftSettings, players: Player[], trades: PickTrade[]) => {
+  const handleStart = (settings: DraftSettings, players: Player[], ownershipMap: Map<string, number>) => {
     analytics.mockDraftStarted({
       numTeams: settings.numTeams,
       scoring: settings.scoring,
@@ -41,7 +26,7 @@ export default function MockDraftPage() {
       settings,
       players,
       initialState: buildInitialState(settings, players),
-      ownershipMap: buildOwnershipMap(trades),
+      ownershipMap,
     })
   }
 
