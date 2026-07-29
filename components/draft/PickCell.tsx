@@ -26,6 +26,7 @@ export function PickCell({
   const [flash, setFlash] = useState(false)
   useEffect(() => {
     if (!prevCompletedRef.current && isCompleted) {
+      prevCompletedRef.current = isCompleted
       setFlash(true)
       const t = setTimeout(() => setFlash(false), 600)
       return () => clearTimeout(t)
