@@ -15,12 +15,7 @@ interface StartedDraft {
   ownershipMap: Map<string, number>
 }
 
-function buildOwnershipMap(
-  settings: DraftSettings,
-  trades: PickTrade[]
-): Map<string, number> {
-  // Start with identity ownership (each pick owned by its teamSlot)
-  // Apply trades as slot swaps: trading pick A↔B means their currentOwnerTeamSlot values swap
+function buildOwnershipMap(trades: PickTrade[]): Map<string, number> {
   const map = new Map<string, number>()
   for (const trade of trades) {
     const keyA = `${trade.roundA}_${trade.slotA}`
@@ -30,8 +25,6 @@ function buildOwnershipMap(
     map.set(keyA, ownerB)
     map.set(keyB, ownerA)
   }
-  // Include user slot so DraftBoard knows which slot belongs to the user
-  void settings
   return map
 }
 
@@ -48,7 +41,7 @@ export default function MockDraftPage() {
       settings,
       players,
       initialState: buildInitialState(settings, players),
-      ownershipMap: buildOwnershipMap(settings, trades),
+      ownershipMap: buildOwnershipMap(trades),
     })
   }
 
