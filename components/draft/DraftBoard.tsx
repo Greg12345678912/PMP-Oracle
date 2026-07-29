@@ -10,7 +10,7 @@ import {
   tradePickSlots,
 } from '@/lib/draft/engine'
 import { saveDraft } from '@/lib/draft/supabase'
-import { DRAFT_SPEED_MS } from '@/lib/draft/types'
+import { DRAFT_SPEED_MS, DEFAULT_LINEUP } from '@/lib/draft/types'
 import type { DraftState, DraftSettings, Player } from '@/lib/draft/types'
 import { DraftControls } from './DraftControls'
 import { MobileTabs, type MobileTab } from './MobileTabs'
@@ -231,7 +231,7 @@ export function DraftBoard({ settings, players, initialState, initialTrades }: D
               <MyTeam
                 picks={state.picks}
                 playerMap={playerMap}
-                numRounds={15}
+                lineup={state.settings.lineup ?? DEFAULT_LINEUP}
               />
             </div>
           </div>
