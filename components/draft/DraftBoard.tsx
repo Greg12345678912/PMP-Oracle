@@ -12,7 +12,6 @@ import { saveDraft } from '@/lib/draft/supabase'
 import { DRAFT_SPEED_MS, DEFAULT_LINEUP } from '@/lib/draft/types'
 import type { DraftState, DraftSettings, Player } from '@/lib/draft/types'
 import { DraftControls } from './DraftControls'
-import { MobileTabs, type MobileTab } from './MobileTabs'
 import { PickGrid } from './PickGrid'
 import { DraftPlayerPool } from './DraftPlayerPool'
 import { MyTeam } from './MyTeam'
@@ -153,8 +152,6 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
     await navigator.clipboard.writeText(url).catch(() => {})
   }
 
-  const [mobileTab, setMobileTab] = useState<MobileTab>('players')
-
   const handleToggleLock = (playerId: string) => {
     dispatch({
       type: 'RESTORE',
@@ -176,8 +173,16 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
     currentPick?.currentOwnerTeamSlot === state.settings.userSlot &&
     state.status === 'paused'
 
+  const [shareLabel, setShareLabel] = useState('Copy Link')
+
+  const handleShare = async () => {
+    await handleShareCopyLink()
+    setShareLabel('Copied!')
+    setTimeout(() => setShareLabel('Copy Link'), 2000)
+  }
+
   return (
-    <div className="min-h-screen bg-pmp-black flex flex-col">
+    <div className="h-screen bg-[#0d0d0d] flex flex-col overflow-hidden">
       {state.status === 'complete' && analytics ? (
         <DraftSummary
           analytics={analytics}
@@ -186,23 +191,38 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
         />
       ) : (
         <>
-          <DraftControls
-            status={state.status}
-            canUndo={undoStack.length > 0}
-            canRedo={redoStack.length > 0}
-            onContinueDraft={handleContinueDraft}
-            onReset={handleReset}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            onShare={handleShareCopyLink}
+          <DraftProgressBar
+            currentPickIndex={state.currentPickIndex}
+            totalPicks={state.picks.length}
+            numTeams={state.settings.numTeams}
           />
 
-          <MobileTabs active={mobileTab} onChange={setMobileTab} />
+          {/* Continue Draft banner */}
+          {isUserTurn && (
+            <div className="bg-pmp-red px-4 py-3 flex items-center justify-center shrink-0">
+              <button
+                onClick={handleContinueDraft}
+                className="text-white font-bold text-lg tracking-wide w-full text-center"
+              >
+                ▶ Continue Draft
+              </button>
+            </div>
+          )}
 
-          {/* Desktop: 3-column layout */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* Player pool — left on desktop, "Players" tab on mobile */}
-            <div className={`w-full md:w-72 flex-shrink-0 border-r border-pmp-gray-800 ${mobileTab !== 'players' ? 'hidden md:flex md:flex-col' : 'flex flex-col'}`}>
+          <DraftControls
+            status={state.status}
+            undoDisabled={undoStack.length === 0}
+            redoDisabled={redoStack.length === 0}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            onReset={handleReset}
+            onShare={handleShare}
+            shareLabel={shareLabel}
+          />
+
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left panel: player pool */}
+            <aside className="w-[264px] shrink-0 border-r border-[#1e1e1e] flex flex-col overflow-hidden">
               <DraftPlayerPool
                 players={players}
                 availablePlayerIds={state.availablePlayerIds}
@@ -214,10 +234,10 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
                 onSelectPlayer={setSelectedPoolPlayerId}
                 onToggleLock={handleToggleLock}
               />
-            </div>
+            </aside>
 
-            {/* Board — center on desktop, "Board" tab on mobile */}
-            <div className={`flex-1 overflow-auto ${mobileTab !== 'board' ? 'hidden md:block' : 'block'}`}>
+            {/* Center: board */}
+            <main className="flex-1 overflow-auto p-2">
               <PickGrid
                 picks={state.picks}
                 playerMap={playerMap}
@@ -228,20 +248,47 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
                 numTeams={state.settings.numTeams}
                 userSlot={state.settings.userSlot}
               />
-            </div>
+            </main>
 
-            {/* My Team — right on desktop, "My Team" tab on mobile */}
-            <div className={`w-full md:w-64 flex-shrink-0 border-l border-pmp-gray-800 ${mobileTab !== 'team' ? 'hidden md:flex md:flex-col' : 'flex flex-col'}`}>
-              <MyTeam
-                picks={state.picks}
-                playerMap={playerMap}
-                lineup={state.settings.lineup ?? DEFAULT_LINEUP}
-                userSlot={state.settings.userSlot}
-              />
-            </div>
+            {/* Right panel: my team */}
+            <aside className="w-[220px] shrink-0 border-l border-[#1e1e1e] overflow-y-auto">
+              <p className="text-pmp-gray-600 text-[10px] uppercase tracking-widest px-3 py-3 sticky top-0 bg-[#0d0d0d] border-b border-[#1e1e1e]">
+                My Team
+              </p>
+              <div className="flex flex-col gap-1 p-2">
+                <MyTeam
+                  picks={state.picks}
+                  playerMap={playerMap}
+                  lineup={state.settings.lineup ?? DEFAULT_LINEUP}
+                  userSlot={state.settings.userSlot}
+                />
+              </div>
+            </aside>
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+function DraftProgressBar({
+  currentPickIndex, totalPicks, numTeams,
+}: { currentPickIndex: number; totalPicks: number; numTeams: number }) {
+  const round = Math.min(Math.floor(currentPickIndex / numTeams) + 1, 15)
+  const pct = Math.round((currentPickIndex / totalPicks) * 100)
+  return (
+    <div className="bg-[#111111] border-b border-[#1e1e1e] px-4 py-2 flex items-center gap-4 shrink-0">
+      <span className="text-pmp-white text-sm font-bold">Round {round}</span>
+      <span className="text-pmp-gray-500 text-xs">
+        Pick {currentPickIndex + 1} / {totalPicks}
+      </span>
+      <div className="flex-1 h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
+        <div
+          className="h-full bg-pmp-red rounded-full transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="text-pmp-gray-600 text-xs">{pct}%</span>
     </div>
   )
 }

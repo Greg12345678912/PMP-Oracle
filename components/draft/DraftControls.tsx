@@ -3,17 +3,17 @@ import { useState } from 'react'
 
 interface DraftControlsProps {
   status: 'drafting' | 'paused' | 'complete'
-  canUndo: boolean
-  canRedo: boolean
-  onContinueDraft: () => void
-  onReset: () => void
+  undoDisabled: boolean
+  redoDisabled: boolean
   onUndo: () => void
   onRedo: () => void
+  onReset: () => void
   onShare: () => Promise<void>
+  shareLabel: string
 }
 
 export function DraftControls({
-  status, canUndo, canRedo, onContinueDraft, onReset, onUndo, onRedo, onShare,
+  undoDisabled, redoDisabled, onUndo, onRedo, onReset, onShare, shareLabel,
 }: DraftControlsProps) {
   const [copied, setCopied] = useState(false)
 
@@ -23,45 +23,26 @@ export function DraftControls({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  return (
-    <div className="flex flex-col gap-2 p-3 border-b border-pmp-gray-800">
-      {status === 'paused' && (
-        <button
-          onClick={onContinueDraft}
-          className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-base hover:opacity-90 transition-opacity"
-        >
-          ▶ Continue Draft
-        </button>
-      )}
+  const controls = [
+    { label: 'Undo',                      icon: '↶', onClick: onUndo,    disabled: undoDisabled },
+    { label: 'Redo',                      icon: '↷', onClick: onRedo,    disabled: redoDisabled },
+    { label: 'Reset',                     icon: '⟳', onClick: onReset,   disabled: false },
+    { label: copied ? '✓ Copied' : shareLabel, icon: '🔗', onClick: handleShare, disabled: false },
+  ]
 
-      <div className="flex gap-2">
+  return (
+    <div className="flex border-b border-[#1e1e1e] bg-[#111111] shrink-0">
+      {controls.map(c => (
         <button
-          onClick={onUndo}
-          disabled={!canUndo}
-          className="flex-1 bg-pmp-gray-900 border border-pmp-gray-800 text-pmp-white text-xs font-semibold py-2 rounded-lg disabled:opacity-30 hover:border-pmp-gray-600 transition-colors"
+          key={c.label}
+          onClick={c.onClick}
+          disabled={c.disabled}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-pmp-gray-400 hover:text-pmp-white hover:bg-[#1e1e1e] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
-          ↩ Undo
+          <span>{c.icon}</span>
+          <span>{c.label}</span>
         </button>
-        <button
-          onClick={onRedo}
-          disabled={!canRedo}
-          className="flex-1 bg-pmp-gray-900 border border-pmp-gray-800 text-pmp-white text-xs font-semibold py-2 rounded-lg disabled:opacity-30 hover:border-pmp-gray-600 transition-colors"
-        >
-          ↪ Redo
-        </button>
-        <button
-          onClick={onReset}
-          className="flex-1 bg-pmp-gray-900 border border-pmp-gray-800 text-pmp-gray-500 text-xs font-semibold py-2 rounded-lg hover:border-pmp-gray-600 hover:text-pmp-white transition-colors"
-        >
-          Reset
-        </button>
-        <button
-          onClick={handleShare}
-          className="flex-1 bg-pmp-gray-900 border border-pmp-gray-800 text-pmp-gray-500 text-xs font-semibold py-2 rounded-lg hover:border-pmp-gray-600 hover:text-pmp-white transition-colors"
-        >
-          {copied ? '✓ Copied' : 'Share'}
-        </button>
-      </div>
+      ))}
     </div>
   )
 }

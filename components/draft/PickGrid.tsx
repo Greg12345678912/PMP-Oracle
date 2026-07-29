@@ -45,7 +45,7 @@ export function PickGrid({
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="overflow-x-auto">
+      <div className="overflow-auto">
         <div
           className="grid gap-0.5 min-w-max"
           style={{ gridTemplateColumns: `repeat(${numTeams}, minmax(72px, 1fr))` }}
