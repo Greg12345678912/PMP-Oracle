@@ -7,6 +7,7 @@ import {
   resetToADP,
   selectBestAvailable,
   computeDraftAnalytics,
+  tradePickSlots,
 } from '@/lib/draft/engine'
 import { saveDraft } from '@/lib/draft/supabase'
 import { DRAFT_SPEED_MS } from '@/lib/draft/types'
@@ -38,16 +39,28 @@ function reducer(state: DraftState, action: Action): DraftState {
   }
 }
 
+type PickTrade = { roundA: number; slotA: number; roundB: number; slotB: number }
+
 interface DraftBoardProps {
   settings: DraftSettings
   players: Player[]
   initialState: DraftState | null
+  initialTrades?: PickTrade[]
 }
 
-export function DraftBoard({ settings, players, initialState }: DraftBoardProps) {
+export function DraftBoard({ settings, players, initialState, initialTrades }: DraftBoardProps) {
   const [state, dispatch] = useReducer(
     reducer,
-    initialState ?? buildInitialState(settings, players)
+    undefined,
+    () => {
+      let initial = initialState ?? buildInitialState(settings, players)
+      for (const trade of (initialTrades ?? [])) {
+        const idxA = initial.picks.findIndex(p => p.round === trade.roundA && p.teamSlot === trade.slotA)
+        const idxB = initial.picks.findIndex(p => p.round === trade.roundB && p.teamSlot === trade.slotB)
+        if (idxA !== -1 && idxB !== -1) initial = tradePickSlots(initial, idxA, idxB)
+      }
+      return initial
+    }
   )
   const [undoStack, setUndoStack] = useState<DraftState[]>([])
   const [redoStack, setRedoStack] = useState<DraftState[]>([])

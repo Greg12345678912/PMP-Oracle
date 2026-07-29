@@ -1,4 +1,5 @@
 'use client'
+import { useMemo } from 'react'
 import { DndContext, DragEndEvent } from '@dnd-kit/core'
 import { PickCell } from './PickCell'
 import type { PickSlot } from '@/lib/draft/types'
@@ -33,6 +34,16 @@ export function PickGrid({
 
   const userTeamSlot = picks.find(p => p.isUser)?.teamSlot
 
+  // Sort picks into grid order: row-major by round, each round sorted by teamSlot (1..N)
+  // Preserve original array index so engine calls (onAssign, onSelectCell) stay correct.
+  const sortedPicks = useMemo(() => {
+    return picks.map((pick, originalIndex) => ({ pick, originalIndex }))
+      .sort((a, b) => {
+        if (a.pick.round !== b.pick.round) return a.pick.round - b.pick.round
+        return a.pick.teamSlot - b.pick.teamSlot
+      })
+  }, [picks])
+
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <div className="overflow-x-auto">
@@ -42,16 +53,20 @@ export function PickGrid({
         >
           {/* Header row */}
           {Array.from({ length: numTeams }, (_, i) => (
-            <div key={i} className="text-center text-pmp-gray-600 text-[10px] py-1">
-              {i + 1 === userTeamSlot ? 'YOU' : `T${i + 1}`}
+            <div
+              key={i}
+              className="sticky top-0 z-20 text-center py-2 text-[11px] font-semibold bg-[#0d0d0d] border-b border-[#1e1e1e]"
+              style={i + 1 === userTeamSlot ? { color: '#ef4444' } : { color: '#4b5563' }}
+            >
+              {i + 1 === userTeamSlot ? '⭐ YOU' : `${i + 1}`}
             </div>
           ))}
 
-          {picks.map((pick, idx) => (
+          {sortedPicks.map(({ pick, originalIndex }) => (
             <PickCell
               key={pick.overallPick}
               pick={pick}
-              pickIndex={idx}
+              pickIndex={originalIndex}
               player={pick.playerId ? playerMap.get(pick.playerId) : undefined}
               currentPickIndex={currentPickIndex}
               selectedPoolPlayerId={selectedPoolPlayerId}

@@ -84,6 +84,28 @@ export function assignPlayerToSlot(
   return { ...state, picks: newPicks, availablePlayerIds: newAvailable }
 }
 
+/**
+ * Trade two pick slots — swap their teamSlot and isUser fields.
+ * Used at draft initialization to apply pre-draft trades from setup.
+ * NOT called during the draft — only called once when initializing state.
+ */
+export function tradePickSlots(
+  state: DraftState,
+  indexA: number,
+  indexB: number,
+): DraftState {
+  if (indexA === indexB) return state
+  if (indexA < 0 || indexB < 0) return state
+  if (indexA >= state.picks.length || indexB >= state.picks.length) return state
+
+  const picks = state.picks.map((p, i) => {
+    if (i === indexA) return { ...p, teamSlot: state.picks[indexB].teamSlot, isUser: state.picks[indexB].isUser }
+    if (i === indexB) return { ...p, teamSlot: state.picks[indexA].teamSlot, isUser: state.picks[indexA].isUser }
+    return p
+  })
+  return { ...state, picks }
+}
+
 export function resetToADP(state: DraftState): DraftState {
   return {
     ...state,

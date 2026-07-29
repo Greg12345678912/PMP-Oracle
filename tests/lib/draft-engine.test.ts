@@ -6,8 +6,10 @@ import {
   resetToADP,
   generateShareId,
   computeDraftAnalytics,
+  tradePickSlots,
 } from '@/lib/draft/engine'
 import type { DraftSettings, Player } from '@/lib/draft/types'
+import { DEFAULT_LINEUP } from '@/lib/draft/types'
 
 const SETTINGS: DraftSettings = {
   numTeams: 10,
@@ -130,6 +132,38 @@ describe('generateShareId', () => {
   it('generates unique IDs', () => {
     const ids = new Set(Array.from({ length: 100 }, generateShareId))
     expect(ids.size).toBeGreaterThan(95)
+  })
+})
+
+describe('tradePickSlots', () => {
+  const baseSettings = { numTeams: 4, numRounds: 15 as const, userSlot: 1, scoring: 'ppr' as const, speed: 'fast' as const, lineup: DEFAULT_LINEUP }
+
+  it('swaps teamSlot and isUser between two picks', () => {
+    const state = buildInitialState(baseSettings, [])
+    const slot0 = state.picks[0].teamSlot  // slot 1, isUser true
+    const slot3 = state.picks[3].teamSlot  // slot 4, isUser false
+    const next = tradePickSlots(state, 0, 3)
+    expect(next.picks[0].teamSlot).toBe(slot3)
+    expect(next.picks[0].isUser).toBe(false)
+    expect(next.picks[3].teamSlot).toBe(slot0)
+    expect(next.picks[3].isUser).toBe(true)
+  })
+
+  it('is a no-op when indices are equal', () => {
+    const state = buildInitialState(baseSettings, [])
+    expect(tradePickSlots(state, 2, 2)).toBe(state)
+  })
+
+  it('is a no-op for out-of-range index', () => {
+    const state = buildInitialState(baseSettings, [])
+    expect(tradePickSlots(state, 0, 9999)).toBe(state)
+  })
+
+  it('does not mutate original state', () => {
+    const state = buildInitialState(baseSettings, [])
+    const original = state.picks[0].teamSlot
+    tradePickSlots(state, 0, 1)
+    expect(state.picks[0].teamSlot).toBe(original)
   })
 })
 

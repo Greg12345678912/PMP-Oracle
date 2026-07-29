@@ -27,6 +27,12 @@
   }
 }
 
+@keyframes cell-flash {
+  0%   { background-color: #7f1d1d; border-color: #ef4444; box-shadow: 0 0 16px rgba(239,68,68,0.5); }
+  100% { background-color: #1a0505; border-color: rgba(239,68,68,0.2); box-shadow: none; }
+}
+.cell-flash { animation: cell-flash 0.6s ease-out forwards; }
+
 * {
   box-sizing: border-box;
 }
