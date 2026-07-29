@@ -32,7 +32,8 @@ describe('DraftBoard', () => {
   it('renders without crashing', () => {
     const state = buildInitialState(SETTINGS, PLAYERS)
     render(<DraftBoard settings={SETTINGS} players={PLAYERS} initialState={state} />)
-    expect(screen.getByText(/continue draft/i)).toBeDefined()
+    // DraftControls always renders Undo/Redo/Reset/Share buttons
+    expect(screen.getByText(/undo/i)).toBeDefined()
   })
 
   it('CPU auto-picks for slot 1 (not user) and pauses at user slot 2', async () => {
@@ -40,7 +41,7 @@ describe('DraftBoard', () => {
     render(<DraftBoard settings={SETTINGS} players={PLAYERS} initialState={state} />)
     // With speed=instant (0ms), CPU should pick immediately and then pause at user turn
     await act(async () => { vi.advanceTimersByTime(100) })
-    // After CPU picks slot 1, it's now user's turn (slot 2) — should be paused
-    expect(screen.getByText(/your pick/i)).toBeDefined()
+    // After CPU picks slot 1, it's now user's turn (slot 2) — DraftControls shows "Continue Draft"
+    expect(screen.getByText(/continue draft/i)).toBeDefined()
   })
 })

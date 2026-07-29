@@ -11,6 +11,12 @@ import {
 import { saveDraft } from '@/lib/draft/supabase'
 import { DRAFT_SPEED_MS } from '@/lib/draft/types'
 import type { DraftState, DraftSettings, Player } from '@/lib/draft/types'
+import { DraftControls } from './DraftControls'
+import { MobileTabs, type MobileTab } from './MobileTabs'
+import { PickGrid } from './PickGrid'
+import { DraftPlayerPool } from './DraftPlayerPool'
+import { MyTeam } from './MyTeam'
+import { DraftSummary } from './DraftSummary'
 
 type Action =
   | { type: 'MAKE_PICK'; playerId: string }
@@ -134,31 +140,90 @@ export function DraftBoard({ settings, players, initialState }: DraftBoardProps)
     await navigator.clipboard.writeText(url).catch(() => {})
   }
 
+  const [mobileTab, setMobileTab] = useState<MobileTab>('players')
+
+  const handleToggleLock = (playerId: string) => {
+    dispatch({
+      type: 'RESTORE',
+      state: {
+        ...state,
+        lockedPlayerIds: state.lockedPlayerIds.includes(playerId)
+          ? state.lockedPlayerIds.filter(id => id !== playerId)
+          : [...state.lockedPlayerIds, playerId],
+      },
+    })
+  }
+
   const analytics = state.status === 'complete'
     ? computeDraftAnalytics(state, playerMap)
     : null
 
   const currentPick = state.picks[state.currentPickIndex]
-  const isUserTurn = currentPick?.isUser && state.status === 'paused'
+  const isUserTurn = currentPick?.isUser === true && state.status === 'paused'
 
   return (
     <div className="min-h-screen bg-pmp-black flex flex-col">
-      {/* DraftControls, PickGrid, DraftPlayerPool, MyTeam, DraftSummary are rendered here.
-          They are implemented in subsequent tasks. This shell exposes the handlers as props. */}
-      <div data-testid="draft-board">
-        {isUserTurn && (
-          <p className="text-pmp-red text-sm font-bold text-center py-2">Your pick</p>
-        )}
-        {state.status !== 'complete' && (
-          <button
-            onClick={handleContinueDraft}
-            className="w-full bg-pmp-red text-pmp-white font-bold py-4 text-lg rounded-none"
-          >
-            &#9654; Continue Draft
-          </button>
-        )}
-        {/* Child panels will be wired in Task 10 */}
-      </div>
+      {state.status === 'complete' && analytics ? (
+        <DraftSummary
+          analytics={analytics}
+          settings={state.settings}
+          onPlayAgain={() => dispatch({ type: 'RESET' })}
+        />
+      ) : (
+        <>
+          <DraftControls
+            status={state.status}
+            canUndo={undoStack.length > 0}
+            canRedo={redoStack.length > 0}
+            onContinueDraft={handleContinueDraft}
+            onReset={handleReset}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            onShare={handleShareCopyLink}
+          />
+
+          <MobileTabs active={mobileTab} onChange={setMobileTab} />
+
+          {/* Desktop: 3-column layout */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Player pool — left on desktop, "Players" tab on mobile */}
+            <div className={`w-full md:w-72 flex-shrink-0 border-r border-pmp-gray-800 ${mobileTab !== 'players' ? 'hidden md:flex md:flex-col' : 'flex flex-col'}`}>
+              <DraftPlayerPool
+                availablePlayerIds={state.availablePlayerIds}
+                playerMap={playerMap}
+                selectedPoolPlayerId={selectedPoolPlayerId}
+                lockedPlayerIds={state.lockedPlayerIds}
+                isUserTurn={isUserTurn}
+                onPickPlayer={handleUserPick}
+                onSelectPlayer={setSelectedPoolPlayerId}
+                onToggleLock={handleToggleLock}
+              />
+            </div>
+
+            {/* Board — center on desktop, "Board" tab on mobile */}
+            <div className={`flex-1 overflow-auto ${mobileTab !== 'board' ? 'hidden md:block' : 'block'}`}>
+              <PickGrid
+                picks={state.picks}
+                playerMap={playerMap}
+                currentPickIndex={state.currentPickIndex}
+                selectedPoolPlayerId={selectedPoolPlayerId}
+                onAssign={handleAssign}
+                onSelectCell={() => {}}
+                numTeams={state.settings.numTeams}
+              />
+            </div>
+
+            {/* My Team — right on desktop, "My Team" tab on mobile */}
+            <div className={`w-full md:w-64 flex-shrink-0 border-l border-pmp-gray-800 ${mobileTab !== 'team' ? 'hidden md:flex md:flex-col' : 'flex flex-col'}`}>
+              <MyTeam
+                picks={state.picks}
+                playerMap={playerMap}
+                numRounds={15}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
