@@ -21,7 +21,7 @@ function assignToRoster(
   })
 }
 
-const mockPlayer = (id: string, name: string, pos: string): Player => ({
+const mockPlayer = (id: string, name: string, pos: Player['position']): Player => ({
   id, name, position: pos, team: 'BUF', searchRank: 1, byeWeek: 7,
   headshotUrl: '', firstName: name.split(' ')[0], lastName: name.split(' ')[1] ?? ''
 })
