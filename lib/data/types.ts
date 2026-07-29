@@ -1,12 +1,14 @@
 export type Position = 'QB' | 'RB' | 'WR' | 'TE' | 'FLEX'
 
+export type DraftEligiblePosition = 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DEF'
+
 export interface Player {
   id: string
   name: string
   firstName: string
   lastName: string
   team: string            // e.g. "ATL"
-  position: Exclude<Position, 'FLEX'>  // actual position, never FLEX
+  position: Exclude<Position, 'FLEX'> | 'K' | 'DEF'  // actual position, never FLEX
   headshotUrl: string
   searchRank: number
   byeWeek: number | null
