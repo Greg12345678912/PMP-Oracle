@@ -56,7 +56,7 @@ export function DraftSetup({ onStart }: DraftSetupProps) {
     setLoading(true)
     try {
       const provider = new SleeperProvider()
-      const players = await provider.getDraftPlayers()
+      const players = await provider.getDraftPlayers(scoring)
       const settings: DraftSettings = { numTeams, numRounds: 15, userSlot, scoring, speed, lineup }
       const ownershipMap = buildOwnershipMapFromTrades(trades, numTeams, 15, userSlot)
       onStart(settings, players, ownershipMap)

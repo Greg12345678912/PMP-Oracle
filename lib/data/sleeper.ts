@@ -43,6 +43,9 @@ interface SleeperPlayer {
   status: string
   search_rank: number | null
   bye_week?: number
+  adp_ppr?: number | null
+  adp_half_ppr?: number | null
+  adp_std?: number | null
 }
 
 function toPlayer(raw: SleeperPlayer): Player {
@@ -108,28 +111,40 @@ export class SleeperProvider implements DataProvider {
     return players
   }
 
-  async getDraftPlayers(): Promise<Player[]> {
+  async getDraftPlayers(scoring: 'ppr' | 'half_ppr' | 'standard'): Promise<Player[]> {
     const raw = await this.fetchAll()
     const LIMITS: Partial<Record<string, number>> = {
       QB: 30, RB: 80, WR: 80, TE: 40, K: 15, DEF: 15,
     }
-    const counts: Partial<Record<string, number>> = {}
-    const pool: Player[] = []
+
+    const getAdp = (p: SleeperPlayer): number => {
+      const adp = scoring === 'ppr' ? p.adp_ppr
+        : scoring === 'half_ppr' ? p.adp_half_ppr
+        : p.adp_std
+      return adp != null ? adp : (p.search_rank ?? 9999)
+    }
 
     const sorted = Array.from(raw.values())
-      .filter(p => p.search_rank && p.search_rank < 9999999 && LIMITS[p.position] !== undefined)
-      .sort((a, b) => (a.search_rank ?? 9999) - (b.search_rank ?? 9999))
+      .filter(p => LIMITS[p.position] !== undefined && getAdp(p) < 9999)
+      .sort((a, b) => getAdp(a) - getAdp(b))
+
+    const counts: Partial<Record<string, number>> = {}
+    const adpByPlayer = new Map<string, number>()
+    const pool: SleeperPlayer[] = []
 
     for (const p of sorted) {
       const limit = LIMITS[p.position] ?? 0
       const count = counts[p.position] ?? 0
       if (count < limit) {
-        pool.push(toPlayer(p))
+        adpByPlayer.set(p.player_id, getAdp(p))
+        pool.push(p)
         counts[p.position] = count + 1
       }
     }
 
-    return pool.sort((a, b) => (a.searchRank ?? 9999) - (b.searchRank ?? 9999))
+    return pool
+      .sort((a, b) => (adpByPlayer.get(a.player_id) ?? 9999) - (adpByPlayer.get(b.player_id) ?? 9999))
+      .map(p => ({ ...toPlayer(p), searchRank: Math.round(adpByPlayer.get(p.player_id) ?? 9999) }))
   }
 }
 
