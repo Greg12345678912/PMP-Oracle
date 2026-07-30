@@ -28,6 +28,7 @@ export function buildInitialState(settings: DraftSettings, players: Player[]): D
   const allPlayerIds = players.map(p => p.id)
   return {
     schemaVersion: 1,
+    version: 0,            // added
     shareId: null,
     settings,
     picks: buildPickSlots(settings.numTeams, settings.numRounds),
@@ -56,6 +57,29 @@ export function makePick(state: DraftState, playerId: string): DraftState {
     availablePlayerIds: newAvailable,
     currentPickIndex: newIndex,
     status: isComplete ? 'complete' : state.status,
+  }
+}
+
+/** Undo the most recently completed pick. No-op if no picks have been made. */
+export function undoPick(state: DraftState): DraftState {
+  if (state.currentPickIndex === 0) return state
+  const prevIndex = state.currentPickIndex - 1
+  const displaced = state.picks[prevIndex].playerId
+  const newPicks = state.picks.map((p, i) =>
+    i === prevIndex ? { ...p, playerId: null } : p
+  )
+  let newAvailable = state.availablePlayerIds
+  if (displaced) {
+    newAvailable = [displaced, ...state.availablePlayerIds]
+    const orderMap = new Map(state.allPlayerIds.map((id, i) => [id, i]))
+    newAvailable.sort((a, b) => (orderMap.get(a) ?? 9999) - (orderMap.get(b) ?? 9999))
+  }
+  return {
+    ...state,
+    picks: newPicks,
+    currentPickIndex: prevIndex,
+    availablePlayerIds: newAvailable,
+    status: 'drafting',
   }
 }
 

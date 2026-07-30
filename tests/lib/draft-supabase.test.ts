@@ -30,6 +30,7 @@ describe('saveDraft', () => {
     const { saveDraft } = await import('@/lib/draft/supabase')
     const fakeState = {
       schemaVersion: 1 as const,
+      version: 0,              // added
       shareId: null,
       settings: { numTeams: 10, numRounds: 15 as const, userSlot: 3, scoring: 'ppr' as const, speed: 'normal' as const },
       picks: [],

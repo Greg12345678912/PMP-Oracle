@@ -45,6 +45,7 @@ export interface TradeRecord {
 
 export interface DraftState {
   schemaVersion: 1
+  version: number          // 0 for solo drafts; monotonic counter for multiplayer
   shareId: string | null
   settings: DraftSettings
   picks: PickSlot[]
