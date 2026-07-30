@@ -280,4 +280,107 @@ describe('useLeagueDraft', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(result.current.league?.status).toBe('complete')
   })
+
+  it('ignores stale pick_made broadcasts with version <= current version', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        league: { id: 'league-1', name: 'Test', status: 'drafting', inviteCode: 'ABC123', hostUserId: 'host', settings: {}, createdAt: '', updatedAt: '' },
+        members: [],
+        draft: {
+          leagueId: 'league-1',
+          version: 1,
+          state: { schemaVersion: 1, version: 1, status: 'drafting' },
+          pickDeadline: null,
+          updatedAt: '',
+        },
+      }),
+    })
+
+    const { useLeagueDraft } = await import('@/lib/league/useLeagueDraft')
+    const { result } = renderHook(() => useLeagueDraft('league-1'))
+
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 0))
+    })
+
+    expect(result.current.draft?.version).toBe(1)
+
+    // Fire a stale pick_made broadcast with same version (should be ignored)
+    await act(async () => {
+      broadcastCallback?.({
+        payload: {
+          id: 'evt-stale-1',
+          leagueId: 'league-1',
+          version: 1,
+          timestamp: new Date().toISOString(),
+          type: 'pick_made',
+          userId: 'test-user',
+          payload: {
+            overallPick: 1,
+            playerId: 'p1',
+            playerName: 'Josh Allen',
+            teamSlot: 1,
+            requestId: 'req-1',
+            state: { schemaVersion: 1, version: 1, status: 'drafting', picks: ['p1'] },
+          },
+        },
+      })
+    })
+
+    // Version should remain 1, state should not update
+    expect(result.current.draft?.version).toBe(1)
+    expect(result.current.draft?.state?.picks).toBeUndefined()
+
+    // Fire another stale broadcast with version less than current (should also be ignored)
+    await act(async () => {
+      broadcastCallback?.({
+        payload: {
+          id: 'evt-stale-2',
+          leagueId: 'league-1',
+          version: 0,
+          timestamp: new Date().toISOString(),
+          type: 'pick_made',
+          userId: 'test-user',
+          payload: {
+            overallPick: 1,
+            playerId: 'p-old',
+            playerName: 'Old Player',
+            teamSlot: 1,
+            requestId: 'req-0',
+            state: { schemaVersion: 1, version: 0, status: 'drafting' },
+          },
+        },
+      })
+    })
+
+    // Version should still be 1
+    expect(result.current.draft?.version).toBe(1)
+
+    // Fire a fresh pick_made broadcast with higher version (should be applied)
+    await act(async () => {
+      broadcastCallback?.({
+        payload: {
+          id: 'evt-fresh',
+          leagueId: 'league-1',
+          version: 2,
+          timestamp: new Date().toISOString(),
+          type: 'pick_made',
+          userId: 'test-user',
+          payload: {
+            overallPick: 2,
+            playerId: 'p2',
+            playerName: 'Patrick Mahomes',
+            teamSlot: 2,
+            requestId: 'req-2',
+            state: { schemaVersion: 1, version: 2, status: 'drafting', picks: ['p1', 'p2'] },
+          },
+        },
+      })
+    })
+
+    // Version should now be 2 and state should update
+    expect(result.current.draft?.version).toBe(2)
+    expect(result.current.draft?.state?.picks).toEqual(['p1', 'p2'])
+  })
 })

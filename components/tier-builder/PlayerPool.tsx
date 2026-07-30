@@ -5,6 +5,7 @@ import { PlayerCard } from './PlayerCard'
 import { SearchBar } from './SearchBar'
 import { Button } from '@/components/ui/Button'
 import { PlayerCardSkeleton } from '@/components/ui/Skeleton'
+import { cn } from '@/lib/utils'
 import type { Player } from '@/lib/data/types'
 
 interface PlayerPoolProps {
@@ -12,9 +13,12 @@ interface PlayerPoolProps {
   poolIds: string[]
   loading?: boolean
   onRandomize: () => void
+  selectedPlayerId?: string | null
+  onSelectPlayer?: (playerId: string) => void
+  onSelectPool?: () => void
 }
 
-export function PlayerPool({ allPlayers, poolIds, loading, onRandomize }: PlayerPoolProps) {
+export function PlayerPool({ allPlayers, poolIds, loading, onRandomize, selectedPlayerId, onSelectPlayer, onSelectPool }: PlayerPoolProps) {
   const [filteredIds, setFilteredIds] = useState<string[] | null>(null)
 
   const { setNodeRef } = useDroppable({ id: 'player-pool' })
@@ -29,12 +33,23 @@ export function PlayerPool({ allPlayers, poolIds, loading, onRandomize }: Player
   const displayIds = filteredIds ?? poolIds
   const displayPlayers = allPlayers.filter(p => displayIds.includes(p.id))
 
+  // Is the selected player currently in a tier (not pool)?
+  const selectedInTier = selectedPlayerId && !poolIds.includes(selectedPlayerId)
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-pmp-gray-500">
-          Player Pool ({poolIds.length} remaining)
-        </span>
+        <button
+          onClick={selectedInTier ? onSelectPool : undefined}
+          className={cn(
+            'text-sm transition-colors',
+            selectedInTier
+              ? 'text-pmp-red font-medium cursor-pointer hover:text-pmp-white'
+              : 'text-pmp-gray-500 cursor-default',
+          )}
+        >
+          {selectedInTier ? '↓ Move to Player Pool' : `Player Pool (${poolIds.length} remaining)`}
+        </button>
         <Button variant="ghost" size="sm" onClick={onRandomize} aria-label="Randomize player order">
           Shuffle
         </Button>
@@ -60,6 +75,8 @@ export function PlayerPool({ allPlayers, poolIds, loading, onRandomize }: Player
               key={player.id}
               player={player}
               draggableId={`pool-${player.id}`}
+              onSelect={() => onSelectPlayer?.(player.id)}
+              isSelected={selectedPlayerId === player.id}
             />
           ))
         )}

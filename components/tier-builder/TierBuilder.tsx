@@ -91,6 +91,7 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
   const [state, setState] = useState<TierState>(() => buildInitialState(players, position))
   const [history, setHistory] = useState<TierState[]>([])
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null)
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState(false)
 
   // Load from share URL on mount
@@ -149,6 +150,7 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
   const handleDragStart = ({ active }: DragStartEvent) => {
     const playerId = String(active.data.current?.playerId ?? active.id)
     setActivePlayerId(playerId)
+    setSelectedPlayerId(null) // clear tap selection when drag starts
   }
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
@@ -168,6 +170,36 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
     pushHistory(state)
     setState(prev => applyMoveToTier(prev, playerId, fromId, overId))
   }
+
+  // Tap-to-select handlers
+  const handleSelectPlayer = useCallback((playerId: string) => {
+    if (viewMode) return
+    setSelectedPlayerId(prev => prev === playerId ? null : playerId)
+  }, [viewMode])
+
+  const handleSelectTier = useCallback((tierId: string) => {
+    if (!selectedPlayerId) return
+    const fromTier = state.tiers.find(t => t.playerIds.includes(selectedPlayerId))
+    const fromId = fromTier ? `tier-${fromTier.id}` : 'player-pool'
+    const toId = `tier-${tierId}`
+    if (fromId !== toId) {
+      pushHistory(state)
+      setState(prev => applyMoveToTier(prev, selectedPlayerId, fromId, toId))
+    }
+    setSelectedPlayerId(null)
+  }, [selectedPlayerId, state, pushHistory])
+
+  const handleSelectPool = useCallback(() => {
+    if (!selectedPlayerId) return
+    const fromTier = state.tiers.find(t => t.playerIds.includes(selectedPlayerId))
+    if (!fromTier) {
+      setSelectedPlayerId(null)
+      return
+    }
+    pushHistory(state)
+    setState(prev => applyMoveToTier(prev, selectedPlayerId, `tier-${fromTier.id}`, 'player-pool'))
+    setSelectedPlayerId(null)
+  }, [selectedPlayerId, state, pushHistory])
 
   const handleUndo = () => {
     if (history.length === 0) return
@@ -238,6 +270,10 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
     ? players.find(p => p.id === activePlayerId)
     : null
 
+  const selectedPlayer = selectedPlayerId
+    ? players.find(p => p.id === selectedPlayerId)
+    : null
+
   return (
     <DndContext
       sensors={sensors}
@@ -272,6 +308,23 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
           </div>
         </div>
 
+        {/* Tap-to-place hint banner */}
+        {selectedPlayer && !viewMode && (
+          <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-pmp-red/10 border border-pmp-red/30 text-sm">
+            <span className="text-pmp-white">
+              <span className="text-pmp-red font-bold">{selectedPlayer.lastName}</span>
+              {' '}— tap a tier label to place
+            </span>
+            <button
+              onClick={() => setSelectedPlayerId(null)}
+              className="text-pmp-gray-500 hover:text-pmp-white ml-4 text-base leading-none"
+              aria-label="Cancel selection"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Tiers */}
         <div className="flex flex-col gap-2">
           {state.tiers.map(tier => (
@@ -282,6 +335,9 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
               onRename={handleRenameTier}
               onDelete={handleDeleteTier}
               readOnly={viewMode}
+              selectedPlayerId={selectedPlayerId}
+              onSelectPlayer={handleSelectPlayer}
+              onSelectTier={() => handleSelectTier(tier.id)}
             />
           ))}
         </div>
@@ -292,6 +348,9 @@ export function TierBuilder({ players, position, loading, onTiersChange }: TierB
           poolIds={state.pool}
           loading={loading}
           onRandomize={handleRandomize}
+          selectedPlayerId={selectedPlayerId}
+          onSelectPlayer={handleSelectPlayer}
+          onSelectPool={handleSelectPool}
         />
       </div>
 

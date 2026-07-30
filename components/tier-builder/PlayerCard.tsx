@@ -12,9 +12,11 @@ interface PlayerCardProps {
   player: Player
   draggableId: string
   compact?: boolean // smaller size for tier rows vs pool
+  onSelect?: () => void
+  isSelected?: boolean
 }
 
-export function PlayerCard({ player, draggableId, compact = false }: PlayerCardProps) {
+export function PlayerCard({ player, draggableId, compact = false, onSelect, isSelected }: PlayerCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: draggableId,
     data: { playerId: player.id },
@@ -33,14 +35,24 @@ export function PlayerCard({ player, draggableId, compact = false }: PlayerCardP
       style={style}
       {...attributes}
       {...listeners}
+      onClick={(e) => {
+        if (onSelect) {
+          e.stopPropagation()
+          onSelect()
+        }
+      }}
       className={cn(
-        'relative flex flex-col items-center rounded-lg bg-pmp-gray-900 border border-pmp-gray-800 cursor-grab active:cursor-grabbing select-none shrink-0 transition-all duration-200',
+        'relative flex flex-col items-center rounded-lg bg-pmp-gray-900 border cursor-grab active:cursor-grabbing select-none shrink-0 transition-all duration-200',
         'hover:border-pmp-gray-600 hover:scale-105',
         isDragging && 'opacity-50 scale-105 z-50 shadow-2xl',
+        isSelected
+          ? 'border-pmp-red bg-pmp-gray-800 ring-2 ring-pmp-red scale-105'
+          : 'border-pmp-gray-800',
         compact ? 'w-14 sm:w-16 p-1' : 'w-16 sm:w-20 p-1.5 sm:p-2',
       )}
       role="button"
       aria-label={`${player.name}, ${player.team}, ${player.position}`}
+      aria-pressed={isSelected}
     >
       {/* Team color accent strip */}
       <div

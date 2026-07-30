@@ -72,7 +72,9 @@ export function useLeagueDraft(leagueId: string): LeagueDraftState {
         if (event.type === 'pick_made') {
           const p = event.payload as PickMadePayload
           setDraft(prev =>
-            prev ? { ...prev, version: event.version, state: p.state } : null,
+            prev && event.version > prev.version
+              ? { ...prev, version: event.version, state: p.state }
+              : prev,
           )
         }
 

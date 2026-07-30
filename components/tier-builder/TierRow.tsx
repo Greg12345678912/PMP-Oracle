@@ -13,6 +13,9 @@ interface TierRowProps {
   onDelete: (tierId: string) => void
   isOver?: boolean
   readOnly?: boolean
+  selectedPlayerId?: string | null
+  onSelectPlayer?: (playerId: string) => void
+  onSelectTier?: () => void
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -30,7 +33,7 @@ function getTierLabelColor(label: string): string {
   return TIER_COLORS[label.toUpperCase()] ?? '#E10600'
 }
 
-export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete, readOnly }: TierRowProps) {
+export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete, readOnly, selectedPlayerId, onSelectPlayer, onSelectTier }: TierRowProps) {
   const [editing, setEditing] = useState(false)
   const [labelValue, setLabelValue] = useState(tier.label)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -41,7 +44,13 @@ export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete
     .map(id => players.find(p => p.id === id))
     .filter((p): p is Player => p !== undefined)
 
+  const isSelectMode = !!selectedPlayerId && !readOnly
+
   const handleLabelClick = () => {
+    if (isSelectMode) {
+      onSelectTier?.()
+      return
+    }
     if (readOnly) return
     setEditing(true)
     setTimeout(() => inputRef.current?.focus(), 0)
@@ -70,13 +79,22 @@ export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete
       'flex items-stretch rounded-xl border transition-colors duration-200 min-h-[60px] sm:min-h-[72px]',
       isOver
         ? 'border-pmp-red bg-pmp-red/5'
+        : isSelectMode
+        ? 'border-pmp-gray-700 bg-pmp-gray-900'
         : 'border-pmp-gray-800 bg-pmp-gray-900'
     )}>
-      {/* Tier label */}
+      {/* Tier label — tap here in select mode to place player */}
       <div
-        className={cn('flex items-center justify-center w-11 sm:w-14 shrink-0 border-r border-pmp-gray-800 group', readOnly ? 'cursor-default' : 'cursor-pointer')}
+        className={cn(
+          'flex items-center justify-center w-11 sm:w-14 shrink-0 border-r border-pmp-gray-800 transition-colors duration-150',
+          isSelectMode
+            ? 'cursor-pointer bg-pmp-red/10 hover:bg-pmp-red/20 active:bg-pmp-red/30'
+            : readOnly
+            ? 'cursor-default'
+            : 'cursor-pointer group',
+        )}
         onClick={handleLabelClick}
-        title={readOnly ? undefined : 'Click to rename'}
+        title={isSelectMode ? `Place in ${tier.label} tier` : (readOnly ? undefined : 'Click to rename')}
       >
         {editing ? (
           <input
@@ -91,8 +109,11 @@ export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete
           />
         ) : (
           <span
-            className="font-display font-bold text-xl select-none"
-            style={{ color: getTierLabelColor(tier.label) }}
+            className={cn(
+              'font-display font-bold text-xl select-none transition-opacity',
+              isSelectMode && 'opacity-100',
+            )}
+            style={{ color: isSelectMode ? '#E10600' : getTierLabelColor(tier.label) }}
           >
             {tier.label}
           </span>
@@ -112,7 +133,7 @@ export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete
         >
           {tierPlayers.length === 0 && (
             <p className="text-pmp-gray-600 text-xs italic select-none">
-              Drop players here
+              {isSelectMode ? 'Tap label ←' : 'Drop players here'}
             </p>
           )}
           {tierPlayers.map(player => (
@@ -121,13 +142,15 @@ export const TierRow = memo(function TierRow({ tier, players, onRename, onDelete
               player={player}
               draggableId={player.id}
               compact
+              onSelect={readOnly ? undefined : () => onSelectPlayer?.(player.id)}
+              isSelected={selectedPlayerId === player.id}
             />
           ))}
         </div>
       </SortableContext>
 
       {/* Delete tier button */}
-      {!readOnly && (
+      {!readOnly && !isSelectMode && (
         <button
           onClick={() => onDelete(tier.id)}
           className="px-2 text-pmp-gray-600 hover:text-pmp-red transition-colors duration-200 shrink-0"

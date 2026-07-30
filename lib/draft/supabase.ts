@@ -3,10 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 import { generateShareId } from './engine'
 import type { DraftState } from './types'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+function getClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 /**
  * Save (upsert) draft state. If state.shareId is null, a new ID is generated.
@@ -14,7 +16,7 @@ const supabase = createClient(
  */
 export async function saveDraft(state: DraftState): Promise<string> {
   const shareId = state.shareId ?? generateShareId()
-  const { error } = await supabase.from('drafts').upsert({
+  const { error } = await getClient().from('drafts').upsert({
     share_id: shareId,
     state: JSON.stringify({ ...state, shareId }),
     updated_at: new Date().toISOString(),
@@ -25,7 +27,7 @@ export async function saveDraft(state: DraftState): Promise<string> {
 
 /** Load draft state by shareId. Returns null if not found. */
 export async function loadDraft(shareId: string): Promise<DraftState | null> {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('drafts')
     .select('state')
     .eq('share_id', shareId)
