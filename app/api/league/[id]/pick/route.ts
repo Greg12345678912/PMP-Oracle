@@ -105,15 +105,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   }
 
   // Insert into immutable event log
+  const eventType = isComplete ? 'draft_complete' : 'pick_made'
   await db.from('draft_events').insert({
     league_id: id,
     version: currentVersion + 1,
-    type: 'pick_made',
+    type: eventType,
     payload: eventPayload,
     user_id: userId,
   })
-
-  const eventType = isComplete ? 'draft_complete' : 'pick_made'
   await broadcastEvent(id, {
     id: crypto.randomUUID(),
     leagueId: id,
