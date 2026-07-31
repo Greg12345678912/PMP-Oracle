@@ -119,8 +119,14 @@ export function useLeagueDraft(leagueId: string): LeagueDraftState {
         }
 
         if (event.type === 'draft_complete') {
-          // DraftCompletePayload carries replayId only — re-fetch to get final state
-          fetchState()
+          const p = event.payload as PickMadePayload
+          setDraft(prev =>
+            prev && event.version > prev.version
+              ? { ...prev, version: event.version, state: p.state }
+              : prev,
+          )
+          setLeague(prev => prev ? { ...prev, status: 'complete' } : null)
+          fetchState() // background cleanup
         }
       })
       .subscribe((status: string) => {
