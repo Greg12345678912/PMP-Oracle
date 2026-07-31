@@ -39,7 +39,7 @@ export function LeagueLobby({ league, members, userId, onStartDraft }: LeagueLob
           </p>
           <button
             onClick={() => navigator.clipboard.writeText(league.inviteCode)}
-            className="mt-2 text-pmp-gray-600 text-xs hover:text-pmp-gray-400 transition-colors"
+            className="mt-2 text-pmp-gray-600 text-xs hover:text-pmp-gray-500 transition-colors"
           >
             Copy
           </button>
@@ -57,7 +57,7 @@ export function LeagueLobby({ league, members, userId, onStartDraft }: LeagueLob
                 className="flex items-center justify-between bg-pmp-gray-900 rounded-lg px-3 py-2.5"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <div className="w-2 h-2 rounded-full bg-pmp-red" />
                   <span className="text-pmp-white text-sm font-medium">{m.displayName}</span>
                   {m.userId === league.hostUserId && (
                     <span className="text-pmp-gray-600 text-[10px] uppercase">Host</span>

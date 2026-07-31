@@ -74,7 +74,7 @@ export default function LeagueNewPage() {
               key={t}
               onClick={() => setTab(t)}
               className={`flex-1 py-2 text-sm font-semibold transition-colors ${
-                tab === t ? 'bg-pmp-red text-pmp-white' : 'text-pmp-gray-500 hover:text-pmp-gray-300'
+                tab === t ? 'bg-pmp-red text-pmp-white' : 'text-pmp-gray-500 hover:text-pmp-gray-500'
               }`}
             >
               {t === 'create' ? 'Create League' : 'Join League'}
@@ -156,7 +156,7 @@ export default function LeagueNewPage() {
           </>
         )}
 
-        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+        {error && <p className="text-pmp-red text-sm text-center">{error}</p>}
 
         <p className="text-center">
           <a href="/mock-draft" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-500">
