@@ -1,20 +1,18 @@
 'use client'
 import { DraftBoard } from '@/components/draft/DraftBoard'
 import type { DraftState } from '@/lib/draft/types'
+import type { Player } from '@/lib/data/types'
 
 interface Props {
   initialState: DraftState
+  players: Player[]
 }
 
-export default function MockDraftClientPage({ initialState }: Props) {
-  // Reconstruct players list from allPlayerIds — in a real implementation,
-  // re-fetch from DataProvider. For now, DraftBoard receives an empty players
-  // array and uses initialState directly (players already embedded in picks).
-  // TODO: store players in DraftState or re-fetch by ID on share load.
+export default function MockDraftClientPage({ initialState, players }: Props) {
   return (
     <DraftBoard
       settings={initialState.settings}
-      players={[]}
+      players={players}
       initialState={initialState}
     />
   )

@@ -1,5 +1,6 @@
 import { loadDraft } from '@/lib/draft/supabase'
 import { notFound } from 'next/navigation'
+import { SleeperProvider } from '@/lib/data/sleeper'
 import MockDraftClientPage from './client'
 
 interface PageProps {
@@ -10,5 +11,9 @@ export default async function MockDraftSharePage({ params }: PageProps) {
   const { id } = await params
   const state = await loadDraft(id)
   if (!state) notFound()
-  return <MockDraftClientPage initialState={state} />
+
+  const provider = new SleeperProvider()
+  const players = await provider.getDraftPlayers(state.settings.scoring)
+
+  return <MockDraftClientPage initialState={state} players={players} />
 }
