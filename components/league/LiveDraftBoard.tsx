@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { MobileTabs } from '@/components/draft/MobileTabs'
 import type { MobileTab } from '@/components/draft/MobileTabs'
 import { PickGrid } from '@/components/draft/PickGrid'
@@ -11,6 +11,9 @@ import { DEFAULT_LINEUP } from '@/lib/draft/types'
 import type { DraftSettings, DraftState, Player } from '@/lib/draft/types'
 import type { LeagueDraft, LeagueMember } from '@/lib/league/types'
 import { SleeperProvider } from '@/lib/data/sleeper'
+
+// 90-second draft clock. When it hits zero on your turn, auto-picks best available.
+const CLOCK_SECONDS = 90
 
 type ZoomLevel = 'compact' | 'normal' | 'large'
 
@@ -32,10 +35,12 @@ export function LiveDraftBoard({
   const [zoom, setZoom] = useState<ZoomLevel>('normal')
   const [selectedPoolPlayerId, setSelectedPoolPlayerId] = useState<string | null>(null)
   const [players, setPlayers] = useState<Player[]>([])
+  const [clockSeconds, setClockSeconds] = useState(CLOCK_SECONDS)
 
   // playerMap is a stable ref — populated by the effect below.
-  // Using useRef so it survives re-renders without triggering them.
   const playerMap = useRef(new Map<string, Player>()).current
+  // Track which pick index the clock started for, so we reset on new picks.
+  const clockPickRef = useRef(state.currentPickIndex)
 
   useEffect(() => {
     const provider = new SleeperProvider()
@@ -45,11 +50,37 @@ export function LiveDraftBoard({
     })
   }, [settings.scoring, playerMap])
 
-  const currentPick = state.picks[state.currentPickIndex]
   const isMyTurn =
     myTeamSlot !== null &&
-    currentPick?.currentOwnerTeamSlot === myTeamSlot &&
+    state.picks[state.currentPickIndex]?.currentOwnerTeamSlot === myTeamSlot &&
     state.status !== 'complete'
+
+  // Auto-pick best available player (highest ADP rank = lowest index in availablePlayerIds)
+  const autoPickBest = useCallback(() => {
+    const bestId = state.availablePlayerIds[0]
+    if (!bestId || isPicking) return
+    const player = playerMap.get(bestId)
+    onPickPlayer(bestId, player?.name ?? bestId)
+  }, [state.availablePlayerIds, isPicking, playerMap, onPickPlayer])
+
+  // Clock: reset on each new pick, tick down, auto-pick on your turn at 0
+  useEffect(() => {
+    if (state.status === 'complete') return
+    // Reset clock when pick index changes
+    if (clockPickRef.current !== state.currentPickIndex) {
+      clockPickRef.current = state.currentPickIndex
+      setClockSeconds(CLOCK_SECONDS)
+      return
+    }
+    if (clockSeconds <= 0) {
+      if (isMyTurn && !isPicking) autoPickBest()
+      return
+    }
+    const timer = setTimeout(() => setClockSeconds(s => s - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [clockSeconds, state.currentPickIndex, state.status, isMyTurn, isPicking, autoPickBest])
+
+  const currentPick = state.picks[state.currentPickIndex]
 
   const currentPickerName = members.find(
     m => m.teamSlot === currentPick?.currentOwnerTeamSlot
@@ -91,7 +122,14 @@ export function LiveDraftBoard({
         <div className="flex-1 h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
           <div className="h-full bg-pmp-red rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
         </div>
-        <span className="text-pmp-gray-600 text-xs hidden sm:block">{pct}%</span>
+        {/* Draft clock */}
+        {state.status !== 'complete' && (
+          <span className={`text-xs font-mono font-bold tabular-nums min-w-[2.5rem] text-right ${
+            clockSeconds <= 10 ? 'text-pmp-red' : 'text-pmp-gray-500'
+          }`}>
+            {String(Math.floor(clockSeconds / 60)).padStart(2, '0')}:{String(clockSeconds % 60).padStart(2, '0')}
+          </span>
+        )}
       </div>
 
       {/* Turn banner */}
