@@ -19,9 +19,35 @@ export async function GET(
     return NextResponse.json({ error: 'League not found' }, { status: 404 })
   }
 
-  return NextResponse.json({
-    league: leagueRes.data,
-    members: membersRes.data ?? [],
-    draft: draftRes.data ?? null,
-  })
+  const rawLeague = leagueRes.data
+  const league = {
+    id: rawLeague.id,
+    inviteCode: rawLeague.invite_code,
+    name: rawLeague.name,
+    hostUserId: rawLeague.host_user_id,
+    settings: rawLeague.settings,
+    status: rawLeague.status,
+    createdAt: rawLeague.created_at,
+    updatedAt: rawLeague.updated_at,
+  }
+
+  const members = (membersRes.data ?? []).map((m: Record<string, unknown>) => ({
+    id: m.id as string,
+    leagueId: m.league_id as string,
+    userId: m.user_id as string,
+    displayName: m.display_name as string,
+    teamSlot: m.team_slot as number | null,
+    isReady: m.is_ready as boolean,
+    joinedAt: m.joined_at as string,
+  }))
+
+  const rawDraft = draftRes.data
+  const draft = rawDraft ? {
+    leagueId: rawDraft.league_id,
+    version: rawDraft.version,
+    state: typeof rawDraft.state === 'string' ? JSON.parse(rawDraft.state) : rawDraft.state,
+    pickDeadline: rawDraft.pick_deadline ?? null,
+  } : null
+
+  return NextResponse.json({ league, members, draft })
 }

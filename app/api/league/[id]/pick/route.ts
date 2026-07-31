@@ -43,7 +43,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   if (!league) return NextResponse.json({ error: 'League not found' }, { status: 404 })
   if (!draftRow) return NextResponse.json({ error: 'Draft not started' }, { status: 409 })
 
-  const currentState = JSON.parse(draftRow.state) as DraftState
+  const currentState = (typeof draftRow.state === 'string'
+    ? JSON.parse(draftRow.state)
+    : draftRow.state) as DraftState
   const currentVersion = draftRow.version as number
   const leagueMembers = (members ?? []).map((m: Record<string, unknown>) => ({
     id: m.id as string,

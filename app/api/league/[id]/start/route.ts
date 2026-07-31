@@ -58,12 +58,11 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     db.from('league_members').update({ team_slot: m.teamSlot }).eq('id', m.id)
   ))
 
-  // Write initial draft state
-  await db.from('league_drafts').insert({
-    league_id: id,
-    version: 0,
-    state: JSON.stringify(state),
-  })
+  // Write initial draft state (upsert to guard against double-click / concurrent requests)
+  await db.from('league_drafts').upsert(
+    { league_id: id, version: 0, state: JSON.stringify(state), pick_deadline: null },
+    { onConflict: 'league_id', ignoreDuplicates: true }
+  )
 
   // Update league status
   await db.from('leagues').update({ status: 'drafting', updated_at: new Date().toISOString() }).eq('id', id)
