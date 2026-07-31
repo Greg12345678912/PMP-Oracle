@@ -62,22 +62,22 @@ export const DraftService = {
     players: Player[]
     members: LeagueMember[]
   }): InitResult {
-    // Shuffle members array (Fisher-Yates) to randomize slot assignment
-    const shuffled = [...params.members]
-    for (let i = shuffled.length - 1; i > 0; i--) {
+    const numTeams = params.settings.numTeams
+
+    // Shuffle all slots [1..numTeams] (Fisher-Yates), assign first members.length to real members
+    const allSlots = Array.from({ length: numTeams }, (_, i) => i + 1)
+    for (let i = allSlots.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+      ;[allSlots[i], allSlots[j]] = [allSlots[j], allSlots[i]]
     }
 
-    const membersWithSlots: LeagueMember[] = shuffled.map((m, i) => ({
+    const membersWithSlots: LeagueMember[] = params.members.map((m, i) => ({
       ...m,
-      teamSlot: i + 1,
+      teamSlot: allSlots[i],
     }))
 
-    // numTeams is set to actual member count; userSlot is a dummy value for multiplayer.
-    // Each client determines "is my turn" using their own teamSlot from LeagueMember.
-    const settings = { ...params.settings, numTeams: params.members.length }
-    const state = buildInitialState(settings, params.players)
+    // Use settings directly — CPU auto-pick handles slots with no real member
+    const state = buildInitialState(params.settings, params.players)
 
     return { state, membersWithSlots }
   },

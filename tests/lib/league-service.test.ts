@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { DraftService, generateInviteCode } from '@/lib/league/service'
 import { buildInitialState } from '@/lib/draft/engine'
+import { DEFAULT_LINEUP } from '@/lib/draft/types'
 import type { DraftSettings } from '@/lib/draft/types'
 import type { LeagueMember } from '@/lib/league/types'
 
@@ -82,5 +83,26 @@ describe('DraftService.initializeDraft', () => {
     const { state } = DraftService.initializeDraft({ settings, players, members: baseMembers })
     expect(state.version).toBe(0)
     expect(state.allPlayerIds).toEqual(['p1', 'p2', 'p3', 'p4'])
+  })
+
+  it('preserves settings.numTeams regardless of member count', () => {
+    const settings: DraftSettings = {
+      numTeams: 10, numRounds: 15, userSlot: 1, scoring: 'ppr', speed: 'normal',
+      lineup: DEFAULT_LINEUP,
+    }
+    const members: LeagueMember[] = [
+      { id: '1', leagueId: 'l', userId: 'u1', displayName: 'Alice', teamSlot: null, isReady: false, joinedAt: '' },
+      { id: '2', leagueId: 'l', userId: 'u2', displayName: 'Bob',   teamSlot: null, isReady: false, joinedAt: '' },
+    ]
+    const { state, membersWithSlots } = DraftService.initializeDraft({ settings, players: [], members })
+    expect(state.settings.numTeams).toBe(10)
+    expect(state.picks).toHaveLength(10 * 15)
+    expect(membersWithSlots).toHaveLength(2)
+    membersWithSlots.forEach(m => {
+      expect(m.teamSlot).toBeGreaterThanOrEqual(1)
+      expect(m.teamSlot).toBeLessThanOrEqual(10)
+    })
+    const slots = membersWithSlots.map(m => m.teamSlot)
+    expect(new Set(slots).size).toBe(2)
   })
 })

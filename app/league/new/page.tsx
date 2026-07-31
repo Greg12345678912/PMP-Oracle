@@ -4,11 +4,17 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getUserId, getDisplayName, setDisplayName } from '@/lib/league/identity'
 import { DEFAULT_LINEUP } from '@/lib/draft/types'
-import type { DraftSettings } from '@/lib/draft/types'
+import type { DraftSettings, LineupConfig } from '@/lib/draft/types'
 
 const DEFAULT_SETTINGS: DraftSettings = {
   numTeams: 10, numRounds: 15, userSlot: 1, scoring: 'ppr', speed: 'normal',
   lineup: DEFAULT_LINEUP,
+}
+
+const LINEUP_PRESETS: Record<string, { label: string; lineup: LineupConfig }> = {
+  espn:    { label: 'ESPN',    lineup: { QB:1, RB:2, WR:2, TE:1, FLEX:1, K:1, DEF:1, BN:6 } },
+  sleeper: { label: 'Sleeper', lineup: { QB:1, RB:2, WR:3, TE:1, FLEX:1, K:0, DEF:1, BN:6 } },
+  yahoo:   { label: 'Yahoo',   lineup: { QB:1, RB:2, WR:2, TE:1, FLEX:1, K:1, DEF:1, BN:6 } },
 }
 
 export default function LeagueNewPage() {
@@ -19,6 +25,7 @@ export default function LeagueNewPage() {
   const [inviteCode, setInviteCode] = useState('')
   const [scoring, setScoring] = useState<DraftSettings['scoring']>('ppr')
   const [numTeams, setNumTeams] = useState(10)
+  const [lineup, setLineup] = useState<LineupConfig>(DEFAULT_LINEUP)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -31,7 +38,7 @@ export default function LeagueNewPage() {
       const res = await fetch('/api/league', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
-        body: JSON.stringify({ name, displayName, settings: { ...DEFAULT_SETTINGS, scoring, numTeams } }),
+        body: JSON.stringify({ name, displayName, settings: { ...DEFAULT_SETTINGS, scoring, numTeams, lineup } }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
@@ -131,6 +138,25 @@ export default function LeagueNewPage() {
                 {[8, 10, 12].map(n => <option key={n} value={n}>{n} Teams</option>)}
               </select>
             </label>
+            <div className="flex flex-col gap-2">
+              <span className="text-pmp-gray-500 text-xs uppercase tracking-widest">Lineup</span>
+              <div className="grid grid-cols-3 gap-2">
+                {Object.entries(LINEUP_PRESETS).map(([key, preset]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setLineup(preset.lineup)}
+                    className={`py-2 rounded-lg border text-xs font-semibold transition-colors ${
+                      JSON.stringify(lineup) === JSON.stringify(preset.lineup)
+                        ? 'border-pmp-red bg-[#1a0505] text-pmp-white'
+                        : 'border-pmp-gray-800 bg-pmp-gray-900 text-pmp-gray-500 hover:text-pmp-white'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <button
               onClick={handleCreate}
               disabled={loading}
