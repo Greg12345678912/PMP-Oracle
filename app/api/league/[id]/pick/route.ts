@@ -71,7 +71,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   const currentPick = currentState.picks[currentState.currentPickIndex]
 
   // Optimistic concurrency: only update if version hasn't changed
-  const { count } = await db
+  const { data: updatedRows } = await db
     .from('league_drafts')
     .update({
       state: JSON.stringify(newState),
@@ -80,9 +80,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     })
     .eq('league_id', id)
     .eq('version', currentVersion)
-    .select('*', { count: 'exact', head: true })
+    .select('league_id')
 
-  if (!count || count === 0) {
+  if (!updatedRows || updatedRows.length === 0) {
     return NextResponse.json(
       { error: 'Concurrent pick detected — please try again' },
       { status: 409 }
