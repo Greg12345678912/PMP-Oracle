@@ -98,14 +98,14 @@ export default function HomePage() {
           </h2>
           <div className="flex flex-col gap-3 w-full">
             <Link
-              href="/mock-draft"
+              href="/league/new"
               className="group flex items-center gap-4 px-5 py-4 rounded-xl bg-pmp-gray-900 border border-pmp-gray-800 hover:border-pmp-red transition-all duration-200"
             >
               <div className="flex-1">
                 <p className="text-pmp-white font-semibold text-sm group-hover:text-pmp-red transition-colors">
                   Mock Draft
                 </p>
-                <p className="text-pmp-gray-600 text-xs mt-0.5">Snake draft simulator</p>
+                <p className="text-pmp-gray-600 text-xs mt-0.5">Solo or multiplayer snake draft</p>
               </div>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-pmp-gray-700 group-hover:text-pmp-red transition-colors shrink-0">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
