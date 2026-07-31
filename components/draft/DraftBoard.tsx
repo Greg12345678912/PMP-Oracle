@@ -1,8 +1,7 @@
 'use client'
 import { useReducer, useEffect, useRef, useState, useCallback } from 'react'
 
-const ZOOM_WIDTHS = { compact: 60, normal: 76, large: 96 } as const
-type ZoomLevel = keyof typeof ZOOM_WIDTHS
+type ZoomLevel = 'compact' | 'normal' | 'large'
 import {
   buildInitialState,
   makePick,
@@ -186,7 +185,7 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
   }
 
   return (
-    <div className="h-screen bg-[#0d0d0d] flex flex-col overflow-hidden">
+    <div className="h-[100dvh] bg-[#0d0d0d] flex flex-col overflow-hidden">
       {state.status === 'complete' && analytics ? (
         <DraftSummary
           analytics={analytics}
@@ -238,7 +237,7 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
                 key={z}
                 onClick={() => setZoom(z)}
                 className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                  zoom === z ? 'bg-pmp-red text-white' : 'text-pmp-gray-500 hover:text-pmp-gray-300'
+                  zoom === z ? 'bg-pmp-red text-white' : 'text-pmp-gray-500 hover:text-pmp-white'
                 }`}
               >
                 {z.charAt(0).toUpperCase() + z.slice(1)}

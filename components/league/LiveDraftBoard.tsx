@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { MobileTabs } from '@/components/draft/MobileTabs'
 import type { MobileTab } from '@/components/draft/MobileTabs'
 import { PickGrid } from '@/components/draft/PickGrid'
@@ -30,6 +31,7 @@ interface LiveDraftBoardProps {
 export function LiveDraftBoard({
   draft, members, myTeamSlot, isPicking, onPickPlayer, settings,
 }: LiveDraftBoardProps) {
+  const router = useRouter()
   const state: DraftState = draft.state
   const [mobileTab, setMobileTab] = useState<MobileTab>('players')
   const [zoom, setZoom] = useState<ZoomLevel>('normal')
@@ -108,7 +110,8 @@ export function LiveDraftBoard({
       <DraftSummary
         analytics={analytics}
         settings={{ ...settings, userSlot: myTeamSlot ?? 1 }}
-        onPlayAgain={() => { /* multiplayer: no replay from here */ }}
+        onPlayAgain={() => router.push('/')}
+        playAgainLabel="Back to Home"
       />
     )
   }

@@ -5,11 +5,12 @@ interface DraftSummaryProps {
   analytics: DraftAnalytics
   settings: DraftSettings
   onPlayAgain: () => void
+  playAgainLabel?: string
 }
 
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF']
 
-export function DraftSummary({ analytics, settings, onPlayAgain }: DraftSummaryProps) {
+export function DraftSummary({ analytics, settings, onPlayAgain, playAgainLabel }: DraftSummaryProps) {
   const positions = POSITION_ORDER.filter(p => analytics.positionBreakdown[p])
 
   return (
@@ -72,7 +73,7 @@ export function DraftSummary({ analytics, settings, onPlayAgain }: DraftSummaryP
         onClick={onPlayAgain}
         className="w-full max-w-sm bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-base hover:opacity-90 transition-opacity"
       >
-        Draft Again
+        {playAgainLabel ?? 'Draft Again'}
       </button>
     </div>
   )

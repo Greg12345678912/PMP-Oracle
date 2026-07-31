@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Link from 'next/link'
 import { SleeperProvider } from '@/lib/data/sleeper'
 import type { DraftSettings, Player, LineupConfig, TradeRecord } from '@/lib/draft/types'
 import { DRAFT_TEAM_OPTIONS, DEFAULT_LINEUP } from '@/lib/draft/types'
@@ -68,7 +69,16 @@ export function DraftSetup({ onStart }: DraftSetupProps) {
   return (
     <div className="min-h-screen bg-pmp-black flex items-center justify-center px-4">
       <div className="w-full max-w-sm flex flex-col gap-6">
-        <div className="text-center">
+        <div className="relative text-center">
+          <Link
+            href="/"
+            className="absolute left-0 top-1 flex items-center gap-1 text-pmp-gray-600 text-sm hover:text-pmp-gray-500 transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </Link>
           <h1 className="text-pmp-white text-2xl font-bold">Mock Draft</h1>
           <p className="text-pmp-gray-500 text-sm mt-1">15 rounds · Snake format</p>
         </div>
