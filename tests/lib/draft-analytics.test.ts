@@ -97,6 +97,19 @@ describe('computeDraftAnalytics', () => {
     expect(analytics.averageADPReached).toBeGreaterThan(0)
   })
 
+  it('includes a grade field with a valid letter', () => {
+    let state = buildInitialState({ ...SETTINGS, numRounds: 15 }, PLAYERS)
+    const playerMap = new Map(PLAYERS.map(p => [p.id, p]))
+    for (let i = 0; i < state.picks.length; i++) {
+      const pid = state.availablePlayerIds[0]
+      if (pid) state = makePick(state, pid)
+    }
+    const result = computeDraftAnalytics(state, playerMap)
+    expect(result.grade).toBeDefined()
+    expect(result.grade.letter).toMatch(/^(A\+|A|A-|B\+|B|B-|C\+|C|D)$/)
+    expect(typeof result.grade.score).toBe('number')
+  })
+
   it('averageADPReached is average of user picks searchRank values', () => {
     const state = buildInitialState(SETTINGS, PLAYERS)
     const playerMap = new Map(PLAYERS.map(p => [p.id, p]))

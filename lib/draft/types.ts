@@ -56,11 +56,17 @@ export interface DraftState {
   status: 'drafting' | 'paused' | 'complete'
 }
 
+export interface DraftGrade {
+  letter: string
+  score: number
+}
+
 export interface DraftAnalytics {
   positionBreakdown: Record<string, number>
   averageADPReached: number
   earliestReach: { player: Player; expectedADP: number; actualPick: number } | null
   biggestValue: { player: Player; expectedADP: number; actualPick: number } | null
+  grade: DraftGrade
 }
 
 export const DRAFT_SPEED_MS: Record<DraftSettings['speed'], number> = {

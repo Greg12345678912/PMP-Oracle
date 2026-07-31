@@ -143,6 +143,7 @@ export function computeDraftAnalytics(
   )
   const positionBreakdown: Record<string, number> = {}
   let totalADP = 0
+  let totalDelta = 0
   let earliestReach: DraftAnalytics['earliestReach'] = null
   let biggestValue: DraftAnalytics['biggestValue'] = null
 
@@ -156,6 +157,7 @@ export function computeDraftAnalytics(
     const expectedADP = player.searchRank ?? 0
     const actualPick = pick.overallPick
     const diff = actualPick - expectedADP  // positive = value, negative = reach
+    totalDelta += diff
 
     if (diff < 0) {
       if (!earliestReach || diff < (earliestReach.actualPick - earliestReach.expectedADP)) {
@@ -169,10 +171,22 @@ export function computeDraftAnalytics(
     }
   }
 
+  const avgDelta = userPicks.length > 0 ? totalDelta / userPicks.length : 0
+  const gradeLetter =
+    avgDelta > 20  ? 'A+' :
+    avgDelta > 15  ? 'A'  :
+    avgDelta > 10  ? 'A-' :
+    avgDelta > 5   ? 'B+' :
+    avgDelta > 0   ? 'B'  :
+    avgDelta > -5  ? 'B-' :
+    avgDelta > -10 ? 'C+' :
+    avgDelta > -20 ? 'C'  : 'D'
+
   return {
     positionBreakdown,
     averageADPReached: userPicks.length > 0 ? totalADP / userPicks.length : 0,
     earliestReach,
     biggestValue,
+    grade: { letter: gradeLetter, score: avgDelta },
   }
 }
