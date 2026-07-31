@@ -191,17 +191,38 @@ export function LiveDraftBoard({
           ${mobileTab === 'players' ? 'flex' : 'hidden'}
           md:flex md:w-[264px]
         `}>
-          <DraftPlayerPool
-            players={players}
-            availablePlayerIds={state.availablePlayerIds}
-            playerMap={playerMap}
-            selectedPoolPlayerId={selectedPoolPlayerId}
-            lockedPlayerIds={state.lockedPlayerIds}
-            isUserTurn={isMyTurn && !isPicking}
-            onPickPlayer={handlePickPlayer}
-            onSelectPlayer={setSelectedPoolPlayerId}
-            onToggleLock={() => {}}
-          />
+          {players.length === 0 ? (
+            <div className="flex flex-col gap-2 p-3 animate-pulse">
+              <div className="h-10 bg-[#1e1e1e] rounded-lg" />
+              <div className="flex gap-1.5 flex-wrap">
+                {[0, 1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-6 w-10 bg-[#1e1e1e] rounded-full" />
+                ))}
+              </div>
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-2.5 px-3 py-2">
+                  <div className="w-5 h-3 bg-[#1e1e1e] rounded" />
+                  <div className="w-9 h-9 bg-[#1e1e1e] rounded-full shrink-0" />
+                  <div className="flex flex-col gap-1 flex-1">
+                    <div className="h-3 bg-[#1e1e1e] rounded w-3/4" />
+                    <div className="h-2 bg-[#1e1e1e] rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <DraftPlayerPool
+              players={players}
+              availablePlayerIds={state.availablePlayerIds}
+              playerMap={playerMap}
+              selectedPoolPlayerId={selectedPoolPlayerId}
+              lockedPlayerIds={state.lockedPlayerIds}
+              isUserTurn={isMyTurn && !isPicking}
+              onPickPlayer={handlePickPlayer}
+              onSelectPlayer={setSelectedPoolPlayerId}
+              onToggleLock={() => {}}
+            />
+          )}
         </aside>
 
         {/* Center: board */}
