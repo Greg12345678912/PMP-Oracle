@@ -109,13 +109,20 @@ export function LeagueLobby({ league, members, userId, onStartDraft }: LeagueLob
 
         {/* Start button (host only) */}
         {isHost ? (
-          <button
-            onClick={handleStart}
-            disabled={starting || members.length < 2}
-            className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {starting ? 'Starting...' : `Start Draft (${members.length} / ${settings.numTeams})`}
-          </button>
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={handleStart}
+              disabled={starting || members.length < 2}
+              className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {starting ? 'Starting...' : 'Start Draft'}
+            </button>
+            <p className="text-pmp-gray-600 text-xs text-center">
+              {members.length < 2
+                ? 'Need at least 2 players to start'
+                : `${members.length} player${members.length === 1 ? '' : 's'} · empty slots will be CPU`}
+            </p>
+          </div>
         ) : (
           <p className="text-pmp-gray-600 text-sm text-center">
             Waiting for the host to start the draft...
