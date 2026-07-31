@@ -62,7 +62,7 @@ export function DraftSummary({ analytics, settings, onPlayAgain, playAgainLabel 
         {/* Grade block */}
         <div className="flex items-center gap-4">
           <div
-            className="w-20 h-20 rounded-2xl flex items-center justify-center shrink-0 font-black text-4xl text-white"
+            className="w-20 h-20 rounded-2xl flex items-center justify-center shrink-0 font-black text-4xl text-pmp-white"
             style={{ backgroundColor: color }}
           >
             {letter}
