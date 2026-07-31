@@ -13,6 +13,8 @@ import {
 import { saveDraft } from '@/lib/draft/supabase'
 import { DRAFT_SPEED_MS, DEFAULT_LINEUP } from '@/lib/draft/types'
 import type { DraftState, DraftSettings, Player } from '@/lib/draft/types'
+import { MobileTabs } from './MobileTabs'
+import type { MobileTab } from './MobileTabs'
 import { DraftControls } from './DraftControls'
 import { PickGrid } from './PickGrid'
 import { DraftPlayerPool } from './DraftPlayerPool'
@@ -177,6 +179,7 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
 
   const [zoom, setZoom] = useState<ZoomLevel>('normal')
   const [shareLabel, setShareLabel] = useState('Copy Link')
+  const [mobileTab, setMobileTab] = useState<MobileTab>('players')
 
   const handleShare = async () => {
     await handleShareCopyLink()
@@ -229,8 +232,10 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
             shareLabel={shareLabel}
           />
 
+          <MobileTabs active={mobileTab} onChange={setMobileTab} />
+
           {/* Zoom toggle strip */}
-          <div className="flex items-center gap-1 px-2 py-1 border-b border-[#1e1e1e] bg-[#111111] shrink-0">
+          <div className="hidden md:flex items-center gap-1 px-2 py-1 border-b border-[#1e1e1e] bg-[#111111] shrink-0">
             <span className="text-pmp-gray-500 text-[10px] mr-1">Zoom</span>
             {(['compact', 'normal', 'large'] as const).map(z => (
               <button
@@ -247,7 +252,11 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
 
           <div className="flex flex-1 overflow-hidden">
             {/* Left panel: player pool */}
-            <aside className="w-[264px] shrink-0 border-r border-[#1e1e1e] flex flex-col overflow-hidden">
+            <aside className={`
+              shrink-0 border-r border-[#1e1e1e] flex flex-col overflow-hidden
+              ${mobileTab === 'players' ? 'flex' : 'hidden'}
+              md:flex md:w-[264px]
+            `}>
               <DraftPlayerPool
                 players={players}
                 availablePlayerIds={state.availablePlayerIds}
@@ -262,7 +271,11 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
             </aside>
 
             {/* Center: board */}
-            <main className="flex-1 overflow-auto p-2">
+            <main className={`
+              flex-1 overflow-auto p-2
+              ${mobileTab === 'board' ? 'block' : 'hidden'}
+              md:block
+            `}>
               <PickGrid
                 picks={state.picks}
                 playerMap={playerMap}
@@ -277,7 +290,11 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
             </main>
 
             {/* Right panel: my team */}
-            <aside className="w-[220px] shrink-0 border-l border-[#1e1e1e] overflow-y-auto">
+            <aside className={`
+              shrink-0 border-l border-[#1e1e1e] overflow-y-auto
+              ${mobileTab === 'team' ? 'flex flex-col w-full' : 'hidden'}
+              md:flex md:flex-col md:w-[220px]
+            `}>
               <p className="text-pmp-gray-600 text-[10px] uppercase tracking-widest px-3 py-3 sticky top-0 bg-[#0d0d0d] border-b border-[#1e1e1e]">
                 My Team
               </p>
