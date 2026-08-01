@@ -558,3 +558,20 @@ These rules are permanent constraints. They cannot be overridden by any task, fe
 - **Accuracy Rating (Elo)** — multi-season reputation score, surfaces after Season 1 (V4)
 - **"Remind me before rankings lock" email** — save-and-remind flow; sign in to get a 48hr warning email before lock deadline (V3)
 - **Shareable prediction card** — pre-season card showing top picks + bold prediction, designed for X / Instagram Stories / Discord (V3). Post-season: results card overlay showing scores.
+
+### Post-Lock Celebration Page (V3 Backlog)
+
+After a user locks their rankings, instead of a plain "Rankings locked" confirmation, show a celebratory moment:
+
+> 🎉 You're officially in the 2026 Oracle Challenge.
+
+Followed by:
+- Share your rankings (copy link / download card)
+- View your public profile
+- Browse community aggregates ("see how others ranked")
+- Countdown until lock closes (if still in submission window)
+- Invite friends
+
+This page is the end of the submission funnel — it should keep users engaged rather than ending the session. Design it like a reward screen, not a receipt.
+
+**Not in V2.** Build the lock confirmation as a simple success state first. Upgrade to the celebration page in V3 alongside leaderboards and community features.

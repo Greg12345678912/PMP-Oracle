@@ -24,6 +24,9 @@
 - Lock date constant: `2026-09-09T20:20:00-04:00` (Wednesday Sept 9, 2026 — first NFL game kickoff ET). Store in a single shared constant.
 - Username: unique handle (used in URLs, set at sign-up, immutable) + display_name (shown in UI, changeable)
 - Admin flag: `user_profiles.is_admin = true` — checked server-side in admin API routes
+- Rankings UI is mobile-first: large drag handles (min 44px touch target), sticky "Save Draft" / "Lock Rankings" CTA at bottom of screen, progress indicator showing "X/Y ranked" for each position
+- Anonymous auto-save: ranking state persisted to `localStorage` under key `oracle_rankings_draft` in real time (no sign-in required). On sign-in, localStorage draft is uploaded to the DB and cleared.
+- `@dnd-kit` drag handles must be explicit `<DragHandle>` elements (not the whole row) for mobile usability
 
 ---
 
