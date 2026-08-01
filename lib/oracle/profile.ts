@@ -69,15 +69,17 @@ export async function createProfile(params: {
   throw new Error('Could not generate unique username after 10 attempts')
 }
 
-/** Fetch or create a profile for the given user. */
+/** Fetch or create a profile for the given user.
+ *  Returns the profile and whether it was just created. */
 export async function getOrCreateProfile(
   userId: string,
   googleDisplayName: string,
   avatarUrl: string | null,
-): Promise<UserProfile> {
+): Promise<{ profile: UserProfile; isNew: boolean }> {
   const existing = await getProfile(userId)
-  if (existing) return existing
-  return createProfile({ userId, displayName: googleDisplayName, avatarUrl })
+  if (existing) return { profile: existing, isNew: false }
+  const profile = await createProfile({ userId, displayName: googleDisplayName, avatarUrl })
+  return { profile, isNew: true }
 }
 
 function mapRow(row: Record<string, unknown>): UserProfile {

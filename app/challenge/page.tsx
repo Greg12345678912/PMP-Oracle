@@ -6,6 +6,7 @@ import { getRankings } from '@/lib/oracle/rankings'
 import { getPredictions } from '@/lib/oracle/predictions'
 import { ORACLE_POSITIONS, ORACLE_LOCK_DATE, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
+import { OracleSplashCTA } from '@/components/oracle/OracleSplashCTA'
 
 export const dynamic = 'force-dynamic'
 
@@ -225,54 +226,54 @@ export default async function ChallengePage() {
     )
   }
 
-  /* ─── Anonymous / not signed in ──────────────────────────────────── */
+  /* ─── Anonymous / not signed in — Oracle splash ──────────────────── */
   return (
-    <div className="px-4 py-8 max-w-md mx-auto flex flex-col gap-5">
-      <div className="flex flex-col gap-2">
-        <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge</p>
-        <h1 className="text-pmp-white text-2xl font-bold leading-snug">
-          Can you predict the 2026 fantasy season?
-        </h1>
-        <p className="text-pmp-gray-500 text-sm">
-          Rank the top QBs, RBs, WRs, and TEs. Lock in before Week 1. Get scored in January.
-        </p>
+    <div className="min-h-[calc(100dvh-120px)] flex flex-col justify-between px-6 py-10 max-w-sm mx-auto">
+      {/* Hero */}
+      <div className="flex flex-col gap-6 pt-4">
+        <div className="flex flex-col gap-1">
+          <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em]">2026 Oracle Challenge</p>
+          <h1 className="text-pmp-white font-black text-4xl leading-[1.1]">
+            Become one of the world&apos;s best fantasy managers.
+          </h1>
+        </div>
+
+        {/* How it works */}
+        <div className="flex flex-col gap-3">
+          {[
+            { n: '1', text: 'Rank every player before Week 1.' },
+            { n: '2', text: 'Your predictions lock September 9.' },
+            { n: '3', text: "We score every pick after the season ends." },
+            { n: '4', text: 'See where you finish against everyone else.' },
+          ].map(({ n, text }) => (
+            <div key={n} className="flex items-start gap-3">
+              <span className="text-pmp-red font-black text-sm w-4 shrink-0 mt-px">{n}</span>
+              <p className="text-pmp-gray-400 text-sm leading-snug">{text}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Social proof */}
+        {totalEntries > 0 && (
+          <div className="flex items-baseline gap-2">
+            <p className="text-pmp-white font-black text-2xl">{totalEntries.toLocaleString()}</p>
+            <p className="text-pmp-gray-500 text-sm">fantasy managers already entered</p>
+          </div>
+        )}
       </div>
 
-      {/* Countdown */}
-      {!locked && season && (
-        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex items-center justify-between">
-          <div>
-            <p className="text-pmp-white font-bold">Time Remaining</p>
-            <p className="text-pmp-gray-600 text-xs mt-0.5">Rankings lock Sep 9</p>
-          </div>
-          <div className="text-right">
-            <p className="text-pmp-white font-black text-3xl">{daysLeft}</p>
-            <p className="text-pmp-gray-600 text-xs">days left</p>
-          </div>
-        </div>
-      )}
-
-      {/* Community proof */}
-      {totalEntries > 0 && (
-        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-4 flex items-center gap-3">
-          <p className="text-pmp-white font-black text-2xl">{totalEntries.toLocaleString()}</p>
-          <p className="text-pmp-gray-500 text-sm">fantasy managers already entered</p>
-        </div>
-      )}
-
-      {/* CTA */}
-      {!locked && (
-        <Link
-          href="/challenge/rankings"
-          className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-2xl text-sm text-center hover:opacity-90 transition-opacity"
-        >
-          Build My Rankings
-        </Link>
-      )}
-
-      <p className="text-pmp-gray-600 text-xs text-center">
-        PPR · Top 10 QB · Top 20 RB · Top 20 WR · Top 10 TE
-      </p>
+      {/* CTA area */}
+      <div className="flex flex-col gap-3 pt-8">
+        {!locked ? (
+          <OracleSplashCTA />
+        ) : (
+          <p className="text-pmp-gray-600 text-sm text-center">Oracle Challenge is locked for the 2026 season.</p>
+        )}
+        <p className="text-pmp-gray-700 text-xs text-center">
+          PPR · Top 10 QB · Top 20 RB · Top 20 WR · Top 10 TE<br />
+          Only one entry per season
+        </p>
+      </div>
     </div>
   )
 }
