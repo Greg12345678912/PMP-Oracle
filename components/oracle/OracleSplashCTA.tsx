@@ -39,7 +39,12 @@ const GoogleIcon = () => (
   </svg>
 )
 
-export function OracleSplashCTA() {
+interface OracleSplashCTAProps {
+  /** Called after successful sign-in (not sign-up). When omitted, navigates to /challenge. */
+  onSignInSuccess?: () => void
+}
+
+export function OracleSplashCTA({ onSignInSuccess }: OracleSplashCTAProps) {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>('signup')
   const [view, setView] = useState<View>('form')
@@ -51,8 +56,6 @@ export function OracleSplashCTA() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Tracks intentional button clicks — prevents iOS autofill from auto-submitting
-  const submitIntentRef = useRef(false)
 
   useEffect(() => {
     if (mode !== 'signup') return
@@ -83,11 +86,7 @@ export function OracleSplashCTA() {
     })
   }
 
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    // Block iOS autofill auto-submit — only proceed when the user clicked the button
-    if (!submitIntentRef.current) return
-    submitIntentRef.current = false
+  const handleEmailSubmit = async () => {
     if (mode === 'signup' && usernameStatus !== 'available') return
     setLoading(true)
     setError(null)
@@ -114,6 +113,8 @@ export function OracleSplashCTA() {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (signInError) {
         setError(readableAuthError(signInError.message, 'Incorrect email or password.'))
+      } else if (onSignInSuccess) {
+        onSignInSuccess()
       } else {
         router.push('/challenge')
         router.refresh()
@@ -180,8 +181,19 @@ export function OracleSplashCTA() {
         <div className="flex-1 h-px bg-pmp-gray-800" />
       </div>
 
-      {/* Email / password form */}
-      <form onSubmit={handleEmailSubmit} className="flex flex-col gap-2.5">
+      {/* Email / password form
+          onSubmit only calls preventDefault — real submission is via button onClick or Enter key.
+          This prevents iOS autofill from auto-submitting the form. */}
+      <form
+        onSubmit={e => e.preventDefault()}
+        onKeyDown={e => {
+          if (e.key === 'Enter' && !loading && canSubmit) {
+            e.preventDefault()
+            void handleEmailSubmit()
+          }
+        }}
+        className="flex flex-col gap-2.5"
+      >
         {mode === 'signup' && (
           <div className="flex flex-col gap-1">
             <input
@@ -231,8 +243,8 @@ export function OracleSplashCTA() {
         </div>
         {typeof error === 'string' && error && <p className="text-pmp-red text-xs">{error}</p>}
         <button
-          type="submit"
-          onClick={() => { submitIntentRef.current = true }}
+          type="button"
+          onClick={() => void handleEmailSubmit()}
           disabled={loading || !canSubmit}
           className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-2xl text-base hover:opacity-90 transition-opacity disabled:opacity-50 active:scale-[0.98]"
         >
