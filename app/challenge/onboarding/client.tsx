@@ -49,7 +49,7 @@ export function OnboardingClient({ initialUsername, displayName }: OnboardingCli
   // Auto-advance from welcome screen to dashboard
   useEffect(() => {
     if (step !== 'welcome') return
-    const t = setTimeout(() => router.replace('/challenge'), 2500)
+    const t = setTimeout(() => router.replace('/challenge/rankings'), 2500)
     return () => clearTimeout(t)
   }, [step, router])
 
@@ -89,6 +89,7 @@ export function OnboardingClient({ initialUsername, displayName }: OnboardingCli
         <div className="mt-2 flex flex-col items-center gap-0.5">
           <p className="text-pmp-gray-600 text-xs font-bold uppercase tracking-widest">Oracle Rating</p>
           <p className="text-pmp-white font-black text-3xl">—</p>
+          <p className="text-pmp-gray-700 text-xs mt-0.5">Unlocked after your first season</p>
         </div>
         <p className="text-pmp-gray-700 text-xs mt-4">Taking you to your dashboard…</p>
       </div>

@@ -231,11 +231,14 @@ export default async function ChallengePage() {
     <div className="min-h-[calc(100dvh-120px)] flex flex-col justify-between px-6 py-10 max-w-sm mx-auto">
       {/* Hero */}
       <div className="flex flex-col gap-6 pt-4">
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-3">
           <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em]">2026 Oracle Challenge</p>
           <h1 className="text-pmp-white font-black text-4xl leading-[1.1]">
-            Become one of the world&apos;s best fantasy managers.
+            Your opinions become your reputation.
           </h1>
+          <p className="text-pmp-gray-500 text-base leading-snug">
+            Every fantasy manager has opinions. Oracle proves who was right.
+          </p>
         </div>
 
         {/* How it works */}
