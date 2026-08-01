@@ -25,6 +25,7 @@ export function ResultsShareCard({ overallScore, percentile }: ResultsShareCardP
       <div
         ref={cardRef}
         className="bg-pmp-black w-[340px] p-8 flex flex-col items-center gap-4 rounded-2xl"
+        style={{ backgroundColor: '#0d0d0d' }}
       >
         <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">
           Oracle Challenge
