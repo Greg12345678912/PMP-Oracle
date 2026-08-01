@@ -41,12 +41,6 @@ export default async function LeaderboardPage() {
 
     return (
       <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
-        <div className="sticky top-0 z-10 bg-pmp-black border-b border-pmp-gray-800 px-4 py-3 flex items-center gap-3">
-          <Link href="/challenge" className="text-pmp-gray-500 text-sm hover:text-pmp-white transition-colors">&larr; Challenge</Link>
-          <div className="flex-1" />
-          <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">{pageLabel}</p>
-        </div>
-
         <div className="px-4 py-6 max-w-md mx-auto w-full flex flex-col gap-6">
           <div className="flex flex-col gap-1">
             <h1 className="text-pmp-white font-bold text-xl">🏆 2026 Oracle Challenge</h1>
@@ -119,12 +113,6 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
-      <div className="sticky top-0 z-10 bg-pmp-black border-b border-pmp-gray-800 px-4 py-3 flex items-center gap-3">
-        <Link href="/challenge" className="text-pmp-gray-500 text-sm hover:text-pmp-white transition-colors">&larr; Challenge</Link>
-        <div className="flex-1" />
-        <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">Leaderboard</p>
-      </div>
-
       <div className="px-4 py-6 max-w-md mx-auto w-full flex flex-col gap-6">
         {/* Hero: entry count */}
         <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-6 py-8 flex flex-col items-center gap-2 text-center">

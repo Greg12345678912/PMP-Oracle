@@ -104,20 +104,10 @@ export function RankingsClient({
         />
       )}
 
-      {/* Page header — no sign-in button, let people build freely */}
-      <div className="px-4 pt-6 pb-4 border-b border-pmp-gray-800 flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-pmp-white font-bold text-lg">My Rankings</h1>
-          <p className="text-pmp-gray-600 text-xs mt-0.5">
-            PPR · 2026 Oracle Challenge
-          </p>
-        </div>
-        <Link
-          href="/challenge"
-          className="text-pmp-gray-600 text-xs hover:text-pmp-gray-400 transition-colors"
-        >
-          &larr; Challenge
-        </Link>
+      {/* Page header */}
+      <div className="px-4 pt-5 pb-4 border-b border-pmp-gray-800 shrink-0">
+        <h1 className="text-pmp-white font-bold text-lg">My Rankings</h1>
+        <p className="text-pmp-gray-600 text-xs mt-0.5">PPR · 2026 Oracle Challenge</p>
       </div>
 
       {/* Position tabs */}
