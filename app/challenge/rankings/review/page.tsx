@@ -7,6 +7,7 @@ import type { OraclePosition } from '@/lib/oracle/constants'
 import type { RankingRow } from '@/lib/oracle/rankings'
 import { ReviewClient } from './client'
 import { redirect } from 'next/navigation'
+import { getPredictions } from '@/lib/oracle/predictions'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,18 +26,24 @@ export default async function ReviewPage() {
     ORACLE_POSITIONS.map((pos, i) => [pos, rankingsArr[i]])
   ) as Record<OraclePosition, RankingRow[]>
 
+  const db = getServiceClient()
+
   // Check if already submitted — separate query since getRankings doesn't return is_submitted
   let isSubmitted = false
+  let predictionCount = 0
   if (season) {
-    const db = getServiceClient()
-    const { data } = await db
-      .from('challenge_rankings')
-      .select('is_submitted')
-      .eq('user_id', session.user.id)
-      .eq('season_id', season.id)
-      .limit(1)
-      .maybeSingle()
-    isSubmitted = data?.is_submitted === true
+    const [submittedData, predictionRows] = await Promise.all([
+      db
+        .from('challenge_rankings')
+        .select('is_submitted')
+        .eq('user_id', session.user.id)
+        .eq('season_id', season.id)
+        .limit(1)
+        .maybeSingle(),
+      getPredictions(db, session.user.id, season.id),
+    ])
+    isSubmitted = submittedData.data?.is_submitted === true
+    predictionCount = predictionRows.length
   }
 
   return (
@@ -44,6 +51,7 @@ export default async function ReviewPage() {
       rankings={rankings}
       locked={locked}
       isSubmitted={isSubmitted}
+      predictionCount={predictionCount}
     />
   )
 }

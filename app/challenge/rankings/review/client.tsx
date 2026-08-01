@@ -9,9 +9,10 @@ interface ReviewClientProps {
   rankings: Record<OraclePosition, RankingRow[]>
   locked: boolean
   isSubmitted: boolean
+  predictionCount: number
 }
 
-export function ReviewClient({ rankings, locked, isSubmitted }: ReviewClientProps) {
+export function ReviewClient({ rankings, locked, isSubmitted, predictionCount }: ReviewClientProps) {
   const [entering, setEntering] = useState(false)
   const [entered, setEntered] = useState(isSubmitted)
   const [showWarning, setShowWarning] = useState(false)
@@ -100,13 +101,24 @@ export function ReviewClient({ rankings, locked, isSubmitted }: ReviewClientProp
           )
         })}
 
-        {/* Predictions — Phase 3 placeholder */}
-        <div className="flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 opacity-50">
-          <span className="text-base">⏳</span>
-          <div>
-            <p className="text-pmp-gray-500 text-sm font-semibold">Season Predictions</p>
-            <p className="text-pmp-gray-600 text-xs">Coming soon</p>
+        {/* Predictions checklist item */}
+        <div className="flex items-center justify-between bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className="text-base">{predictionCount > 0 ? '✅' : '⏳'}</span>
+            <div>
+              <p className={['text-sm font-semibold', predictionCount > 0 ? 'text-pmp-white' : 'text-pmp-gray-500'].join(' ')}>
+                Season Predictions
+              </p>
+              <p className="text-pmp-gray-600 text-xs">
+                {predictionCount > 0 ? `${predictionCount} / 8 answered` : '0 / 8 answered'}
+              </p>
+            </div>
           </div>
+          {!locked && (
+            <Link href="/challenge/predictions" className="text-pmp-red text-xs font-semibold hover:opacity-80">
+              {predictionCount > 0 ? 'Edit \u2192' : 'Add \u2192'}
+            </Link>
+          )}
         </div>
       </div>
 
