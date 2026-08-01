@@ -7,8 +7,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-  title: 'Fantasy Football Tier List Builder | Pretty Much Picks',
-  description: 'Build, download, and share your fantasy football tier list. No signup required.',
+  title: 'PMP Fantasy Platform | Pretty Much Picks',
+  description: 'Oracle Challenge, Tier Builder, Mock Draft, and more. The PMP Fantasy Platform by Pretty Much Picks.',
   metadataBase: new URL('https://prettymuchpicks.com'),
 }
 

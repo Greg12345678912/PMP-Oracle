@@ -34,9 +34,13 @@ export async function GET(request: NextRequest) {
   let redirectTarget = next
   if (!error && data?.session?.user) {
     const user = data.session.user
+    const displayName =
+      user.user_metadata?.full_name
+      ?? user.email?.split('@')[0]
+      ?? 'user'
     const { isNew } = await getOrCreateProfile(
       user.id,
-      user.user_metadata?.full_name ?? 'User',
+      displayName,
       user.user_metadata?.avatar_url ?? null,
     )
     // Send brand-new users through the username-claim onboarding

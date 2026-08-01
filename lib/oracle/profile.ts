@@ -45,9 +45,10 @@ export async function createProfile(params: {
   userId: string
   displayName: string
   avatarUrl: string | null
+  desiredUsername?: string
 }): Promise<UserProfile> {
   const db = getServiceClient()
-  const base = generateUsername(params.displayName) || 'user'
+  const base = (params.desiredUsername ?? generateUsername(params.displayName)) || 'user'
 
   for (let attempt = 0; attempt < 10; attempt++) {
     const username = attempt === 0 ? base : uniqueUsername(base, attempt)

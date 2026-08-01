@@ -30,10 +30,10 @@ export async function generateMetadata({
   if (!position) return {}
   const label = POSITION_LABELS[position]
   return {
-    title: `${label} Tier List Builder | Pretty Much Picks`,
+    title: `${label} PMP Fantasy Platform | Pretty Much Picks`,
     description: `Build and share your fantasy football ${label} tier list. Drag and drop, download a premium graphic, share instantly. No signup required.`,
     openGraph: {
-      title: `${label} Tier List Builder | Pretty Much Picks`,
+      title: `${label} PMP Fantasy Platform | Pretty Much Picks`,
       description: `Build your ${label} rankings and share a premium graphic.`,
       url: `https://prettymuchpicks.com/${slug}`,
     },

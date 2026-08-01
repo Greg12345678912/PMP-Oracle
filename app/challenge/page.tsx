@@ -7,11 +7,12 @@ import { getPredictions } from '@/lib/oracle/predictions'
 import { ORACLE_POSITIONS, ORACLE_LOCK_DATE, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import { OracleSplashCTA } from '@/components/oracle/OracleSplashCTA'
+import { SignOutButton } from '@/components/oracle/SignOutButton'
 
 export const dynamic = 'force-dynamic'
 
 function daysUntil(date: Date): number {
-  return Math.max(0, Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+  return Math.max(0, Math.floor((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
 }
 
 export default async function ChallengePage() {
@@ -222,13 +223,18 @@ export default async function ChallengePage() {
             View My Results →
           </Link>
         )}
+
+        {/* Sign out */}
+        <div className="flex justify-center pt-2 pb-4">
+          <SignOutButton />
+        </div>
       </div>
     )
   }
 
   /* ─── Anonymous / not signed in — Oracle splash ──────────────────── */
   return (
-    <div className="min-h-[calc(100dvh-120px)] flex flex-col justify-between px-6 py-10 max-w-sm mx-auto">
+    <div className="px-6 py-10 max-w-sm mx-auto flex flex-col gap-8">
       {/* Hero */}
       <div className="flex flex-col gap-6 pt-4">
         <div className="flex flex-col gap-3">
@@ -246,8 +252,8 @@ export default async function ChallengePage() {
           {[
             { n: '1', text: 'Rank every player before Week 1.' },
             { n: '2', text: 'Your predictions lock September 9.' },
-            { n: '3', text: "We score every pick after the season ends." },
-            { n: '4', text: 'See where you finish against everyone else.' },
+            { n: '3', text: 'We score every pick after the season ends.' },
+            { n: '4', text: 'Finish #1 at the end of the season. Win $500. Free entry.' },
           ].map(({ n, text }) => (
             <div key={n} className="flex items-start gap-3">
               <span className="text-pmp-red font-black text-sm w-4 shrink-0 mt-px">{n}</span>
@@ -265,14 +271,14 @@ export default async function ChallengePage() {
         )}
       </div>
 
-      {/* CTA area */}
-      <div className="flex flex-col gap-3 pt-8">
+      {/* Auth */}
+      <div className="flex flex-col gap-3">
         {!locked ? (
           <OracleSplashCTA />
         ) : (
           <p className="text-pmp-gray-600 text-sm text-center">Oracle Challenge is locked for the 2026 season.</p>
         )}
-        <p className="text-pmp-gray-700 text-xs text-center">
+        <p className="text-pmp-gray-700 text-xs text-center pb-6">
           PPR · Top 10 QB · Top 20 RB · Top 20 WR · Top 10 TE<br />
           Only one entry per season
         </p>

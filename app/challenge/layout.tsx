@@ -6,7 +6,7 @@ import { OracleNav } from '@/components/oracle/OracleNav'
 import { ORACLE_LOCK_DATE } from '@/lib/oracle/constants'
 
 function daysUntilLock(): number {
-  return Math.max(0, Math.ceil((ORACLE_LOCK_DATE.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+  return Math.max(0, Math.floor((ORACLE_LOCK_DATE.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
 }
 
 export default async function ChallengeLayout({

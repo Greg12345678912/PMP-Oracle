@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Pretty Much Picks',
-  description: 'Fantasy Football content, tier lists, and rankings.',
+  description: 'PMP Fantasy Platform — Oracle Challenge, Tier Builder, and more by Pretty Much Picks.',
 }
 
 const SOCIAL_LINKS = [
@@ -65,7 +65,7 @@ export default function LinksPage() {
             <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">
               Pretty Much Picks
             </p>
-            <p className="text-pmp-gray-500 text-sm mt-0.5">Fantasy Football</p>
+            <p className="text-pmp-gray-500 text-sm mt-0.5">PMP Fantasy Football Platform</p>
           </div>
         </div>
 
@@ -100,14 +100,14 @@ export default function LinksPage() {
           <div className="flex items-center gap-4 px-5 py-4 rounded-xl bg-pmp-gray-900 border border-pmp-gray-800 hover:border-pmp-red transition-all duration-200">
             <Image
               src="/logo-tier.png"
-              alt="Tier List Builder"
+              alt="PMP Fantasy Platform"
               width={44}
               height={44}
               className="rounded-lg shrink-0"
             />
             <div className="flex-1 min-w-0">
               <p className="text-pmp-white font-semibold text-sm group-hover:text-pmp-red transition-colors duration-200">
-                Tier List Builder
+                PMP Fantasy Football Platform
               </p>
               <p className="text-pmp-gray-600 text-xs mt-0.5">
                 Build &amp; share your fantasy rankings

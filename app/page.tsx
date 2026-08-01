@@ -3,9 +3,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Fantasy Football Tier List Builder | Pretty Much Picks',
+  title: 'PMP Fantasy Platform | Pretty Much Picks',
   description:
-    'Build, download, and share your fantasy football tier list in under two minutes. No signup required.',
+    'Oracle Challenge, Tier Builder, Mock Draft, and more. The PMP Fantasy Platform by Pretty Much Picks.',
 }
 
 const POSITIONS = [
@@ -36,7 +36,7 @@ export default function HomePage() {
                 Pretty Much Picks
               </div>
               <h1 className="font-display text-3xl sm:text-5xl font-black text-pmp-white leading-tight">
-                Fantasy Football<br />Tier List Builder
+                PMP Fantasy Football<br />Platform
               </h1>
             </div>
           </div>
@@ -110,7 +110,7 @@ export default function HomePage() {
                     New
                   </span>
                 </div>
-                <p className="text-pmp-gray-600 text-xs">Rank your top players. Lock in before Sep 9. Win bragging rights.</p>
+                <p className="text-pmp-gray-600 text-xs">Rank your top players. Lock in before Sep 9. Win $500. Free entry.</p>
               </div>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-pmp-red shrink-0">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

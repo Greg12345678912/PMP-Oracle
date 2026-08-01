@@ -53,8 +53,8 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, u
       ? `${window.location.origin}/u/${username}`
       : `${window.location.origin}/challenge`
     const shareText = entryNumber
-      ? `I just entered the 2026 Oracle Challenge — Entry #${entryNumber.toLocaleString()}. Can you beat my rankings?`
-      : 'I just entered the 2026 Oracle Challenge. Can you beat my rankings?'
+      ? `I just entered the 2026 Oracle Challenge — Entry #${entryNumber.toLocaleString()}. $500 to the best ranker. Can you beat me?`
+      : 'I just entered the 2026 Oracle Challenge. $500 to the best ranker. Can you beat me?'
     if (typeof navigator !== 'undefined' && navigator.share) {
       await navigator.share({ title: 'Pretty Much Picks — Oracle Challenge', text: shareText, url: profileUrl }).catch(() => {})
     } else {

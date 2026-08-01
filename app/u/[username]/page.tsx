@@ -200,7 +200,7 @@ export default async function UserProfilePage({ params }: PageProps) {
     ? computePercentile(rank, totalParticipants)
     : null
 
-  const lockDateLabel = ORACLE_LOCK_DATE.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+  const lockDateLabel = ORACLE_LOCK_DATE.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/New_York' })
 
   const oracleResult: OracleResult | null =
     isScored && scoreData
