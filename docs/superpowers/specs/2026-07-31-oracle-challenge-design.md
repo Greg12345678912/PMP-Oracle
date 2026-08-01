@@ -660,3 +660,106 @@ unless you complete it before September 9 at kickoff.
 ### Final mental model
 
 Build → Save → Review → Enter → Locked → Results
+
+---
+
+## Results Page Design (Task 10)
+
+Optimize for emotion first, information second. People will screenshot this page. Design it to look great in a screenshot.
+
+### Route: `/challenge/results` (or `/challenge/results/[username]` for public profiles)
+
+### Sections (in order):
+
+**1. Hero — the screenshot moment**
+```
+🏆 2026 Oracle Challenge Results
+
+Overall Accuracy
+91.4
+
+Top 2%    #187 of 9,842
+```
+Big number centered. Percentile + rank below. Red accent on score. This is section 1 because it's what people share.
+
+**2. Position Breakdown — visual bars**
+```
+QB  ████████████ 94.2
+RB  ██████████   89.8
+WR  ████████████ 92.5
+TE  █████████    85.4
+```
+Progress bars, percentage labels. Immediately shows strengths vs weaknesses.
+
+**3. Your Story — Best Call + Biggest Miss**
+```
+🏆 Best Call
+Puka Nacua
+You ranked WR2 · Finished WR2
++50 pts
+
+😬 Biggest Miss
+Garrett Wilson
+You ranked WR4 · Finished WR19
++5 pts
+```
+Two cards side by side. Not a table. These are what people will remember and talk about.
+
+**4. Prediction Results — quick grid**
+```
+✅ NFL MVP
+❌ OROY
+✅ TE1 Overall
+❌ Biggest Bust
+```
+Small cards in a 2-col grid. ✅/❌ with question label + answer.
+
+**5. Season Summary — one sentence, not a table**
+Auto-generated from score data:
+- If QB+WR normalized > 85 and RB+TE < 80: "You excelled at ranking skill positions but underestimated some key running backs and tight ends."
+- If all 4 > 85: "Exceptional accuracy across every position — you predicted this season as well as almost anyone."
+- Otherwise: generate based on best/worst positions.
+
+This feels personal. People will quote it in their content.
+
+**6. Share Card — one tap**
+
+Uses `html2canvas` (already in the project). Renders a branded card:
+```
+🏆 Oracle Challenge
+
+Accuracy
+91.4
+
+Top 2%
+
+Pretty Much Picks
+```
+Download button below the results page. Card is designed to look great at 1080×1080 (Instagram) and 1200×630 (Twitter/X).
+
+**7. Timeline — proves these were preseason picks**
+```
+📅 Rankings locked: September 8, 2026
+🏁 Season ended: January 5, 2027
+📊 Scored: January 6, 2027
+```
+Small section at the bottom. Reinforces credibility — these were real preseason predictions.
+
+### Auto-Generated Season Summary Logic
+
+```ts
+function generateSummary(results: OracleResult): string {
+  const { positionResults, overallScore } = results
+  const scores = Object.fromEntries(positionResults.map(p => [p.position, p.normalizedScore]))
+  const best = positionResults.reduce((a, b) => a.normalizedScore > b.normalizedScore ? a : b)
+  const worst = positionResults.reduce((a, b) => a.normalizedScore < b.normalizedScore ? a : b)
+
+  if (overallScore >= 90) return `Exceptional accuracy across every position — you predicted this season as well as almost anyone.`
+  if (overallScore >= 75) return `Strong overall performance. Your best position was ${best.position} (${best.normalizedScore.toFixed(1)}) and you had more room to grow at ${worst.position}.`
+  return `You showed real accuracy at ${best.position} rankings. Heading into next season, ${worst.position} is where there's the most room to improve.`
+}
+```
+
+### V3 Backlog Addition
+
+**"Compare with a Friend" / "Compare with Pretty Much Picks"** — side-by-side results view. Two profiles, same layout. Every comparison is shareable. This is a major viral loop feature — add to V3.
