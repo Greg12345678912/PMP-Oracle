@@ -57,7 +57,11 @@ export async function PUT(request: NextRequest) {
 
   // Use user-scoped Supabase client so RLS insert check (auth.uid() = user_id) passes
   const supabase = await getServerClient()
-  await upsertPrediction(supabase, session.user.id, season.id, body.questionId as PredictionQuestionId, body.answer.trim())
+  try {
+    await upsertPrediction(supabase, session.user.id, season.id, body.questionId as PredictionQuestionId, body.answer.trim())
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'Failed to save prediction' }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true })
 }

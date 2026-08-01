@@ -163,7 +163,7 @@ export function PredictionsClient({
                   <p className="text-pmp-white text-sm flex-1">{qs.answer}</p>
                   <div className="flex items-center gap-2">
                     {qs.saveState === 'saved' && (
-                      <span className="text-green-500 text-xs font-medium">Saved</span>
+                      <span className="text-green-500 text-xs font-medium">✓ Saved</span>
                     )}
                     <button
                       onClick={() => setField(q.id, { editing: true, saveState: 'idle' })}
@@ -198,7 +198,7 @@ export function PredictionsClient({
                     <p className="text-pmp-red text-xs">{qs.errorMsg}</p>
                   )}
                   {qs.saveState === 'saved' && (
-                    <p className="text-green-500 text-xs">Saved</p>
+                    <p className="text-green-500 text-xs">✓ Saved</p>
                   )}
                 </div>
               )}
