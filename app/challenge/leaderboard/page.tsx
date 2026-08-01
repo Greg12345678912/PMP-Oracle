@@ -1,5 +1,6 @@
 import { getServiceClient } from '@/lib/league/db'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
+import { getSession } from '@/lib/auth/server'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -16,7 +17,7 @@ function RankMovement({ change }: { change: number | null }) {
 }
 
 export default async function LeaderboardPage() {
-  const season = await getCurrentSeason()
+  const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
   const db = getServiceClient()
 
   // Count distinct submitted users
@@ -28,10 +29,24 @@ export default async function LeaderboardPage() {
 
   const totalEntries = new Set((submittedRows ?? []).map(r => r.user_id as string)).size
 
+  // Check if the current user has entered
+  let userIsEntered = false
+  if (session && season) {
+    const { data: userEntry } = await db
+      .from('challenge_rankings')
+      .select('is_submitted')
+      .eq('user_id', session.user.id)
+      .eq('season_id', season.id)
+      .eq('is_submitted', true)
+      .limit(1)
+      .maybeSingle()
+    userIsEntered = userEntry?.is_submitted === true
+  }
+
   const isScored = season?.status === 'scored'
   const locked = season ? isLocked(season) : false
 
-  // Check if weekly scoring has started (current_week > 0 on any row)
+  // Check if weekly scoring has started
   const { data: weekCheck } = season
     ? await db
         .from('accuracy_scores')
@@ -78,7 +93,7 @@ export default async function LeaderboardPage() {
             </p>
             {!isScored && (
               <p className="text-pmp-gray-700 text-xs mt-0.5">
-                Scores are recalculated every week based on season-to-date accuracy
+                Scores are recalculated every Tuesday
               </p>
             )}
           </div>
@@ -120,6 +135,22 @@ export default async function LeaderboardPage() {
               )
             })}
           </div>
+
+          {userIsEntered ? (
+            <Link
+              href="/challenge/results"
+              className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
+            >
+              See My Results →
+            </Link>
+          ) : session ? null : (
+            <Link
+              href="/challenge/rankings"
+              className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
+            >
+              Build My Rankings →
+            </Link>
+          )}
         </div>
       </div>
     )
@@ -148,8 +179,6 @@ export default async function LeaderboardPage() {
     return true
   })
 
-  const pageLabel = locked ? 'Entries' : 'Participants'
-
   return (
     <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
       <div className="px-4 py-6 max-w-md mx-auto w-full flex flex-col gap-6">
@@ -164,15 +193,16 @@ export default async function LeaderboardPage() {
             <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge</p>
             <p className="text-pmp-white text-5xl font-black">{totalEntries.toLocaleString()}</p>
             <p className="text-pmp-gray-500 text-sm">
-              {pageLabel === 'Participants'
-                ? (totalEntries === 1 ? 'participant so far' : 'participants so far')
-                : (totalEntries === 1 ? 'entry so far' : 'entries so far')}
+              {totalEntries === 1 ? 'participant so far' : 'participants so far'}
             </p>
-            <p className="text-pmp-gray-600 text-xs mt-2">
-              {locked
-                ? 'Weekly leaderboard updates begin after Week 1'
-                : 'Leaderboard scores reveal after Week 18. Will you hold the top spot?'}
-            </p>
+            <div className="mt-3 flex flex-col gap-1 text-center">
+              <p className="text-pmp-white text-sm font-semibold">
+                🏆 {locked ? 'First leaderboard: Sept. 15' : 'Leaderboard starts Sept. 15'}
+              </p>
+              <p className="text-pmp-gray-600 text-xs">
+                Then updated every Tuesday throughout the NFL season.
+              </p>
+            </div>
           </div>
         )}
 
@@ -207,7 +237,15 @@ export default async function LeaderboardPage() {
           </div>
         )}
 
-        {!season || season.status === 'open' ? (
+        {/* Dynamic CTA */}
+        {userIsEntered ? (
+          <Link
+            href="/challenge/results"
+            className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
+          >
+            See My Results →
+          </Link>
+        ) : (!season || season.status === 'open') ? (
           <Link
             href="/challenge/rankings"
             className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
