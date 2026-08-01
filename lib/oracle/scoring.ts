@@ -20,7 +20,6 @@ export function scoreRankings(userRank: number, actualRank: number | null): numb
 export function applyConfidence(
   rawScore: number,
   confidence: 'low' | 'medium' | 'high',
-  distance: number,
 ): number {
   if (confidence === 'low') return rawScore
   const isStrong = rawScore >= 30
@@ -81,7 +80,7 @@ export async function scorePosition(
     const actualRank = truthMap.get(row.playerId) ?? null
     const distance = actualRank != null ? Math.abs(row.playerRank - actualRank) : null
     const rawScore = scoreRankings(row.playerRank, actualRank)
-    const finalScore = applyConfidence(rawScore, row.confidence, distance ?? 99)
+    const finalScore = applyConfidence(rawScore, row.confidence)
     totalFinal += finalScore
     return {
       playerId: row.playerId,
