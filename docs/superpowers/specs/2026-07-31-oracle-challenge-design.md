@@ -71,8 +71,9 @@ FLEX, K, and DEF excluded from V2. Always add later.
 2. Lists are pre-populated with ADP/consensus suggestions as a starting point (all draggable/swappable)
 3. Users can build rankings without an account
 4. "Lock In My Rankings" → Google sign-in gate → rankings saved with timestamp
-5. Rankings are editable until lockout (NFL Week 1 Thursday kickoff)
-6. Post-lockout: read-only. Share card available. Results page visible after scoring.
+5. Rankings are editable until lockout: **Wednesday, September 9, 2026 — NFL Week 1 kickoff**
+6. A live countdown is displayed throughout: "Rankings lock in 4 days 12 hours 33 minutes"
+7. Post-lockout: read-only. Share card available. Results page visible after scoring.
 
 ### Scoring — Per Player
 
@@ -268,7 +269,13 @@ Accuracy Rating section hidden until after first completed season (V4).
 
 ---
 
-## Ground Truth Import
+## Ground Truth
+
+**Source: Sleeper PPR final season finishes** (declared publicly before Week 1 so everyone knows the rules before locking in).
+
+Secondary fallback: ESPN or Yahoo PPR stats via API (credentials available). If Sleeper's API doesn't expose clean end-of-season rankings, we pull from the best available and document it. Same source used for in-season projected scores (V3).
+
+Consistency rule: source cannot change mid-season. Whatever is declared in August is what scores January.
 
 ### V2: CSV Upload (Admin)
 
@@ -284,11 +291,9 @@ rank,player_name,player_id,ppr_points
 
 Preview before confirming. Validation: no duplicate ranks, all required fields present.
 
-Source of truth is declared publicly before the season starts (e.g., "FantasyPros PPR consensus end-of-season rankings"). The `ground_truth` table stores the source field.
-
 ### V3+: Automated Import
 
-Design accommodates pulling from FantasyPros API or Sleeper at season end. The `source` field and import timestamp on `ground_truth` support this without schema changes.
+Pull from Sleeper API (or ESPN/Yahoo API) at end of season and after each week for projected scoring. The `source` field and import timestamp on `ground_truth` support either path without schema changes.
 
 ---
 
@@ -312,13 +317,14 @@ These surface on the profile and results page. Keeps users checking in weekly ev
 CREATE TABLE user_profiles (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id      uuid UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  username     text UNIQUE NOT NULL,
-  display_name text NOT NULL,
+  username     text UNIQUE NOT NULL,   -- unique handle, used in /u/[username] URLs
+  display_name text NOT NULL,          -- shown in UI, changeable
   avatar_url   text,
   is_verified  boolean DEFAULT false,
   is_creator   boolean DEFAULT false,
-  creator_links jsonb DEFAULT '{}', -- { youtube, tiktok, podcast, newsletter }
-  accuracy_rating int DEFAULT 1000, -- populated after Season 1
+  is_admin     boolean DEFAULT false,  -- grants access to /admin/* pages
+  creator_links jsonb DEFAULT '{}',   -- { youtube, tiktok, podcast, newsletter }
+  accuracy_rating int DEFAULT 1000,   -- stored from day one, surfaced after Season 1
   created_at   timestamptz DEFAULT now()
 );
 
@@ -429,23 +435,40 @@ CREATE TABLE user_achievements (
 
 ---
 
-## Pages
+## Player Pages — `/players/[id]`
+
+One of the highest-traffic pages during draft season. Shows community sentiment around a specific player.
 
 ```
-/challenge                     -- Oracle Challenge landing + ranking builder
-/challenge/predictions         -- Prediction submissions
-/challenge/results             -- Your results (right/wrong breakdown) — post-scoring only
-/u/[username]                  -- Public profile
-/admin/seasons                 -- Manage seasons
-/admin/seasons/[year]/import   -- Import ground truth CSV
-/admin/seasons/[year]/score    -- Trigger scoring run
-/admin/predictions             -- Create/manage prediction questions
+Puka Nacua — WR
+
+Community Oracle Ranking    WR4  (avg across all submitted rankings)
+Your Ranking                WR2
+Pretty Much Picks Ranking   WR3  (verified creator, shown if PMP has submitted)
+
+Community Distribution
+  WR1         2%   [=]
+  WR2-5      34%   [========]
+  WR6-10     41%   [==========]
+  WR11-20    18%   [====]
+  Outside     5%   [=]
+
+"62% of users have him inside WR5"
+"9% have him outside the Top 10"
+
+Confidence Breakdown
+  High       28%
+  Medium     55%
+  Low        17%
+
+Most common exact rank: WR4  (chosen by 19% of users)
 ```
 
-Leaderboard pages added in V3:
-```
-/leaderboard                   -- Overall / Position / Creator tabs
-```
+Content angle: every video can end with "check where the community has him on Pretty Much Picks."
+
+### Data requirements
+
+All data derived from `challenge_rankings` — no new tables needed. Aggregations run on-demand (or cached). Only visible for players who appear in at least one user's submitted rankings.
 
 ---
 
@@ -482,9 +505,32 @@ Launch messaging after Season 1: "Your 2026 season is now permanent. Accuracy Ra
 
 ---
 
-## Open Questions (resolved before planning)
+## Pages
 
-- Ground truth source: FantasyPros PPR end-of-season? Or Sleeper? Needs to be declared publicly before Week 1.
-- Lock date: exact timestamp (Week 1 Thursday kickoff — ~September 3, 2026 8:20 PM ET)
-- Username format: display name only, or also a unique handle (@gregspunt)?
-- Admin auth: is there a separate admin role in Supabase, or is it a flag on user_profiles?
+```
+/challenge                       -- Oracle Challenge landing + ranking builder (with countdown)
+/challenge/predictions           -- Prediction submissions
+/challenge/results               -- Your results: right/wrong per player — post-scoring only
+/players/[id]                    -- Player page: community distribution, your rank vs consensus
+/u/[username]                    -- Public profile (URL uses unique @handle e.g. /u/gregspunt)
+/admin/seasons                   -- Manage seasons, set lock date
+/admin/seasons/[year]/import     -- CSV upload or API trigger for ground truth
+/admin/seasons/[year]/score      -- Trigger scoring run
+/admin/predictions               -- Create/manage prediction questions
+```
+
+Leaderboard pages added in V3:
+```
+/leaderboard                     -- Overall / Position / Creator tabs
+```
+
+---
+
+## Decisions (all resolved)
+
+| Question | Decision |
+|---|---|
+| Ground truth source | Sleeper PPR final season finishes. Fallback: ESPN or Yahoo API (credentials available). Declared publicly before Week 1, never changes mid-season. |
+| Lock date | Wednesday, September 9, 2026 — NFL Week 1 opening game kickoff. Live countdown shown throughout preseason. |
+| Username | Both: unique `@handle` (used in URLs, immutable) + `display_name` (shown in UI, changeable). |
+| Admin auth | `is_admin boolean` on `user_profiles`. Grants access to `/admin/*`. Upgrade to role enum if moderators are added later. |
