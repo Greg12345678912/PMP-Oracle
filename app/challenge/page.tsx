@@ -11,17 +11,22 @@ export default async function ChallengePage() {
     <div className="min-h-[100dvh] bg-pmp-black flex flex-col items-center justify-center px-4 py-12 text-center">
       <div className="w-full max-w-md flex flex-col items-center gap-8">
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em]">
-            Pretty Much Picks
+            🏆 Pretty Much Picks
           </p>
           <h1 className="text-pmp-white text-4xl font-bold leading-tight">
             The Oracle Challenge
           </h1>
-          <p className="text-pmp-gray-500 text-base">
-            Lock in your PPR rankings before Week 1.<br />
-            Come back in January to see who actually knows football.
+          <p className="text-pmp-white text-lg font-semibold leading-snug">
+            Can you predict the 2026 fantasy season better than everyone else?
           </p>
+          <div className="flex flex-col gap-1.5 text-pmp-gray-500 text-sm text-left">
+            <p>📋 Rank the Top 10 QBs, Top 20 RBs, Top 20 WRs, Top 10 TEs</p>
+            <p>🔒 Lock in before Week 1 kickoff</p>
+            <p>📊 Get scored on accuracy in January</p>
+            <p>🏅 Build your fantasy reputation</p>
+          </div>
         </div>
 
         {season && !isLocked(season) ? (

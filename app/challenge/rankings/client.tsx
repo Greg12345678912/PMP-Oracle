@@ -149,10 +149,12 @@ export function RankingsClient({
                 'flex-1 py-3 text-sm font-semibold transition-colors min-h-[44px]',
                 isActive
                   ? 'text-pmp-white border-b-2 border-pmp-red'
-                  : 'text-pmp-gray-600 hover:text-pmp-gray-500',
+                  : savedPositions.has(pos)
+                    ? 'text-pmp-gray-400 hover:text-pmp-gray-300'
+                    : 'text-pmp-gray-600 hover:text-pmp-gray-500',
               ].join(' ')}
             >
-              {pos}
+              {savedPositions.has(pos) ? `✓ ${pos}` : pos}
               <span className="block text-[10px] font-normal opacity-60">
                 Top {size}
               </span>

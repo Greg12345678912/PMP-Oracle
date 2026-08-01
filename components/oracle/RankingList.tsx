@@ -211,13 +211,6 @@ export function RankingList({
               />
             ))}
 
-            {/* Onboarding hint when list is empty and not locked */}
-            {rows.length === 0 && !locked && (
-              <p className="text-pmp-gray-600 text-xs text-center py-2">
-                Search for players below to build your rankings. Drag to reorder.
-              </p>
-            )}
-
             {/* Empty-slot placeholder */}
             {rows.length < maxSize && !locked && (
               <div className="flex items-center gap-2 rounded-lg px-4 py-3 border border-dashed border-pmp-gray-700 text-pmp-gray-600 text-sm">
@@ -234,11 +227,17 @@ export function RankingList({
       {/* Player pool search — hidden when full or locked */}
       {!locked && rows.length < maxSize && (
         <div className="flex flex-col gap-2">
+          {rows.length === 0 && (
+            <p className="text-pmp-gray-500 text-xs text-center pb-1">
+              Search for a player, then tap to add them. Drag to reorder.
+            </p>
+          )}
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={`Search ${position} players…`}
-            className="bg-pmp-gray-900 border border-pmp-gray-800 text-pmp-white rounded-xl px-4 py-3 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-gray-600"
+            className="bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white rounded-xl px-4 py-3 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-red transition-colors"
+            autoFocus={rows.length === 0}
           />
           {search.length > 0 && (
             <div className="flex flex-col gap-1 max-h-52 overflow-y-auto rounded-xl border border-pmp-gray-800 bg-pmp-gray-900">
