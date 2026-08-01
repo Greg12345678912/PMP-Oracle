@@ -169,9 +169,9 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, u
                   <p className="text-pmp-gray-600 text-xs">{count} / {max} players ranked</p>
                 </div>
               </div>
-              {!complete && !locked && (
+              {!locked && (
                 <Link href="/challenge/rankings" className="text-pmp-red text-xs font-semibold hover:opacity-80">
-                  Complete &rarr;
+                  {complete ? 'Edit \u2192' : 'Complete \u2192'}
                 </Link>
               )}
             </div>
