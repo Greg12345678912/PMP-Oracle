@@ -9,6 +9,10 @@ function daysUntilLock(): number {
   return Math.max(0, Math.floor((ORACLE_LOCK_DATE.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
 }
 
+function isChallengeLocked(): boolean {
+  return new Date() >= ORACLE_LOCK_DATE
+}
+
 export default async function ChallengeLayout({
   children,
 }: {
@@ -27,6 +31,9 @@ export default async function ChallengeLayout({
     username = (data?.username as string | null) ?? null
   }
 
+  const locked = isChallengeLocked()
+  const daysLeft = daysUntilLock()
+
   return (
     <div className="flex flex-col min-h-[100dvh] bg-pmp-black">
       {/* Persistent top bar — logo goes home, exits Oracle */}
@@ -39,9 +46,11 @@ export default async function ChallengeLayout({
         </div>
         {/* Status strip */}
         <div className="px-4 py-1.5 bg-pmp-gray-900 border-t border-pmp-gray-800 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+          <span className={['w-1.5 h-1.5 rounded-full shrink-0', locked ? 'bg-pmp-gray-600' : 'bg-green-500'].join(' ')} />
           <p className="text-pmp-gray-500 text-[11px]">
-            2026 Oracle Challenge · Open · {daysUntilLock()} days remaining
+            {locked
+              ? '2026 Oracle Challenge · Locked'
+              : `2026 Oracle Challenge · Open · ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining`}
           </p>
         </div>
       </header>

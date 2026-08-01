@@ -93,7 +93,7 @@ export default async function LeaderboardPage() {
     .from('challenge_rankings')
     .select('user_id, updated_at')
     .eq('is_submitted', true)
-    .eq(season ? 'season_id' : 'season_id', season?.id ?? '')
+    .eq('season_id', season?.id ?? '')
     .order('updated_at', { ascending: false })
     .limit(20)
 
