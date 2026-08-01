@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const body = await request.json() as { displayName: string }
+  const body = await request.json() as { displayName: string; teamSlot?: number }
   const userId = request.headers.get('x-user-id')
 
   if (!userId) return NextResponse.json({ error: 'Missing x-user-id' }, { status: 400 })
@@ -24,22 +24,44 @@ export async function POST(
   if (!league) return NextResponse.json({ error: 'League not found' }, { status: 404 })
   if (league.status !== 'lobby') return NextResponse.json({ error: 'Draft already started' }, { status: 409 })
 
+  const maxTeams = (league.settings as { numTeams?: number }).numTeams ?? 12
+
   // Check seat count against numTeams
   const { count } = await db
     .from('league_members')
     .select('*', { count: 'exact', head: true })
     .eq('league_id', id)
 
-  const maxTeams = (league.settings as { numTeams?: number }).numTeams ?? 12
   if ((count ?? 0) >= maxTeams) {
     return NextResponse.json({ error: 'League is full' }, { status: 409 })
+  }
+
+  // Validate teamSlot if provided
+  if (body.teamSlot !== undefined) {
+    if (body.teamSlot < 1 || body.teamSlot > maxTeams) {
+      return NextResponse.json({ error: 'Invalid slot' }, { status: 400 })
+    }
+    const { count: slotCount } = await db
+      .from('league_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('league_id', id)
+      .eq('team_slot', body.teamSlot)
+      .neq('user_id', userId)
+    if ((slotCount ?? 0) > 0) {
+      return NextResponse.json({ error: 'Slot already taken' }, { status: 409 })
+    }
   }
 
   // Upsert: if already a member (e.g. reconnect), just return existing record
   const { data: member, error: memberErr } = await db
     .from('league_members')
     .upsert(
-      { league_id: id, user_id: userId, display_name: body.displayName.trim() },
+      {
+        league_id: id,
+        user_id: userId,
+        display_name: body.displayName.trim(),
+        ...(body.teamSlot !== undefined ? { team_slot: body.teamSlot } : {}),
+      },
       { onConflict: 'league_id,user_id', ignoreDuplicates: false }
     )
     .select()

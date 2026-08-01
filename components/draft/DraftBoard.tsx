@@ -1,7 +1,5 @@
 'use client'
 import { useReducer, useEffect, useRef, useState, useCallback } from 'react'
-
-type ZoomLevel = 'compact' | 'normal' | 'large'
 import {
   buildInitialState,
   makePick,
@@ -177,7 +175,6 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
     currentPick?.currentOwnerTeamSlot === state.settings.userSlot &&
     state.status === 'paused'
 
-  const [zoom, setZoom] = useState<ZoomLevel>('normal')
   const [shareLabel, setShareLabel] = useState('Copy Link')
   const [mobileTab, setMobileTab] = useState<MobileTab>('players')
 
@@ -234,21 +231,6 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
 
           <MobileTabs active={mobileTab} onChange={setMobileTab} />
 
-          {/* Zoom toggle strip */}
-          <div className="hidden md:flex items-center gap-1 px-2 py-1 border-b border-[#1e1e1e] bg-[#111111] shrink-0">
-            <span className="text-pmp-gray-500 text-[10px] mr-1">Zoom</span>
-            {(['compact', 'normal', 'large'] as const).map(z => (
-              <button
-                key={z}
-                onClick={() => setZoom(z)}
-                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                  zoom === z ? 'bg-pmp-red text-pmp-white' : 'text-pmp-gray-500 hover:text-pmp-white'
-                }`}
-              >
-                {z.charAt(0).toUpperCase() + z.slice(1)}
-              </button>
-            ))}
-          </div>
 
           <div className="flex flex-1 overflow-hidden">
             {/* Left panel: player pool */}
@@ -285,7 +267,7 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
                 onSelectCell={() => {}}
                 numTeams={state.settings.numTeams}
                 userSlot={state.settings.userSlot}
-                zoom={zoom}
+                zoom="normal"
               />
             </main>
 

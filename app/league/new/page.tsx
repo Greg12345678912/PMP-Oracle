@@ -47,23 +47,35 @@ export default function LeagueNewPage() {
     } finally { setLoading(false) }
   }
 
-  const handleJoin = async () => {
+  // Join flow state: null = step 1 (enter code), object = step 2 (pick slot)
+  const [joinLeague, setJoinLeague] = useState<{ leagueId: string; numTeams: number; takenSlots: number[] } | null>(null)
+  const [pickedSlot, setPickedSlot] = useState<number | null>(null)
+
+  const handleFindLeague = async () => {
     if (!inviteCode.trim() || !displayName.trim()) { setError('Invite code and display name required'); return }
     setLoading(true); setError('')
     try {
-      // Resolve invite code → league id
       const resolveRes = await fetch(`/api/league/by-code/${inviteCode.toUpperCase().trim()}`)
-      if (!resolveRes.ok) { setError('Invalid invite code'); return }
-      const { leagueId } = await resolveRes.json()
-      const joinRes = await fetch(`/api/league/${leagueId}/join`, {
+      if (!resolveRes.ok) { const d = await resolveRes.json(); setError(d.error ?? 'Invalid invite code'); return }
+      const data = await resolveRes.json()
+      setJoinLeague(data)
+      setPickedSlot(null)
+    } finally { setLoading(false) }
+  }
+
+  const handleJoin = async () => {
+    if (!joinLeague || !pickedSlot) { setError('Pick a draft position first'); return }
+    setLoading(true); setError('')
+    try {
+      const joinRes = await fetch(`/api/league/${joinLeague.leagueId}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
-        body: JSON.stringify({ displayName }),
+        body: JSON.stringify({ displayName, teamSlot: pickedSlot }),
       })
       const data = await joinRes.json()
       if (!joinRes.ok) { setError(data.error); return }
       setDisplayName(displayName)
-      router.push(`/league/${leagueId}`)
+      router.push(`/league/${joinLeague.leagueId}`)
     } finally { setLoading(false) }
   }
 
@@ -165,6 +177,44 @@ export default function LeagueNewPage() {
               {loading ? 'Creating...' : 'Create League'}
             </button>
           </>
+        ) : joinLeague ? (
+          <>
+            <div className="text-center">
+              <p className="text-pmp-gray-500 text-xs uppercase tracking-widest mb-1">Pick your draft position</p>
+              <p className="text-pmp-gray-600 text-xs">{joinLeague.numTeams} teams · pick a slot</p>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {Array.from({ length: joinLeague.numTeams }, (_, i) => i + 1).map(slot => {
+                const taken = joinLeague.takenSlots.includes(slot)
+                return (
+                  <button
+                    key={slot}
+                    onClick={() => !taken && setPickedSlot(slot)}
+                    disabled={taken}
+                    className={`py-3 rounded-lg text-sm font-bold transition-colors ${
+                      taken
+                        ? 'bg-pmp-gray-900 text-pmp-gray-800 cursor-not-allowed'
+                        : pickedSlot === slot
+                          ? 'bg-pmp-red text-pmp-white'
+                          : 'bg-pmp-gray-900 border border-pmp-gray-800 text-pmp-gray-500 hover:text-pmp-white hover:border-pmp-gray-600'
+                    }`}
+                  >
+                    #{slot}
+                  </button>
+                )
+              })}
+            </div>
+            <button
+              onClick={handleJoin}
+              disabled={loading || !pickedSlot}
+              className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {loading ? 'Joining...' : pickedSlot ? `Join as Pick #${pickedSlot}` : 'Select a position'}
+            </button>
+            <button onClick={() => { setJoinLeague(null); setError('') }} className="text-pmp-gray-600 text-xs text-center hover:text-pmp-gray-500">
+              ← Back
+            </button>
+          </>
         ) : (
           <>
             <label className="flex flex-col gap-1">
@@ -178,11 +228,11 @@ export default function LeagueNewPage() {
               />
             </label>
             <button
-              onClick={handleJoin}
+              onClick={handleFindLeague}
               disabled={loading}
               className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {loading ? 'Joining...' : 'Join League'}
+              {loading ? 'Finding...' : 'Find League'}
             </button>
           </>
         )}

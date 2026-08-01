@@ -41,6 +41,7 @@ export type DraftEventType =
   | 'host_transferred'
   | 'member_joined'
   | 'member_left'
+  | 'slot_claimed'
   | 'chat'
   | 'reaction'
 

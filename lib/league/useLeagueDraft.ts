@@ -92,6 +92,13 @@ export function useLeagueDraft(leagueId: string): LeagueDraftState {
           setLeague(prev => prev ? { ...prev, status: 'drafting' } : null)
         }
 
+        if (event.type === 'slot_claimed') {
+          const p = event.payload as { userId: string; teamSlot: number }
+          setMembers(prev => prev.map(m =>
+            m.userId === p.userId ? { ...m, teamSlot: p.teamSlot } : m,
+          ))
+        }
+
         if (event.type === 'member_joined') {
           const p = event.payload as MemberJoinedPayload
           // Deduplicate by userId — fires on every reconnect so we must not append blindly

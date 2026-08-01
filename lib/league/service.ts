@@ -64,16 +64,20 @@ export const DraftService = {
   }): InitResult {
     const numTeams = params.settings.numTeams
 
-    // Shuffle all slots [1..numTeams] (Fisher-Yates), assign first members.length to real members
-    const allSlots = Array.from({ length: numTeams }, (_, i) => i + 1)
-    for (let i = allSlots.length - 1; i > 0; i--) {
+    // Respect pre-assigned slots; randomly assign only members with no slot
+    const usedSlots = new Set(params.members.map(m => m.teamSlot).filter(Boolean) as number[])
+    const freeSlots = Array.from({ length: numTeams }, (_, i) => i + 1).filter(s => !usedSlots.has(s))
+
+    // Fisher-Yates shuffle free slots
+    for (let i = freeSlots.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
-      ;[allSlots[i], allSlots[j]] = [allSlots[j], allSlots[i]]
+      ;[freeSlots[i], freeSlots[j]] = [freeSlots[j], freeSlots[i]]
     }
 
-    const membersWithSlots: LeagueMember[] = params.members.map((m, i) => ({
+    let freeIdx = 0
+    const membersWithSlots: LeagueMember[] = params.members.map(m => ({
       ...m,
-      teamSlot: allSlots[i],
+      teamSlot: m.teamSlot ?? freeSlots[freeIdx++],
     }))
 
     // Use settings directly — CPU auto-pick handles slots with no real member

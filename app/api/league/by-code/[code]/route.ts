@@ -11,7 +11,7 @@ export async function GET(
 
   const { data, error } = await db
     .from('leagues')
-    .select('id')
+    .select('id, settings, status')
     .eq('invite_code', code.toUpperCase())
     .single()
 
@@ -19,5 +19,19 @@ export async function GET(
     return NextResponse.json({ error: 'League not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ leagueId: data.id })
+  if (data.status !== 'lobby') {
+    return NextResponse.json({ error: 'Draft already started' }, { status: 409 })
+  }
+
+  const numTeams = (data.settings as { numTeams?: number }).numTeams ?? 12
+
+  const { data: members } = await db
+    .from('league_members')
+    .select('team_slot')
+    .eq('league_id', data.id)
+    .not('team_slot', 'is', null)
+
+  const takenSlots = (members ?? []).map((m: Record<string, unknown>) => m.team_slot as number)
+
+  return NextResponse.json({ leagueId: data.id, numTeams, takenSlots })
 }

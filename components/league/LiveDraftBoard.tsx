@@ -16,8 +16,6 @@ import { SleeperProvider } from '@/lib/data/sleeper'
 // 90-second draft clock. When it hits zero on your turn, auto-picks best available.
 const CLOCK_SECONDS = 90
 
-type ZoomLevel = 'compact' | 'normal' | 'large'
-
 interface LiveDraftBoardProps {
   leagueId: string
   draft: LeagueDraft
@@ -34,7 +32,6 @@ export function LiveDraftBoard({
   const router = useRouter()
   const state: DraftState = draft.state
   const [mobileTab, setMobileTab] = useState<MobileTab>('players')
-  const [zoom, setZoom] = useState<ZoomLevel>('normal')
   const [selectedPoolPlayerId, setSelectedPoolPlayerId] = useState<string | null>(null)
   const [players, setPlayers] = useState<Player[]>([])
   const [clockSeconds, setClockSeconds] = useState(CLOCK_SECONDS)
@@ -151,35 +148,20 @@ export function LiveDraftBoard({
       {/* Mobile tab bar */}
       <MobileTabs active={mobileTab} onChange={setMobileTab} />
 
-      {/* Desktop zoom strip (hidden on mobile) */}
-      <div className="hidden md:flex items-center gap-1 px-2 py-1 border-b border-[#1e1e1e] bg-[#111111] shrink-0">
-        <span className="text-pmp-gray-500 text-[10px] mr-1">Zoom</span>
-        {(['compact', 'normal', 'large'] as const).map(z => (
-          <button
-            key={z}
-            onClick={() => setZoom(z)}
-            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-              zoom === z ? 'bg-pmp-red text-pmp-white' : 'text-pmp-gray-500 hover:text-pmp-white'
+      {/* Member list strip (desktop only) */}
+      <div className="hidden md:flex items-center gap-2 px-3 py-1.5 border-b border-[#1e1e1e] bg-[#111111] shrink-0">
+        {members.map(m => (
+          <span
+            key={m.id}
+            className={`text-[10px] px-1.5 py-0.5 rounded ${
+              m.teamSlot === currentPick?.currentOwnerTeamSlot
+                ? 'bg-pmp-red text-pmp-white font-bold'
+                : 'text-pmp-gray-600'
             }`}
           >
-            {z.charAt(0).toUpperCase() + z.slice(1)}
-          </button>
+            {m.displayName}
+          </span>
         ))}
-        {/* Member list in header (desktop only) */}
-        <div className="ml-auto flex items-center gap-2">
-          {members.map(m => (
-            <span
-              key={m.id}
-              className={`text-[10px] px-1.5 py-0.5 rounded ${
-                m.teamSlot === currentPick?.currentOwnerTeamSlot
-                  ? 'bg-pmp-red text-pmp-white font-bold'
-                  : 'text-pmp-gray-600'
-              }`}
-            >
-              {m.displayName}
-            </span>
-          ))}
-        </div>
       </div>
 
       {/* Content: mobile shows one panel at a time; desktop shows all three */}
@@ -240,7 +222,7 @@ export function LiveDraftBoard({
             onSelectCell={() => {}}
             numTeams={settings.numTeams}
             userSlot={myTeamSlot ?? 1}
-            zoom={zoom}
+            zoom="normal"
           />
         </main>
 
