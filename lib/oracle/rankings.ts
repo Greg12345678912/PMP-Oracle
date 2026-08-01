@@ -11,11 +11,24 @@ export interface RankingRow {
 
 export type ValidateResult = { ok: true } | { ok: false; error: string }
 
+const VALID_CONFIDENCE = new Set<string>(['low', 'medium', 'high'])
+
 export function validateRankings(position: OraclePosition, rows: RankingRow[]): ValidateResult {
   const max = POSITION_LIST_SIZE[position]
   if (rows.length > max) return { ok: false, error: `Max ${max} players for ${position}` }
+
   const ranks = rows.map(r => r.playerRank)
   if (new Set(ranks).size !== ranks.length) return { ok: false, error: 'Duplicate ranks' }
+
+  const ids = rows.map(r => r.playerId)
+  if (new Set(ids).size !== ids.length) return { ok: false, error: 'Duplicate players' }
+
+  for (const row of rows) {
+    if (!VALID_CONFIDENCE.has(row.confidence)) {
+      return { ok: false, error: 'Invalid confidence value' }
+    }
+  }
+
   return { ok: true }
 }
 

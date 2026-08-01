@@ -45,7 +45,7 @@ export default async function ChallengePage() {
           .maybeSingle(),
         db
           .from('challenge_rankings')
-          .select('user_id', { count: 'exact', head: true })
+          .select('user_id')
           .eq('season_id', season.id)
           .eq('is_submitted', true),
         getPredictions(db, session.user.id, season.id),
@@ -54,19 +54,19 @@ export default async function ChallengePage() {
 
     displayName = (profileResult.data?.display_name as string | null) ?? null
     isSubmitted = submittedResult.data?.is_submitted === true
-    totalEntries = entryCountResult.count ?? 0
+    totalEntries = new Set((entryCountResult.data ?? []).map((r: { user_id: string }) => r.user_id)).size
     predictionCount = predictionRows.length
     ORACLE_POSITIONS.forEach((pos, i) => {
       rankingCounts[pos] = rankingResults[i]?.length ?? 0
     })
   } else if (season) {
     const db = getServiceClient()
-    const { count } = await db
+    const { data: submittedRows } = await db
       .from('challenge_rankings')
-      .select('user_id', { count: 'exact', head: true })
+      .select('user_id')
       .eq('season_id', season.id)
       .eq('is_submitted', true)
-    totalEntries = count ?? 0
+    totalEntries = new Set((submittedRows ?? []).map((r: { user_id: string }) => r.user_id)).size
   }
 
   const completedPositions = ORACLE_POSITIONS.filter(
@@ -75,7 +75,12 @@ export default async function ChallengePage() {
   const allComplete = completedPositions.length === 4
   const totalRanked = ORACLE_POSITIONS.reduce((sum, pos) => sum + rankingCounts[pos], 0)
   const totalPossible = Object.values(POSITION_LIST_SIZE).reduce((a, b) => a + b, 0) // 60
-  const pctComplete = Math.round((totalRanked / totalPossible) * 100)
+
+  // Step-based progress: rankings=33%, predictions=33%, submitted=34%
+  const entryPct = isSubmitted
+    ? 100
+    : Math.round((completedPositions.length / 4) * 33) +
+      Math.round((Math.min(predictionCount, 8) / 8) * 33)
 
   /* ─── Signed-in dashboard ─────────────────────────────────────────── */
   if (session) {
@@ -89,11 +94,11 @@ export default async function ChallengePage() {
             Welcome back, {firstName}.
           </h1>
           {isSubmitted ? (
-            <p className="text-pmp-red text-sm font-semibold mt-0.5">Officially entered · {totalRanked} / {totalPossible} players ranked</p>
-          ) : totalRanked > 0 ? (
-            <p className="text-pmp-gray-400 text-sm mt-0.5">{totalRanked} / {totalPossible} players ranked · {pctComplete}% complete</p>
+            <p className="text-pmp-red text-sm font-semibold mt-0.5">Officially entered · 100% complete</p>
+          ) : entryPct > 0 ? (
+            <p className="text-pmp-gray-400 text-sm mt-0.5">{entryPct}% complete</p>
           ) : (
-            <p className="text-pmp-gray-600 text-sm mt-0.5">Your Oracle entry is 0% complete</p>
+            <p className="text-pmp-gray-600 text-sm mt-0.5">0% complete</p>
           )}
         </div>
 

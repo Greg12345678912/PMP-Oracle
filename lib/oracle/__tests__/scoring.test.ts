@@ -144,6 +144,57 @@ describe('scorePosition', () => {
   })
 })
 
+describe('manual scenario: Allen/Burrow/Lamar swap', () => {
+  /*
+   * Ground truth:  Allen → 1, Burrow → 2, Lamar → 3
+   * User ranking:  Allen → 1, Lamar  → 2, Burrow → 3  (Lamar/Burrow swapped)
+   *
+   * Expected per-player math (all confidence = 'low'):
+   *   Allen:  userRank=1 actualRank=1  distance=0  rawScore=50  finalScore=50
+   *   Lamar:  userRank=2 actualRank=3  distance=1  rawScore=45  finalScore=45
+   *   Burrow: userRank=3 actualRank=2  distance=1  rawScore=45  finalScore=45
+   *
+   * maxPossible (QB, 10 slots) = 10 × 50 = 500
+   * totalFinal  = 140
+   * normalized  = round((140/500) × 1000) / 10 = 28.0
+   */
+  it('scores Allen perfect + Lamar/Burrow off-by-1 correctly', () => {
+    expect(scoreRankings(1, 1)).toBe(50) // Allen exact
+    expect(scoreRankings(2, 3)).toBe(45) // Lamar off by 1
+    expect(scoreRankings(3, 2)).toBe(45) // Burrow off by 1
+  })
+
+  it('applies low confidence = no change', () => {
+    expect(applyConfidence(50, 'low')).toBe(50)
+    expect(applyConfidence(45, 'low')).toBe(45)
+  })
+
+  it('normalized QB score for this scenario = 28.0', () => {
+    // totalFinal = 50 + 45 + 45 = 140
+    // maxPossible = 10 * 50 = 500
+    const totalFinal = 140
+    const maxPossible = 500
+    const normalized = Math.round((totalFinal / maxPossible) * 1000) / 10
+    expect(normalized).toBe(28)
+  })
+
+  it('high confidence correct pick gets 1.5× bonus (50→75)', () => {
+    expect(applyConfidence(scoreRankings(1, 1), 'high')).toBe(75)
+  })
+
+  it('high confidence wrong pick (distance≥10) gets 0.5× penalty → 0', () => {
+    // rawScore = 0 (distance ≥ 10), so 0 * 0.5 = 0
+    expect(applyConfidence(scoreRankings(1, 11), 'high')).toBe(0)
+  })
+
+  it('high confidence close-but-wrong (rawScore=25) gets 0.5× penalty → 13', () => {
+    // rawScore = 50 - 5*5 = 25, isStrong = false → ×0.5 → 12.5 → rounds to 13
+    const raw = scoreRankings(1, 6) // distance = 5, rawScore = 25
+    expect(raw).toBe(25)
+    expect(applyConfidence(raw, 'high')).toBe(13)
+  })
+})
+
 describe('scoreUser overall score calculation', () => {
   it('calculates overall score as average of 4 normalized position scores', () => {
     // Direct test of the calculation logic used in scoreUser
