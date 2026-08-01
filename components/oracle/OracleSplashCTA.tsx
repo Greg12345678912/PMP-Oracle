@@ -76,7 +76,8 @@ export function OracleSplashCTA() {
         },
       })
       if (signUpError) {
-        setError(signUpError.message)
+        const msg = signUpError.message
+        setError(typeof msg === 'string' && msg.trim() ? msg : 'Sign up failed — please try again.')
       } else if (data.session) {
         // Email confirmation disabled — session returned immediately
         router.push('/challenge/onboarding')
@@ -86,7 +87,8 @@ export function OracleSplashCTA() {
     } else {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (signInError) {
-        setError(signInError.message)
+        const msg = signInError.message
+        setError(typeof msg === 'string' && msg.trim() ? msg : 'Incorrect email or password.')
       } else {
         router.push('/challenge')
         router.refresh()
@@ -192,7 +194,7 @@ export function OracleSplashCTA() {
           minLength={6}
           className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white rounded-xl px-4 py-3.5 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-red transition-colors"
         />
-        {error && <p className="text-pmp-red text-xs">{error}</p>}
+        {typeof error === 'string' && error && <p className="text-pmp-red text-xs">{error}</p>}
         <button
           type="submit"
           disabled={loading || !canSubmit}
