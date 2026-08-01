@@ -1,5 +1,5 @@
 import { getServiceClient } from '@/lib/league/db'
-import { getCurrentSeason } from '@/lib/oracle/season'
+import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -17,6 +17,11 @@ export default async function LeaderboardPage() {
     .eq(season ? 'season_id' : 'season_id', season?.id ?? '')
 
   const isScored = season?.status === 'scored'
+  const pageLabel = isScored
+    ? 'Leaderboard'
+    : (season && isLocked(season))
+      ? 'Entries'
+      : 'Participants'
 
   if (isScored) {
     // Post-season: show accuracy leaderboard
@@ -39,7 +44,7 @@ export default async function LeaderboardPage() {
         <div className="sticky top-0 z-10 bg-pmp-black border-b border-pmp-gray-800 px-4 py-3 flex items-center gap-3">
           <Link href="/challenge" className="text-pmp-gray-500 text-sm hover:text-pmp-white transition-colors">&larr; Challenge</Link>
           <div className="flex-1" />
-          <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">Leaderboard</p>
+          <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">{pageLabel}</p>
         </div>
 
         <div className="px-4 py-6 max-w-md mx-auto w-full flex flex-col gap-6">
@@ -126,7 +131,9 @@ export default async function LeaderboardPage() {
           <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge</p>
           <p className="text-pmp-white text-5xl font-black">{entryCount.toLocaleString()}</p>
           <p className="text-pmp-gray-500 text-sm">
-            {entryCount === 1 ? 'entry so far' : 'entries so far'}
+            {pageLabel === 'Participants'
+              ? (entryCount === 1 ? 'participant so far' : 'participants so far')
+              : (entryCount === 1 ? 'entry so far' : 'entries so far')}
           </p>
           <p className="text-pmp-gray-600 text-xs mt-2">
             Accuracy leaderboard unlocks after the 2026 season

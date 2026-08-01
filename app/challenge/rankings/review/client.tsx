@@ -10,9 +10,10 @@ interface ReviewClientProps {
   locked: boolean
   isSubmitted: boolean
   predictionCount: number
+  username: string | null
 }
 
-export function ReviewClient({ rankings, locked, isSubmitted, predictionCount }: ReviewClientProps) {
+export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, username }: ReviewClientProps) {
   const [entering, setEntering] = useState(false)
   const [entered, setEntered] = useState(isSubmitted)
   const [entryNumber, setEntryNumber] = useState<number | null>(null)
@@ -47,6 +48,20 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount }:
     }
   }
 
+  const handleShare = async () => {
+    const profileUrl = username
+      ? `${window.location.origin}/u/${username}`
+      : `${window.location.origin}/challenge`
+    const shareText = entryNumber
+      ? `I just entered the 2026 Oracle Challenge — Entry #${entryNumber.toLocaleString()}. Can you beat my rankings?`
+      : 'I just entered the 2026 Oracle Challenge. Can you beat my rankings?'
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      await navigator.share({ title: 'Pretty Much Picks — Oracle Challenge', text: shareText, url: profileUrl }).catch(() => {})
+    } else {
+      await navigator.clipboard.writeText(`${shareText} ${profileUrl}`).catch(() => {})
+    }
+  }
+
   if (entered) {
     return (
       <div className="min-h-[100dvh] bg-pmp-black flex flex-col items-center justify-center px-4 text-center gap-6">
@@ -62,10 +77,27 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount }:
           </p>
         </div>
         <div className="flex flex-col gap-3 w-full max-w-xs">
-          <Link href="/challenge/leaderboard" className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:border-pmp-gray-500 transition-colors">
-            View Leaderboard →
+          <button
+            onClick={handleShare}
+            className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm hover:opacity-90 transition-opacity"
+          >
+            Share Your Entry
+          </button>
+          <Link
+            href="/challenge/leaderboard"
+            className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:border-pmp-gray-500 transition-colors"
+          >
+            Browse Participants →
           </Link>
-          <Link href="/challenge/rankings" className="text-pmp-gray-600 text-sm text-center hover:text-pmp-gray-500 transition-colors">
+          {username && (
+            <Link
+              href={`/u/${username}`}
+              className="text-pmp-gray-500 text-sm text-center hover:text-pmp-gray-300 transition-colors"
+            >
+              View Your Profile →
+            </Link>
+          )}
+          <Link href="/challenge/rankings" className="text-pmp-gray-600 text-xs text-center hover:text-pmp-gray-500 transition-colors">
             Edit My Rankings
           </Link>
         </div>

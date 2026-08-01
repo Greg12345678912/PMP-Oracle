@@ -31,8 +31,9 @@ export default async function ReviewPage() {
   // Check if already submitted — separate query since getRankings doesn't return is_submitted
   let isSubmitted = false
   let predictionCount = 0
+  let username: string | null = null
   if (season) {
-    const [submittedData, predictionRows] = await Promise.all([
+    const [submittedData, predictionRows, profileData] = await Promise.all([
       db
         .from('challenge_rankings')
         .select('is_submitted')
@@ -41,9 +42,15 @@ export default async function ReviewPage() {
         .limit(1)
         .maybeSingle(),
       getPredictions(db, session.user.id, season.id),
+      db
+        .from('user_profiles')
+        .select('username')
+        .eq('user_id', session.user.id)
+        .maybeSingle(),
     ])
     isSubmitted = submittedData.data?.is_submitted === true
     predictionCount = predictionRows.length
+    username = (profileData.data?.username as string | null) ?? null
   }
 
   return (
@@ -52,6 +59,7 @@ export default async function ReviewPage() {
       locked={locked}
       isSubmitted={isSubmitted}
       predictionCount={predictionCount}
+      username={username}
     />
   )
 }
