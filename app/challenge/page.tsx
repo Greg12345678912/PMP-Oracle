@@ -42,14 +42,11 @@ export default async function ChallengePage() {
             href="/challenge/rankings"
             className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm hover:opacity-90 transition-opacity"
           >
-            {season && isLocked(season) ? 'View My Rankings' : 'Lock In My Rankings'}
+            {season && isLocked(season) ? 'View My Rankings' : 'Build My Rankings'}
           </Link>
-          <Link
-            href="/challenge/predictions"
-            className="w-full bg-pmp-gray-900 border border-pmp-gray-800 text-pmp-white font-medium py-3 rounded-xl text-sm hover:border-pmp-gray-600 transition-colors"
-          >
-            Season Predictions
-          </Link>
+          <span className="w-full bg-pmp-gray-900 border border-pmp-gray-800 text-pmp-gray-600 font-medium py-3 rounded-xl text-sm text-center opacity-50 cursor-not-allowed select-none block">
+            Season Predictions — Coming Soon
+          </span>
         </div>
 
         <p className="text-pmp-gray-600 text-xs">

@@ -53,8 +53,8 @@ interface RankingListProps {
   players: Player[]
   locked: boolean
   isSignedIn: boolean
-  /** Called when user clicks "Lock Rankings" — handles auth gate externally */
-  onLock: (position: OraclePosition, rows: RankingRow[]) => Promise<void>
+  /** Called when user clicks "Save Rankings" — handles auth gate externally */
+  onSave: (position: OraclePosition, rows: RankingRow[]) => Promise<void>
 }
 
 export function RankingList({
@@ -63,7 +63,7 @@ export function RankingList({
   players,
   locked,
   isSignedIn,
-  onLock,
+  onSave,
 }: RankingListProps) {
   const maxSize = POSITION_LIST_SIZE[position]
 
@@ -76,7 +76,7 @@ export function RankingList({
 
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
 
   const rankedIds = new Set(rows.map(r => r.playerId))
 
@@ -144,12 +144,11 @@ export function RankingList({
     )
   }
 
-  const handleLock = async () => {
+  const handleSave = async () => {
     setSaving(true)
     try {
-      await onLock(position, rows)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
+      await onSave(position, rows)
+      setLastSavedAt(new Date())
     } finally {
       setSaving(false)
     }
@@ -212,6 +211,13 @@ export function RankingList({
               />
             ))}
 
+            {/* Onboarding hint when list is empty and not locked */}
+            {rows.length === 0 && !locked && (
+              <p className="text-pmp-gray-600 text-xs text-center py-2">
+                Search for players below to build your rankings. Drag to reorder.
+              </p>
+            )}
+
             {/* Empty-slot placeholder */}
             {rows.length < maxSize && !locked && (
               <div className="flex items-center gap-2 rounded-lg px-4 py-3 border border-dashed border-pmp-gray-700 text-pmp-gray-600 text-sm">
@@ -261,26 +267,31 @@ export function RankingList({
         </div>
       )}
 
-      {/* Sticky Save/Lock CTA — fixed to bottom of viewport */}
+      {/* Sticky Save CTA — fixed to bottom of viewport */}
       {!locked && (
         <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-3 bg-gradient-to-t from-pmp-black via-pmp-black/95 to-transparent pointer-events-none">
           <div className="pointer-events-auto max-w-xl mx-auto">
             <button
-              onClick={handleLock}
+              onClick={handleSave}
               disabled={saving || rows.length === 0}
               className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm tracking-wide hover:opacity-90 transition-opacity disabled:opacity-40 active:scale-[0.98]"
             >
               {saving
-                ? 'Saving…'
-                : saved
-                  ? 'Saved!'
+                ? 'Saving\u2026'
+                : lastSavedAt
+                  ? `\u2713 Saved at ${lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
                   : isSignedIn
-                    ? `Lock ${position} Rankings`
+                    ? 'Save Rankings'
                     : `Save Draft (${rows.length}/${maxSize})`}
             </button>
             {!isSignedIn && rows.length > 0 && (
               <p className="text-pmp-gray-600 text-xs text-center mt-2">
                 Draft saved locally · Sign in to lock in permanently
+              </p>
+            )}
+            {isSignedIn && !saving && (
+              <p className="text-pmp-gray-600 text-xs text-center mt-2">
+                All rankings lock automatically on Sept 9 at kickoff
               </p>
             )}
           </div>
