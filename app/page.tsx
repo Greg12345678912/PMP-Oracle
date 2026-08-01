@@ -83,7 +83,7 @@ export default async function HomePage() {
           </Link>
 
           <p className="text-pmp-gray-700 text-xs">
-            PPR · Top 10 QB · Top 20 RB · Top 20 WR · Top 10 TE · One entry per season
+            PPR · Top 10 QB · Top 10 RB · Top 10 WR · Top 10 TE · One entry per season
           </p>
         </section>
 

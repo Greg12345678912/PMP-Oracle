@@ -290,7 +290,7 @@ export default async function ChallengePage() {
           <p className="text-pmp-gray-600 text-sm text-center">Oracle Challenge is locked for the 2026 season.</p>
         )}
         <p className="text-pmp-gray-700 text-xs text-center pb-6">
-          PPR · Top 10 QB · Top 20 RB · Top 20 WR · Top 10 TE<br />
+          PPR · Top 10 QB · Top 10 RB · Top 10 WR · Top 10 TE<br />
           Only one entry per season
         </p>
       </div>
