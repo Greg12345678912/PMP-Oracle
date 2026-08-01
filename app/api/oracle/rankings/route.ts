@@ -5,6 +5,7 @@ import { getRankings, upsertRankings, validateRankings } from '@/lib/oracle/rank
 import type { OraclePosition } from '@/lib/oracle/constants'
 import { ORACLE_POSITIONS, ORACLE_LOCK_DATE } from '@/lib/oracle/constants'
 import type { RankingRow } from '@/lib/oracle/rankings'
+import { getServiceClient } from '@/lib/league/db'
 
 export async function GET(request: NextRequest) {
   const session = await getSession()
@@ -29,7 +30,6 @@ export async function GET(request: NextRequest) {
 
   // After lock, non-owners can only view public rankings
   if (!isOwner) {
-    const { getServiceClient } = await import('@/lib/league/db')
     const db = getServiceClient()
     const { data } = await db
       .from('challenge_rankings')
@@ -52,9 +52,11 @@ export async function PUT(request: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Sign in to save rankings' }, { status: 401 })
 
-  const body = await request.json() as {
-    position: OraclePosition
-    rankings: RankingRow[]
+  let body: { position: OraclePosition; rankings: RankingRow[] }
+  try {
+    body = await request.json() as { position: OraclePosition; rankings: RankingRow[] }
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
   if (!body.position || !ORACLE_POSITIONS.includes(body.position)) {

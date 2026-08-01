@@ -19,6 +19,20 @@ export function validateRankings(position: OraclePosition, rows: RankingRow[]): 
   return { ok: true }
 }
 
+/** Type guard: validates that an unknown value is a RankingRow array */
+function isRankingRowArray(value: unknown): value is RankingRow[] {
+  if (!Array.isArray(value)) return false
+  return value.every(
+    (item): item is RankingRow =>
+      item !== null &&
+      typeof item === 'object' &&
+      typeof (item as Record<string, unknown>).playerRank === 'number' &&
+      typeof (item as Record<string, unknown>).playerId === 'string' &&
+      typeof (item as Record<string, unknown>).playerName === 'string' &&
+      ['low', 'medium', 'high'].includes((item as Record<string, unknown>).confidence as string),
+  )
+}
+
 /** Composite key helper — describes how a rankings record is uniquely identified */
 export function rankingsKey(userId: string, seasonId: string, position: OraclePosition) {
   return { user_id: userId, season_id: seasonId, position }
@@ -38,7 +52,10 @@ export async function getRankings(
     .eq('position', position)
     .maybeSingle()
   if (!data) return []
-  return (data.rankings as RankingRow[]) ?? []
+  const parsed: unknown = typeof data.rankings === 'string'
+    ? JSON.parse(data.rankings)
+    : data.rankings
+  return isRankingRowArray(parsed) ? parsed : []
 }
 
 export async function upsertRankings(
