@@ -64,42 +64,77 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, u
 
   if (entered) {
     return (
-      <div className="min-h-[100dvh] bg-pmp-black flex flex-col items-center justify-center px-4 text-center gap-6">
-        <div className="flex flex-col gap-3">
-          <p className="text-4xl">🎉</p>
-          <h1 className="text-pmp-white font-bold text-2xl">You&apos;re officially entered.</h1>
-          {entryNumber && (
-            <p className="text-pmp-red font-bold text-lg">Entry #{entryNumber.toLocaleString()}</p>
-          )}
-          <p className="text-pmp-gray-500 text-sm">
-            Your rankings are locked in for the 2026 Oracle Challenge.<br />
-            You can edit them until September 9 at kickoff.
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 w-full max-w-xs">
-          <button
-            onClick={handleShare}
-            className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm hover:opacity-90 transition-opacity"
-          >
-            Share Your Entry
-          </button>
-          <Link
-            href="/challenge/leaderboard"
-            className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:border-pmp-gray-500 transition-colors"
-          >
-            Browse Participants →
-          </Link>
-          {username && (
-            <Link
-              href={`/u/${username}`}
-              className="text-pmp-gray-500 text-sm text-center hover:text-pmp-gray-300 transition-colors"
+      <div className="min-h-[100dvh] bg-pmp-black flex flex-col items-center justify-center px-4 py-10">
+        <div className="w-full max-w-xs flex flex-col gap-6">
+
+          {/* Header */}
+          <div className="text-center flex flex-col gap-1">
+            <p className="text-3xl">🏆</p>
+            <h1 className="text-pmp-white font-black text-2xl mt-2">You&apos;re officially in.</h1>
+            <p className="text-pmp-gray-600 text-sm">2026 Oracle Challenge</p>
+          </div>
+
+          {/* Entry receipt card */}
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl overflow-hidden">
+            {/* Entry number — hero row */}
+            <div className="px-5 py-5 border-b border-dashed border-pmp-gray-800 flex items-center justify-between">
+              <span className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Entry</span>
+              <span className="text-pmp-red font-black text-2xl">
+                #{entryNumber ? entryNumber.toLocaleString() : '—'}
+              </span>
+            </div>
+
+            {/* Receipt rows */}
+            <div className="px-5 py-4 flex flex-col gap-3.5">
+              <div className="flex items-center justify-between">
+                <span className="text-pmp-gray-500 text-sm">Rankings locked</span>
+                <span className="text-pmp-white text-sm font-semibold">September 9</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-pmp-gray-500 text-sm">First update</span>
+                <span className="text-pmp-white text-sm font-semibold">September 15</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-pmp-gray-500 text-sm">Prize</span>
+                <span className="text-pmp-white text-sm font-semibold">$500</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-pmp-gray-500 text-sm">Entry fee</span>
+                <span className="text-green-400 text-sm font-semibold">Free</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col gap-2.5">
+            <button
+              onClick={handleShare}
+              className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm hover:opacity-90 transition-opacity active:scale-[0.98]"
             >
-              View Your Profile →
+              Share Your Entry
+            </button>
+            <Link
+              href="/challenge/leaderboard"
+              className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:border-pmp-gray-500 transition-colors"
+            >
+              See the Competition →
             </Link>
-          )}
-          <Link href="/challenge/rankings" className="text-pmp-gray-600 text-xs text-center hover:text-pmp-gray-500 transition-colors">
-            Edit My Rankings
-          </Link>
+            {username && (
+              <Link
+                href={`/u/${username}`}
+                className="text-pmp-gray-500 text-sm text-center hover:text-pmp-gray-300 transition-colors py-1"
+              >
+                View Your Profile →
+              </Link>
+            )}
+            <Link
+              href="/challenge/rankings"
+              className="text-pmp-gray-700 text-xs text-center hover:text-pmp-gray-500 transition-colors py-1"
+            >
+              Edit Rankings (until Sep 9)
+            </Link>
+          </div>
+
         </div>
       </div>
     )
