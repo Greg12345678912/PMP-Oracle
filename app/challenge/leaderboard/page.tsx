@@ -9,12 +9,15 @@ export default async function LeaderboardPage() {
   const season = await getCurrentSeason()
   const db = getServiceClient()
 
-  // Count total entries
-  const { count: totalEntries } = await db
+  // Count distinct submitted users — challenge_rankings has one row per (user, season, position)
+  // so a head: true count would be inflated by up to 4x. Fetch user_ids and deduplicate.
+  const { data: submittedRows } = await db
     .from('challenge_rankings')
-    .select('user_id', { count: 'exact', head: true })
+    .select('user_id')
     .eq('is_submitted', true)
-    .eq(season ? 'season_id' : 'season_id', season?.id ?? '')
+    .eq('season_id', season?.id ?? '')
+
+  const totalEntries = new Set((submittedRows ?? []).map(r => r.user_id as string)).size
 
   const isScored = season?.status === 'scored'
   const pageLabel = isScored

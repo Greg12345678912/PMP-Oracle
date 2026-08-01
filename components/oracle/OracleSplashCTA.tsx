@@ -143,7 +143,7 @@ export function OracleSplashCTA() {
         className="w-full bg-pmp-white text-pmp-black font-bold py-4 rounded-2xl text-base hover:opacity-90 transition-opacity flex items-center justify-center gap-2.5 active:scale-[0.98]"
       >
         <GoogleIcon />
-        Continue with Google
+        Enter with Google
       </button>
 
       {/* Divider */}

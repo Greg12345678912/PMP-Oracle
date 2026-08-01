@@ -22,11 +22,15 @@ export async function POST() {
     .eq('season_id', season.id)
 
   // Count distinct submitted users for social proof
-  const { count } = await supabase
+  // challenge_rankings has one row per (user, season, position) so we can't use
+  // head: true count — that would count rows, not users (up to 4x inflated).
+  const { data: submittedRows } = await supabase
     .from('challenge_rankings')
-    .select('user_id', { count: 'exact', head: true })
+    .select('user_id')
     .eq('season_id', season.id)
     .eq('is_submitted', true)
 
-  return Response.json({ ok: true, entryNumber: count ?? 1 })
+  const entryNumber = new Set((submittedRows ?? []).map(r => r.user_id as string)).size
+
+  return Response.json({ ok: true, entryNumber })
 }
