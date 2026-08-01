@@ -77,9 +77,9 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, u
           {/* Entry receipt card */}
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl overflow-hidden">
             {/* Entry number — hero row */}
-            <div className="px-5 py-5 border-b border-dashed border-pmp-gray-800 flex items-center justify-between">
+            <div className="px-5 py-6 border-b border-dashed border-pmp-gray-800 flex items-center justify-between">
               <span className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Entry</span>
-              <span className="text-pmp-red font-black text-2xl">
+              <span className="text-pmp-red font-black text-5xl leading-none">
                 #{entryNumber ? entryNumber.toLocaleString() : '—'}
               </span>
             </div>
@@ -95,7 +95,7 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, u
                 <span className="text-pmp-white text-sm font-semibold">September 15</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-pmp-gray-500 text-sm">Prize</span>
+                <span className="text-pmp-gray-500 text-sm">First place</span>
                 <span className="text-pmp-white text-sm font-semibold">$500</span>
               </div>
               <div className="flex items-center justify-between">
@@ -104,6 +104,10 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, u
               </div>
             </div>
           </div>
+
+          <p className="text-pmp-gray-600 text-xs text-center leading-relaxed">
+            Your opinions become your reputation.
+          </p>
 
           {/* Actions */}
           <div className="flex flex-col gap-2.5">
