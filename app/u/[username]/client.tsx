@@ -7,6 +7,7 @@ import type { OraclePosition } from '@/lib/oracle/constants'
 import { PREDICTION_QUESTIONS } from '@/lib/oracle/predictions'
 import type { PredictionRow } from '@/lib/oracle/predictions'
 import type { PositionResult } from '@/lib/oracle/scoring'
+import { ResultsShareCard } from '@/components/oracle/ResultsShareCard'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ interface ProfileClientProps {
   summary: string | null
   rankingPreview: Record<string, RankingPickPreview[]>
   predictions: PredictionRow[]
+  lockDateLabel: string
 }
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
@@ -90,6 +92,7 @@ export function ProfileClient({
   summary,
   rankingPreview,
   predictions,
+  lockDateLabel,
 }: ProfileClientProps) {
   const [activeTab, setActiveTab] = useState<OraclePosition>('QB')
 
@@ -187,7 +190,12 @@ export function ProfileClient({
           </div>
         )}
 
-        {/* ── 5. Rankings preview ── */}
+        {/* ── 5. Share card (if scored and percentile known) ── */}
+        {isScored && overallScore !== null && percentile !== null && (
+          <ResultsShareCard overallScore={overallScore} percentile={percentile} />
+        )}
+
+        {/* ── 6. Rankings preview ── */}
         <div className="flex flex-col gap-4">
           <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
             Rankings
@@ -196,7 +204,7 @@ export function ProfileClient({
           {!isAfterLock ? (
             <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-5 text-center">
               <p className="text-pmp-gray-500 text-sm">
-                Rankings hidden until September 9
+                Rankings hidden until {lockDateLabel}
               </p>
             </div>
           ) : (
@@ -250,7 +258,7 @@ export function ProfileClient({
           )}
         </div>
 
-        {/* ── 6. Predictions ── */}
+        {/* ── 7. Predictions ── */}
         {isAfterLock && predictions.length > 0 && (
           <div className="flex flex-col gap-4">
             <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">

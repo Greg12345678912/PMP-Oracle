@@ -195,8 +195,12 @@ export default async function UserProfilePage({ params }: PageProps) {
 
   // Summary + percentile
   const overallScore = scoreData?.overall_score ?? null
-  const rank = scoreData?.global_rank ?? totalParticipants
-  const percentile = overallScore !== null ? computePercentile(rank, totalParticipants) : null
+  const rank = scoreData?.global_rank ?? null
+  const percentile = overallScore !== null && rank !== null
+    ? computePercentile(rank, totalParticipants)
+    : null
+
+  const lockDateLabel = ORACLE_LOCK_DATE.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
 
   const oracleResult: OracleResult | null =
     isScored && scoreData
@@ -223,6 +227,7 @@ export default async function UserProfilePage({ params }: PageProps) {
       summary={summary}
       rankingPreview={rankingPreview}
       predictions={predictionsData}
+      lockDateLabel={lockDateLabel}
     />
   )
 }
