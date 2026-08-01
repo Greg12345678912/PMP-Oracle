@@ -3,6 +3,30 @@ import type { OraclePosition } from './constants'
 import { ORACLE_POSITIONS, POSITION_LIST_SIZE } from './constants'
 import { getRankings } from './rankings'
 
+// ─── Public result types ────────────────────────────────────────────────────
+
+export interface PlayerScore {
+  playerId: string
+  playerName: string
+  userRank: number
+  actualRank: number | null
+  distance: number | null
+  rawScore: number
+  confidence: string
+  finalPoints: number
+}
+
+export interface PositionResult {
+  position: OraclePosition
+  normalizedScore: number
+  players: PlayerScore[]
+}
+
+export interface OracleResult {
+  overallScore: number
+  positionResults: PositionResult[]
+}
+
 /** Points for a given distance from the correct rank (stepped, 50 → 0). */
 export function scoreRankings(userRank: number, actualRank: number | null): number {
   if (actualRank == null) return 0
@@ -163,4 +187,23 @@ export async function scoreUser(userId: string, seasonId: string): Promise<void>
       )
     }
   }
+}
+
+/**
+ * Generate a one-sentence season summary based on overall accuracy and
+ * best/worst positions.
+ */
+export function generateSummary(results: OracleResult): string {
+  const { positionResults, overallScore } = results
+  const best = positionResults.reduce((a, b) =>
+    a.normalizedScore > b.normalizedScore ? a : b,
+  )
+  const worst = positionResults.reduce((a, b) =>
+    a.normalizedScore < b.normalizedScore ? a : b,
+  )
+  if (overallScore >= 90)
+    return `Exceptional accuracy across every position — you predicted this season as well as almost anyone.`
+  if (overallScore >= 75)
+    return `Strong overall performance. Your best position was ${best.position} (${best.normalizedScore.toFixed(1)}) and you had more room to grow at ${worst.position}.`
+  return `You showed real accuracy at ${best.position} rankings. Heading into next season, ${worst.position} is where there's the most room to improve.`
 }
