@@ -14,10 +14,11 @@ export default async function PlayerPage({
   const { id } = await params
 
   if (new Date() < ORACLE_LOCK_DATE) {
+    const lockLabel = ORACLE_LOCK_DATE.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     return (
       <div className="min-h-[100dvh] bg-pmp-black flex items-center justify-center px-4">
         <p className="text-pmp-gray-500 text-sm text-center">
-          Community rankings are revealed after the season locks on September&nbsp;9, 2026.
+          Community rankings are revealed after the season locks on {lockLabel}.
         </p>
       </div>
     )

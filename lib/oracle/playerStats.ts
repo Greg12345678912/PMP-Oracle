@@ -65,6 +65,10 @@ export async function getPlayerStats(
     ? (playerEntries.find((e) => e.userId === userId)?.playerRank ?? null)
     : null
 
+  const lowPct = Math.round((confidenceCounts.low / total) * 100)
+  const medPct = Math.round((confidenceCounts.medium / total) * 100)
+  const highPct = 100 - lowPct - medPct
+
   return {
     playerName,
     total,
@@ -72,9 +76,9 @@ export async function getPlayerStats(
     mostCommonRank,
     userRank,
     confidenceBreakdown: {
-      low: Math.round((confidenceCounts.low / total) * 100),
-      medium: Math.round((confidenceCounts.medium / total) * 100),
-      high: Math.round((confidenceCounts.high / total) * 100),
+      low: lowPct,
+      medium: medPct,
+      high: highPct,
     },
   }
 }
