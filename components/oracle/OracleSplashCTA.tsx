@@ -3,6 +3,17 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { getBrowserClient } from '@/lib/auth/client'
 
+const EyeIcon = ({ open }: { open: boolean }) => open ? (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+  </svg>
+) : (
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+  </svg>
+)
+
 type Mode = 'signup' | 'signin'
 type View = 'form' | 'check-email'
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
@@ -38,7 +49,10 @@ export function OracleSplashCTA() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Tracks intentional button clicks — prevents iOS autofill from auto-submitting
+  const submitIntentRef = useRef(false)
 
   useEffect(() => {
     if (mode !== 'signup') return
@@ -71,6 +85,9 @@ export function OracleSplashCTA() {
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Block iOS autofill auto-submit — only proceed when the user clicked the button
+    if (!submitIntentRef.current) return
+    submitIntentRef.current = false
     if (mode === 'signup' && usernameStatus !== 'available') return
     setLoading(true)
     setError(null)
@@ -192,19 +209,30 @@ export function OracleSplashCTA() {
           autoComplete="email"
           className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white rounded-xl px-4 py-3.5 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-red transition-colors"
         />
-        <input
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          placeholder="Password"
-          required
-          autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-          minLength={6}
-          className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white rounded-xl px-4 py-3.5 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-red transition-colors"
-        />
+        <div className="relative">
+          <input
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+            minLength={6}
+            className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white rounded-xl px-4 pr-11 py-3.5 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-red transition-colors"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(v => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-pmp-gray-500 hover:text-pmp-gray-300 transition-colors p-1"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+          >
+            <EyeIcon open={showPassword} />
+          </button>
+        </div>
         {typeof error === 'string' && error && <p className="text-pmp-red text-xs">{error}</p>}
         <button
           type="submit"
+          onClick={() => { submitIntentRef.current = true }}
           disabled={loading || !canSubmit}
           className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-2xl text-base hover:opacity-90 transition-opacity disabled:opacity-50 active:scale-[0.98]"
         >
