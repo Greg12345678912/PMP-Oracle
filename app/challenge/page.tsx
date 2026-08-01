@@ -139,7 +139,7 @@ export default async function ChallengePage() {
                   Predictions
                 </p>
                 <p className="text-pmp-gray-600 text-xs">
-                  {predictionCount > 0 ? `${predictionCount} / 8 answered` : '8 questions · season props'}
+                  {predictionCount > 0 ? `${predictionCount} / 8 answered` : '8 season questions'}
                 </p>
               </div>
               {!locked && <span className="text-pmp-red text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
@@ -196,9 +196,15 @@ export default async function ChallengePage() {
         )}
         {locked && (
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 text-center">
-            <p className="text-pmp-white font-bold text-base">Rankings Locked</p>
+            <p className="text-pmp-white font-bold text-base">
+              {season?.status === 'scored' ? 'Season Complete' : isSubmitted ? "You're Locked In" : 'Entry Closed'}
+            </p>
             <p className="text-pmp-gray-600 text-xs mt-1">
-              {season?.status === 'scored' ? 'Season complete — results available' : 'Locked until the 2026 season ends'}
+              {season?.status === 'scored'
+                ? 'Results are available'
+                : isSubmitted
+                  ? 'Your picks are locked. First scoring update arrives September 15.'
+                  : 'The entry window has closed for the 2026 season.'}
             </p>
           </div>
         )}

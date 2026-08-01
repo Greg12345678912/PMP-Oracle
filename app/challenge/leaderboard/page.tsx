@@ -134,7 +134,7 @@ export default async function LeaderboardPage() {
                 : (entryCount === 1 ? 'entry so far' : 'entries so far')}
             </p>
             <p className="text-pmp-gray-600 text-xs mt-2">
-              Accuracy leaderboard unlocks after the 2026 season
+              Leaderboard scores reveal after Week 18. Will you hold the top spot?
             </p>
           </div>
         )}
@@ -142,7 +142,7 @@ export default async function LeaderboardPage() {
         {/* Recent entrants */}
         {uniqueEntries.length > 0 && (
           <div className="flex flex-col gap-3">
-            <h2 className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Recently Entered</h2>
+            <h2 className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Your Competition</h2>
             <div className="flex flex-col gap-2">
               {uniqueEntries.map((entry) => {
                 const profile = recentProfileMap.get(entry.user_id as string)

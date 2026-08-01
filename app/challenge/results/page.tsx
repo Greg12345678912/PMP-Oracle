@@ -51,15 +51,15 @@ function HoldingPage() {
       <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">
         2026 Oracle Challenge
       </p>
-      <h1 className="text-pmp-white font-bold text-2xl">Results coming in January</h1>
+      <h1 className="text-pmp-white font-bold text-2xl">First scores drop September 15.</h1>
       <p className="text-pmp-gray-500 text-sm">
-        The season isn&apos;t over yet. Check back after the NFL regular season ends.
+        After Week 1, your picks start earning points. Come back September 15 to see where you stand.
       </p>
       <Link
         href="/challenge/rankings"
         className="text-pmp-red text-sm font-semibold hover:opacity-80"
       >
-        View my rankings →
+        See my picks →
       </Link>
     </div>
   )

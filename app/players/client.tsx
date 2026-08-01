@@ -122,7 +122,7 @@ export function PlayersClient({ playersByPosition, isPostLock }: PlayersClientPr
           {/* Most Ranked section */}
           <div className="px-4 pt-6">
             <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest mb-3">
-              {isPostLock ? 'Most Ranked' : 'Top ADP'}
+              {isPostLock ? 'Most Ranked' : 'Consensus Top Picks'}
             </p>
             <div className="flex flex-col gap-2">
               {topPicks.map(p => <PlayerCard key={p.id} player={p} />)}

@@ -68,7 +68,7 @@ export function RankingsClient({
     async (position: OraclePosition, rows: RankingRow[]) => {
       if (!isSignedIn) {
         // RankingList already wrote to localStorage — show profile gate instead of
-        // immediately redirecting. User clicks "Continue with Google" from there.
+        // immediately redirecting. User clicks "Enter with Google" from there.
         setShowProfileGate(true)
         return
       }
