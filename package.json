@@ -15,6 +15,7 @@
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
     "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
     "geist": "^1.7.2",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",

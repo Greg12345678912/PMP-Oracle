@@ -5,6 +5,7 @@ import { ORACLE_LOCK_DATE } from '@/lib/oracle/constants'
 
 // POST /api/oracle/rankings/enter
 // Sets is_submitted = true for all challenge_rankings rows for user + current season
+// Returns entryNumber — total submitted entries after this user's (for social proof display)
 export async function POST() {
   const session = await getSession()
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -20,5 +21,12 @@ export async function POST() {
     .eq('user_id', session.user.id)
     .eq('season_id', season.id)
 
-  return Response.json({ ok: true })
+  // Count distinct submitted users for social proof
+  const { count } = await supabase
+    .from('challenge_rankings')
+    .select('user_id', { count: 'exact', head: true })
+    .eq('season_id', season.id)
+    .eq('is_submitted', true)
+
+  return Response.json({ ok: true, entryNumber: count ?? 1 })
 }

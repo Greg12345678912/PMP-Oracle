@@ -1,9 +1,8 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
-import { getBrowserClient } from '@/lib/auth/client'
 import { RankingList } from '@/components/oracle/RankingList'
-import { SignInButton } from '@/components/oracle/SignInButton'
+import { ProfileGate } from '@/components/oracle/ProfileGate'
 import type { RankingRow } from '@/lib/oracle/rankings'
 import type { Player } from '@/lib/data/types'
 import type { OraclePosition } from '@/lib/oracle/constants'
@@ -28,23 +27,20 @@ export function RankingsClient({
   isSignedIn,
 }: RankingsClientProps) {
   const [activePosition, setActivePosition] = useState<OraclePosition>('QB')
-
   const [savedPositions, setSavedPositions] = useState<Set<OraclePosition>>(
     () => new Set(ORACLE_POSITIONS.filter(p => (initialRankings[p]?.length ?? 0) > 0))
   )
   const [nudge, setNudge] = useState<string | null>(null)
+  const [showProfileGate, setShowProfileGate] = useState(false)
 
   /**
-   * On sign-in return: if `?synced=1` is NOT in the URL, upload any
-   * localStorage drafts to the DB then redirect to strip the query param.
-   * This runs once when isSignedIn becomes true client-side.
+   * On sign-in return: upload any localStorage drafts to the DB.
    */
   useEffect(() => {
     if (!isSignedIn || typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     if (params.get('synced') === '1') return
 
-    // Upload any drafts that exist in localStorage
     void (async () => {
       for (const pos of ORACLE_POSITIONS) {
         try {
@@ -62,30 +58,18 @@ export function RankingsClient({
           // best-effort
         }
       }
-      // Mark as synced so we don't repeat on re-render
       const url = new URL(window.location.href)
       url.searchParams.set('synced', '1')
       window.history.replaceState(null, '', url.toString())
     })()
   }, [isSignedIn])
 
-  /**
-   * Called by RankingList's CTA.
-   * - Signed in: PUT to API immediately.
-   * - Anonymous: persist to localStorage (already done by RankingList), then
-   *   redirect to Google OAuth so on return `useEffect` above picks it up.
-   */
   const handleSave = useCallback(
     async (position: OraclePosition, rows: RankingRow[]) => {
       if (!isSignedIn) {
-        // RankingList already wrote to localStorage. Trigger sign-in.
-        const supabase = getBrowserClient()
-        await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/challenge/rankings')}`,
-          },
-        })
+        // RankingList already wrote to localStorage — show profile gate instead of
+        // immediately redirecting. User clicks "Continue with Google" from there.
+        setShowProfileGate(true)
         return
       }
       const res = await fetch('/api/oracle/rankings', {
@@ -113,7 +97,14 @@ export function RankingsClient({
 
   return (
     <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
-      {/* Page header */}
+      {showProfileGate && (
+        <ProfileGate
+          redirectTo="/challenge/rankings"
+          onDismiss={() => setShowProfileGate(false)}
+        />
+      )}
+
+      {/* Page header — no sign-in button, let people build freely */}
       <div className="px-4 pt-6 pb-4 border-b border-pmp-gray-800 flex items-center justify-between shrink-0">
         <div>
           <h1 className="text-pmp-white font-bold text-lg">My Rankings</h1>
@@ -121,13 +112,12 @@ export function RankingsClient({
             PPR · 2026 Oracle Challenge
           </p>
         </div>
-        {!isSignedIn && !locked && (
-          <SignInButton
-            label="Sign in"
-            redirectTo="/challenge/rankings"
-            className="text-xs py-2 px-3"
-          />
-        )}
+        <Link
+          href="/challenge"
+          className="text-pmp-gray-600 text-xs hover:text-pmp-gray-400 transition-colors"
+        >
+          &larr; Challenge
+        </Link>
       </div>
 
       {/* Position tabs */}
@@ -187,7 +177,7 @@ export function RankingsClient({
         </div>
       )}
 
-      {/* Scrollable ranking area for the active position */}
+      {/* Scrollable ranking area */}
       <div className="flex-1 overflow-y-auto px-4 py-5">
         <RankingList
           key={activePosition}
@@ -200,7 +190,7 @@ export function RankingsClient({
         />
       </div>
 
-      {/* Review & Enter CTA — shown when at least 1 position is saved and not locked */}
+      {/* Review & Enter CTA */}
       {!locked && savedPositions.size >= 1 && (
         <div className="px-4 py-4 border-t border-pmp-gray-800 shrink-0">
           <Link

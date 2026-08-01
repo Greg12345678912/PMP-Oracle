@@ -49,9 +49,12 @@ export default async function ChallengePage() {
           >
             {season && isLocked(season) ? 'View My Rankings' : 'Build My Rankings'}
           </Link>
-          <span className="w-full bg-pmp-gray-900 border border-pmp-gray-800 text-pmp-gray-600 font-medium py-3 rounded-xl text-sm text-center opacity-50 cursor-not-allowed select-none block">
-            Season Predictions — Coming Soon
-          </span>
+          <Link
+            href="/challenge/leaderboard"
+            className="w-full bg-pmp-gray-900 border border-pmp-gray-800 text-pmp-gray-400 font-medium py-3 rounded-xl text-sm text-center hover:border-pmp-gray-600 hover:text-pmp-white transition-colors block"
+          >
+            View Leaderboard
+          </Link>
         </div>
 
         <p className="text-pmp-gray-600 text-xs">

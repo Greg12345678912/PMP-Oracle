@@ -15,6 +15,7 @@ interface ReviewClientProps {
 export function ReviewClient({ rankings, locked, isSubmitted, predictionCount }: ReviewClientProps) {
   const [entering, setEntering] = useState(false)
   const [entered, setEntered] = useState(isSubmitted)
+  const [entryNumber, setEntryNumber] = useState<number | null>(null)
   const [showWarning, setShowWarning] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,6 +36,8 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount }:
         const { error: err } = await res.json().catch(() => ({ error: 'Failed to enter' }))
         throw new Error(err)
       }
+      const data = await res.json().catch(() => ({}))
+      setEntryNumber((data as { entryNumber?: number }).entryNumber ?? null)
       setEntered(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong')
@@ -50,17 +53,20 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount }:
         <div className="flex flex-col gap-3">
           <p className="text-4xl">🎉</p>
           <h1 className="text-pmp-white font-bold text-2xl">You&apos;re officially entered.</h1>
+          {entryNumber && (
+            <p className="text-pmp-red font-bold text-lg">Entry #{entryNumber.toLocaleString()}</p>
+          )}
           <p className="text-pmp-gray-500 text-sm">
-            Your rankings are saved for the 2026 Oracle Challenge.<br />
+            Your rankings are locked in for the 2026 Oracle Challenge.<br />
             You can edit them until September 9 at kickoff.
           </p>
         </div>
         <div className="flex flex-col gap-3 w-full max-w-xs">
-          <Link href="/challenge/rankings" className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:border-pmp-gray-500 transition-colors">
-            Edit My Rankings
+          <Link href="/challenge/leaderboard" className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:border-pmp-gray-500 transition-colors">
+            View Leaderboard →
           </Link>
-          <Link href="/challenge" className="text-pmp-gray-600 text-sm text-center hover:text-pmp-gray-500 transition-colors">
-            Back to Oracle Challenge
+          <Link href="/challenge/rankings" className="text-pmp-gray-600 text-sm text-center hover:text-pmp-gray-500 transition-colors">
+            Edit My Rankings
           </Link>
         </div>
       </div>
