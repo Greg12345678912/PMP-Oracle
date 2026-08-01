@@ -25,7 +25,7 @@ interface UserProfileRow {
   is_verified: boolean
   is_creator: boolean
   avatar_url: string | null
-  oracle_score: number | null
+  oracle_score?: number | null
   accuracy_rating: number | null
 }
 
@@ -85,7 +85,7 @@ export default async function UserProfilePage({ params }: PageProps) {
 
   const { data: profileData } = await db
     .from('user_profiles')
-    .select('user_id, username, display_name, is_public, is_verified, is_creator, avatar_url, oracle_score, accuracy_rating')
+    .select('user_id, username, display_name, is_public, is_verified, is_creator, avatar_url, accuracy_rating')
     .eq('username', username)
     .maybeSingle()
 
