@@ -138,12 +138,12 @@ export function LiveDraftBoard({
       {/* Turn banner */}
       <div className="bg-pmp-red px-4 py-2.5 flex items-center justify-center shrink-0">
         {isMyTurn ? (
-          <p className="text-white font-bold text-sm tracking-wide text-center">
+          <p className="text-pmp-white font-bold text-sm tracking-wide text-center">
             {isPicking ? 'Submitting...' : 'Your pick — select a player'}
           </p>
         ) : (
-          <p className="text-white/80 text-sm text-center">
-            Waiting for <span className="font-bold text-white">{currentPickerName}</span>
+          <p className="text-pmp-white/80 text-sm text-center">
+            Waiting for <span className="font-bold text-pmp-white">{currentPickerName}</span>
           </p>
         )}
       </div>
@@ -159,7 +159,7 @@ export function LiveDraftBoard({
             key={z}
             onClick={() => setZoom(z)}
             className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-              zoom === z ? 'bg-pmp-red text-white' : 'text-pmp-gray-500 hover:text-pmp-white'
+              zoom === z ? 'bg-pmp-red text-pmp-white' : 'text-pmp-gray-500 hover:text-pmp-white'
             }`}
           >
             {z.charAt(0).toUpperCase() + z.slice(1)}
@@ -172,7 +172,7 @@ export function LiveDraftBoard({
               key={m.id}
               className={`text-[10px] px-1.5 py-0.5 rounded ${
                 m.teamSlot === currentPick?.currentOwnerTeamSlot
-                  ? 'bg-pmp-red text-white font-bold'
+                  ? 'bg-pmp-red text-pmp-white font-bold'
                   : 'text-pmp-gray-600'
               }`}
             >

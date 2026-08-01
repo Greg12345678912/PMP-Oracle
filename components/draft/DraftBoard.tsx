@@ -207,13 +207,13 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
           {state.status === 'paused' && (
             <div className="bg-pmp-red px-4 py-3 flex items-center justify-center shrink-0">
               {isUserTurn ? (
-                <p className="text-white font-bold text-base tracking-wide text-center">
+                <p className="text-pmp-white font-bold text-base tracking-wide text-center">
                   Your pick — select a player from the left panel
                 </p>
               ) : (
                 <button
                   onClick={handleContinueDraft}
-                  className="text-white font-bold text-lg tracking-wide w-full text-center"
+                  className="text-pmp-white font-bold text-lg tracking-wide w-full text-center"
                 >
                   ▶ Continue Draft
                 </button>
@@ -242,7 +242,7 @@ export function DraftBoard({ settings, players, initialState, ownershipMap }: Dr
                 key={z}
                 onClick={() => setZoom(z)}
                 className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                  zoom === z ? 'bg-pmp-red text-white' : 'text-pmp-gray-500 hover:text-pmp-white'
+                  zoom === z ? 'bg-pmp-red text-pmp-white' : 'text-pmp-gray-500 hover:text-pmp-white'
                 }`}
               >
                 {z.charAt(0).toUpperCase() + z.slice(1)}

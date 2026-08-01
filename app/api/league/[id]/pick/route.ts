@@ -160,7 +160,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       const cpuPayload: PickMadePayload = {
         overallPick: nextPick.overallPick,
         playerId: bestPlayerId,
-        playerName: bestPlayerId,
+        playerName: '',
         teamSlot: nextPick.currentOwnerTeamSlot,
         requestId: crypto.randomUUID(),
         state: cpuState,
