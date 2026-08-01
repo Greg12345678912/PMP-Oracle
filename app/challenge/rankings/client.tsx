@@ -48,12 +48,18 @@ export function RankingsClient({
           if (!raw) continue
           const rows: RankingRow[] = JSON.parse(raw)
           if (!rows.length) continue
-          await fetch('/api/oracle/rankings', {
+          // Truncate to current maxSize before syncing — prevents validation errors
+          // when list size constants have changed since draft was saved
+          const truncated = rows.slice(0, POSITION_LIST_SIZE[pos])
+          const res = await fetch('/api/oracle/rankings', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ position: pos, rankings: rows }),
+            body: JSON.stringify({ position: pos, rankings: truncated }),
           })
-          localStorage.removeItem(draftKey(pos))
+          // Only clear localStorage if the save actually succeeded
+          if (res.ok) {
+            localStorage.removeItem(draftKey(pos))
+          }
         } catch {
           // best-effort
         }
