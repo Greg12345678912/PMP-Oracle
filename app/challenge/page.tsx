@@ -71,6 +71,9 @@ export default async function ChallengePage() {
     pos => rankingCounts[pos] >= POSITION_LIST_SIZE[pos],
   )
   const allComplete = completedPositions.length === 4
+  const totalRanked = ORACLE_POSITIONS.reduce((sum, pos) => sum + rankingCounts[pos], 0)
+  const totalPossible = Object.values(POSITION_LIST_SIZE).reduce((a, b) => a + b, 0) // 60
+  const pctComplete = Math.round((totalRanked / totalPossible) * 100)
 
   /* ─── Signed-in dashboard ─────────────────────────────────────────── */
   if (session) {
@@ -83,7 +86,13 @@ export default async function ChallengePage() {
           <h1 className="text-pmp-white font-bold text-2xl">
             Welcome back, {firstName}.
           </h1>
-          <p className="text-pmp-gray-600 text-sm mt-0.5">2026 Oracle Challenge</p>
+          {isSubmitted ? (
+            <p className="text-pmp-red text-sm font-semibold mt-0.5">Officially entered · {totalRanked} / {totalPossible} players ranked</p>
+          ) : totalRanked > 0 ? (
+            <p className="text-pmp-gray-400 text-sm mt-0.5">{totalRanked} / {totalPossible} players ranked · {pctComplete}% complete</p>
+          ) : (
+            <p className="text-pmp-gray-600 text-sm mt-0.5">Your Oracle entry is 0% complete</p>
+          )}
         </div>
 
         {/* Entry checklist */}

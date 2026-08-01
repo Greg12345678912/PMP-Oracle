@@ -116,16 +116,10 @@ export default async function LeaderboardPage() {
       <div className="px-4 py-6 max-w-md mx-auto w-full flex flex-col gap-6">
         {/* Hero: entry count */}
         {entryCount === 0 ? (
-          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-6 py-10 flex flex-col items-center gap-3 text-center">
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-6 py-10 flex flex-col items-center gap-2 text-center">
             <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge</p>
             <p className="text-pmp-white font-bold text-xl">No one has entered yet.</p>
-            <p className="text-pmp-gray-500 text-sm">Be the first. Be Entry #1.</p>
-            <a
-              href="/challenge/rankings"
-              className="mt-2 bg-pmp-red text-pmp-white font-bold py-3 px-6 rounded-xl text-sm hover:opacity-90 transition-opacity"
-            >
-              Enter Oracle Challenge
-            </a>
+            <p className="text-pmp-gray-500 text-sm">Be Entry #1.</p>
           </div>
         ) : (
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-6 py-8 flex flex-col items-center gap-2 text-center">

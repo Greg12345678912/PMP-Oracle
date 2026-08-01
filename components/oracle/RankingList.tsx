@@ -211,15 +211,22 @@ export function RankingList({
               />
             ))}
 
-            {/* Empty-slot placeholder */}
-            {rows.length < maxSize && !locked && (
-              <div className="flex items-center gap-2 rounded-lg px-4 py-3 border border-dashed border-pmp-gray-700 text-pmp-gray-600 text-sm">
-                <span className="text-pmp-gray-600 text-xs font-bold w-5 text-right">
-                  {rows.length + 1}
+            {/* Empty-slot placeholders — show next 3 (or remaining if fewer) */}
+            {!locked && Array.from({
+              length: Math.min(3, maxSize - rows.length),
+            }).map((_, i) => (
+              <div
+                key={`empty-${rows.length + i}`}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 border border-dashed border-pmp-gray-800"
+              >
+                <span className="text-pmp-gray-700 text-xs font-black w-5 text-right shrink-0">
+                  {rows.length + i + 1}
                 </span>
-                <span className="pl-2">Add a player below…</span>
+                <span className="text-pmp-gray-700 text-sm pl-1">
+                  {i === 0 ? 'Tap a player below to add' : '—'}
+                </span>
               </div>
-            )}
+            ))}
           </div>
         </SortableContext>
       </DndContext>
@@ -227,34 +234,32 @@ export function RankingList({
       {/* Player pool — hidden when full or locked */}
       {!locked && rows.length < maxSize && (
         <div className="flex flex-col gap-3">
-          {/* Popular players — shown when not actively searching */}
+          {/* Popular players — secondary suggestion, shown when not searching */}
           {search.length === 0 && (
-            <div className="flex flex-col gap-2">
-              <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
+            <div className="flex flex-col gap-1.5">
+              <p className="text-pmp-gray-700 text-[10px] font-bold uppercase tracking-widest">
                 Popular {position}s
               </p>
-              <div className="flex flex-col gap-1">
-                {players
-                  .filter(p => !rankedIds.has(p.id))
-                  .slice(0, 10)
-                  .map(player => (
-                    <button
-                      key={player.id}
-                      onClick={() => addPlayer(player)}
-                      className="flex items-center gap-3 px-4 py-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl text-left hover:border-pmp-gray-600 active:bg-pmp-gray-800 transition-colors min-h-[48px]"
-                    >
-                      <span className="text-pmp-white text-sm font-medium flex-1">{player.name}</span>
-                      <span className="text-pmp-gray-600 text-xs">{player.team}</span>
-                      <span className="text-pmp-red text-lg leading-none">+</span>
-                    </button>
-                  ))}
-              </div>
+              {players
+                .filter(p => !rankedIds.has(p.id))
+                .slice(0, 8)
+                .map(player => (
+                  <button
+                    key={player.id}
+                    onClick={() => addPlayer(player)}
+                    className="flex items-center gap-3 px-3 py-2.5 bg-pmp-gray-900/60 border border-pmp-gray-800/60 rounded-lg text-left hover:border-pmp-gray-700 hover:bg-pmp-gray-900 active:bg-pmp-gray-800 transition-colors min-h-[44px]"
+                  >
+                    <span className="text-pmp-gray-400 text-sm flex-1">{player.name}</span>
+                    <span className="text-pmp-gray-600 text-xs">{player.team}</span>
+                    <span className="text-pmp-gray-600 text-base leading-none">+</span>
+                  </button>
+                ))}
             </div>
           )}
 
           {/* Search */}
           <div className="flex flex-col gap-2">
-            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
+            <p className="text-pmp-gray-700 text-[10px] font-bold uppercase tracking-widest">
               Search Everyone
             </p>
             <input

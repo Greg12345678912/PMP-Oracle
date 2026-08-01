@@ -19,16 +19,26 @@ export default async function PlayerPage({
 
     // Find player info from the pool
     const pools = await Promise.all(ORACLE_POSITIONS.map(pos => getPlayerPool(pos)))
-    const player = pools.flat().find(p => p.id === id)
+    const allPlayers = pools.flat()
+    const player = allPlayers.find(p => p.id === id)
+
+    // Position rank = index in position-filtered pool + 1
+    const posPool = pools[ORACLE_POSITIONS.indexOf((player?.position as typeof ORACLE_POSITIONS[number]) ?? 'QB')] ?? []
+    const posRank = posPool.findIndex(p => p.id === id) + 1
 
     return (
       <div className="px-4 py-8 max-w-md mx-auto flex flex-col gap-6">
         {/* Player identity */}
-        <div className="flex flex-col gap-1">
-          <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">
+        <div className="flex flex-col gap-1.5">
+          <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
             {player?.position ?? 'Player'} · {player?.team ?? ''}
           </p>
-          <h1 className="text-pmp-white font-bold text-2xl">{player?.name ?? id}</h1>
+          <h1 className="text-pmp-white font-bold text-3xl">{player?.name ?? id}</h1>
+          {posRank > 0 && (
+            <p className="text-pmp-red text-sm font-semibold">
+              #{posRank} {player?.position} · Current ADP
+            </p>
+          )}
         </div>
 
         {/* Lock teaser card */}
