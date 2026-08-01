@@ -9,7 +9,7 @@ interface OracleNavProps {
 }
 
 const TABS = [
-  { key: 'feed',        label: 'Feed',        icon: '⚡',  href: '/challenge' },
+  { key: 'feed',        label: 'Dashboard',   icon: '🏠',  href: '/challenge' },
   { key: 'players',    label: 'Players',     icon: '🔍',  href: '/players' },
   { key: 'leaderboard',label: 'Leaderboard', icon: '🏅',  href: '/challenge/leaderboard' },
   { key: 'results',    label: 'Results',     icon: '📈',  href: '/challenge/results' },
