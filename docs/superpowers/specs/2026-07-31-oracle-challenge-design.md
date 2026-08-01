@@ -575,3 +575,88 @@ Followed by:
 This page is the end of the submission funnel — it should keep users engaged rather than ending the session. Design it like a reward screen, not a receipt.
 
 **Not in V2.** Build the lock confirmation as a simple success state first. Upgrade to the celebration page in V3 alongside leaderboards and community features.
+
+---
+
+## Rankings UX Flow (Build → Save → Review → Submit)
+
+The ranking experience follows a 4-step mental model:
+
+**Build** → drag players into your top N for each position
+**Save** → auto-saved to localStorage (anonymous) or DB (signed in); "Last saved at 9:42 PM" persists
+**Review** → `/challenge/rankings/review` — see all 4 positions + predictions before submitting
+**Submit** → explicit CTA "Submit to Oracle Challenge"; sets `is_submitted = true`; note: "You can edit until September 9 at kickoff"
+
+### Completion Tracker
+
+Shown on the rankings page at all times:
+```
+Your Progress
+✅ QB (10/10)
+☐ RB (0/20)
+☐ WR (0/20)
+☐ TE (0/10)
+1 of 4 complete
+
+[Enter Oracle Challenge →]
+```
+CTA appears as long as ≥1 position has rankings. Links to `/challenge/rankings/review`.
+
+### Persistent Save State
+
+The "Save Rankings" button shows:
+- `Save Rankings` — default
+- `Saving…` — while in flight
+- `✅ Saved at 9:42 PM` — persists until next edit; never auto-disappears
+
+### DB change required
+
+Add `is_submitted boolean not null default false` to `challenge_rankings`. Applied via migration. The submission flag is set when the user hits "Submit to Oracle Challenge" on the review page. It does NOT lock editing — that's still controlled by `ORACLE_LOCK_DATE`.
+
+### Review Page (`/challenge/rankings/review`)
+
+Shows:
+- All 4 positions with player count and first few names
+- Predictions section (Phase 3 — shows "No predictions yet" if Phase 3 not built)
+- Note: "You can continue editing until September 9 at kickoff. After that, rankings lock permanently."
+- CTA: **"Enter the Oracle Challenge"** — POST to a submit API route that sets `is_submitted = true` for all rankings
+- Post-entry confirmation message: **"🎉 You're officially entered."**
+- If already entered: shows "✅ You're in the 2026 Oracle Challenge" + edit/share links
+
+### Review Page Visual Design (pre-flight checklist)
+
+```
+2026 Oracle Challenge
+Review your entry before entering.
+
+✅ QB Rankings (10/10)
+✅ RB Rankings (20/20)
+✅ WR Rankings (20/20)
+⏳ TE Rankings (0/10) — incomplete
+   [Complete TE →]
+
+⏳ Predictions — Phase 3
+
+────────────────────
+
+You can continue editing until
+September 9 at kickoff.
+
+[ Enter the Oracle Challenge ]
+```
+
+### Incomplete Entry Warning (non-blocking)
+
+If the user clicks "Enter the Oracle Challenge" with any incomplete positions, show an inline warning — do NOT block entry:
+
+```
+⚠️ You're entering without TE rankings.
+You can still compete, but you'll score 0 points for that position
+unless you complete it before September 9 at kickoff.
+
+[ Go Back ]  [ Enter Anyway ]
+```
+
+### Final mental model
+
+Build → Save → Review → Enter → Locked → Results
