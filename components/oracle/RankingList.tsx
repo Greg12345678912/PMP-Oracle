@@ -67,11 +67,13 @@ export function RankingList({
 }: RankingListProps) {
   const maxSize = POSITION_LIST_SIZE[position]
 
-  /** Seed rows: prefer localStorage draft (anonymous) over server rows */
+  /** Seed rows: prefer localStorage draft (anonymous) over server rows.
+   *  Always truncate to maxSize in case the limit was reduced after saving. */
   const [rows, setRows] = useState<RankingRow[]>(() => {
-    if (typeof window === 'undefined') return initialRows
+    if (typeof window === 'undefined') return initialRows.slice(0, maxSize)
     const draft = readDraft(position)
-    return draft && draft.length > 0 ? draft : initialRows
+    const source = draft && draft.length > 0 ? draft : initialRows
+    return source.slice(0, maxSize)
   })
 
   const [search, setSearch] = useState('')
