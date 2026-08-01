@@ -160,9 +160,13 @@ export function OracleSplashCTA() {
             <input
               type="text"
               value={username}
-              onChange={e => setUsername(e.target.value.toLowerCase())}
+              onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
               placeholder="Username"
               required
+              maxLength={20}
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
               autoComplete="username"
               className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white rounded-xl px-4 py-3.5 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-red transition-colors"
             />

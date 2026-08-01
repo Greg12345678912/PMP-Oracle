@@ -77,6 +77,7 @@ export function RankingList({
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const rankedIds = new Set(rows.map(r => r.playerId))
 
@@ -146,9 +147,12 @@ export function RankingList({
 
   const handleSave = async () => {
     setSaving(true)
+    setSaveError(null)
     try {
       await onSave(position, rows)
       setLastSavedAt(new Date())
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Save failed — try again')
     } finally {
       setSaving(false)
     }
@@ -307,12 +311,15 @@ export function RankingList({
                     ? 'Save Rankings'
                     : `Save Draft (${rows.length}/${maxSize})`}
             </button>
-            {!isSignedIn && rows.length > 0 && (
+            {saveError && (
+              <p className="text-pmp-red text-xs text-center mt-2">{saveError}</p>
+            )}
+            {!saveError && !isSignedIn && rows.length > 0 && (
               <p className="text-pmp-gray-600 text-xs text-center mt-2">
                 Draft saved locally · Sign in to lock in permanently
               </p>
             )}
-            {isSignedIn && !saving && (
+            {!saveError && isSignedIn && !saving && (
               <p className="text-pmp-gray-600 text-xs text-center mt-2">
                 All rankings lock automatically on Sept 9 at kickoff
               </p>
