@@ -534,3 +534,27 @@ Leaderboard pages added in V3:
 | Lock date | Wednesday, September 9, 2026 — NFL Week 1 opening game kickoff. Live countdown shown throughout preseason. |
 | Username | Both: unique `@handle` (used in URLs, immutable) + `display_name` (shown in UI, changeable). |
 | Admin auth | `is_admin boolean` on `user_profiles`. Grants access to `/admin/*`. Upgrade to role enum if moderators are added later. |
+
+---
+
+## Non-Negotiable Product Rules
+
+These rules are permanent constraints. They cannot be overridden by any task, feature, or admin action (except the technical-issue exception noted below).
+
+1. **Rankings are private until the lock deadline.** No user can see another user's rankings before the lock. Enforced server-side: `GET /api/oracle/rankings/[userId]` returns 403 before lock if requester is not the owner.
+2. **Community aggregates are visible before lock.** `GET /api/oracle/community-stats` returns aggregate data only (e.g. "67% have Chase in their Top 3") — never individual attribution before lock.
+3. **After the lock deadline, public rankings become visible.** Once `now >= ORACLE_LOCK_DATE`, all rankings where `is_public = true` are readable by anyone.
+4. **After the season, rankings and scores remain permanently attached to public profiles.** Scores never disappear from public profiles once posted.
+5. **Users can opt out with `is_public = false`.** They still participate in scoring and community aggregates but their individual rankings and profile are not publicly visible.
+6. **Rankings become immutable after lock.** The API rejects any PUT to `oracle_rankings` once `now >= ORACLE_LOCK_DATE`. The only exception: an admin with a verified technical issue may unlock and re-lock a single user's entry via an audited admin route — this must be logged.
+
+---
+
+## V3+ Backlog (do not build in V2)
+
+- **Leaderboards** — global, position, creator (V3)
+- **In-season projected scores** — "if season ended today" weekly update (V3)
+- **Risers/fallers tracker** — rank movement visualizations (V3)
+- **Accuracy Rating (Elo)** — multi-season reputation score, surfaces after Season 1 (V4)
+- **"Remind me before rankings lock" email** — save-and-remind flow; sign in to get a 48hr warning email before lock deadline (V3)
+- **Shareable prediction card** — pre-season card showing top picks + bold prediction, designed for X / Instagram Stories / Discord (V3). Post-season: results card overlay showing scores.
