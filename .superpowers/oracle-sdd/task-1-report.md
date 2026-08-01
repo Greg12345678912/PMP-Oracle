@@ -79,3 +79,40 @@ npx @next/codemod@canary middleware-to-proxy .
 - TypeScript: clean (0 errors).
 - All exports match the interfaces specified in the brief (`getBrowserClient`, `getServerClient`, `getSession`).
 - Cookie adapter pattern matches `@supabase/ssr` documentation and `next/headers` async `cookies()` API (confirmed compatible with Next.js 16).
+
+---
+
+## Fix: middleware → proxy migration
+
+- Renamed `middleware.ts` → `proxy.ts` using official `@next/codemod@canary middleware-to-proxy`
+- Export function renamed from `middleware` → `proxy`
+- Config matcher export unchanged
+- Build result: **PASS** (✓ Compiled successfully in 2.1s, no middleware deprecation warnings)
+- Deprecation warning resolved: **YES**
+
+### Build Output Summary
+
+```
+▲ Next.js 16.2.11 (Turbopack)
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.1s
+  Running TypeScript ...
+  Finished TypeScript in 2.6s ...
+✓ Generating static pages using 10 workers (13/13) in 2.2s
+
+ƒ Proxy (Middleware)
+```
+
+### Verification
+
+No middleware deprecation warnings in build log. Only pre-existing workspace root warning (unrelated).
+
+### Commit
+
+```
+[feature/multiplayer-m1 b4fd1e3] fix: migrate middleware.ts → proxy.ts per Next.js 16 convention
+ 3 files changed, 106 insertions(+), 1 deletion(-)
+ rename middleware.ts => proxy.ts (93%)
+```
+
+Commit hash: **b4fd1e3**
