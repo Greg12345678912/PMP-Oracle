@@ -98,6 +98,25 @@ export default function HomePage() {
           </h2>
           <div className="flex flex-col gap-3 w-full">
             <Link
+              href="/challenge"
+              className="group flex items-center gap-4 px-5 py-4 rounded-xl bg-pmp-gray-900 border border-pmp-red transition-all duration-200 hover:bg-pmp-gray-800"
+            >
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="text-pmp-white font-semibold text-sm group-hover:text-pmp-red transition-colors">
+                    Oracle Challenge
+                  </p>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-pmp-red bg-pmp-red/10 px-2 py-0.5 rounded-full">
+                    New
+                  </span>
+                </div>
+                <p className="text-pmp-gray-600 text-xs">Rank your top players. Lock in before Sep 9. Win bragging rights.</p>
+              </div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-pmp-red shrink-0">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+            <Link
               href="/league/new"
               className="group flex items-center gap-4 px-5 py-4 rounded-xl bg-pmp-gray-900 border border-pmp-gray-800 hover:border-pmp-red transition-all duration-200"
             >
