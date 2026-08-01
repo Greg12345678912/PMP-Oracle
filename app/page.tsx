@@ -116,22 +116,8 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
-            <Link
-              href="/league/new"
-              className="group flex items-center gap-4 px-5 py-4 rounded-xl bg-pmp-gray-900 border border-pmp-gray-800 hover:border-pmp-red transition-all duration-200"
-            >
-              <div className="flex-1">
-                <p className="text-pmp-white font-semibold text-sm group-hover:text-pmp-red transition-colors">
-                  Mock Draft
-                </p>
-                <p className="text-pmp-gray-600 text-xs mt-0.5">Solo or multiplayer snake draft</p>
-              </div>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-pmp-gray-700 group-hover:text-pmp-red transition-colors shrink-0">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
             <div className="flex gap-2 flex-wrap justify-center">
-              {['Weekly Rankings', 'Trade Analyzer'].map(label => (
+              {['Mock Draft', 'Weekly Rankings', 'Trade Analyzer'].map(label => (
                 <span key={label} className="text-pmp-gray-700 text-xs px-3 py-1 rounded-full border border-pmp-gray-800">
                   {label} — coming soon
                 </span>
