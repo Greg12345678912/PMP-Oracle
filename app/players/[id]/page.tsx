@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation'
 import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason } from '@/lib/oracle/season'
-import { ORACLE_LOCK_DATE } from '@/lib/oracle/constants'
+import { ORACLE_LOCK_DATE, ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import { getPlayerStats } from '@/lib/oracle/playerStats'
+import { getPlayerPool } from '@/lib/oracle/players'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,12 +15,54 @@ export default async function PlayerPage({
   const { id } = await params
 
   if (new Date() < ORACLE_LOCK_DATE) {
-    const lockLabel = ORACLE_LOCK_DATE.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    const lockLabel = ORACLE_LOCK_DATE.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+
+    // Find player info from the pool
+    const pools = await Promise.all(ORACLE_POSITIONS.map(pos => getPlayerPool(pos)))
+    const player = pools.flat().find(p => p.id === id)
+
     return (
-      <div className="min-h-[100dvh] bg-pmp-black flex items-center justify-center px-4">
-        <p className="text-pmp-gray-500 text-sm text-center">
-          Community rankings are revealed after the season locks on {lockLabel}.
-        </p>
+      <div className="px-4 py-8 max-w-md mx-auto flex flex-col gap-6">
+        {/* Player identity */}
+        <div className="flex flex-col gap-1">
+          <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">
+            {player?.position ?? 'Player'} · {player?.team ?? ''}
+          </p>
+          <h1 className="text-pmp-white font-bold text-2xl">{player?.name ?? id}</h1>
+        </div>
+
+        {/* Lock teaser card */}
+        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-6 flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <p className="text-pmp-white font-bold text-base">Community Rankings</p>
+            <p className="text-pmp-gray-500 text-sm">
+              Unlocks {lockLabel} after rankings lock
+            </p>
+          </div>
+          <div className="h-px bg-pmp-gray-800" />
+          <div className="flex flex-col gap-2">
+            <p className="text-pmp-gray-600 text-xs font-bold uppercase tracking-widest">After lock you&apos;ll see</p>
+            {[
+              'Average community rank',
+              'Confidence breakdown',
+              'Rank distribution chart',
+              'Biggest believers vs. biggest fades',
+            ].map(item => (
+              <div key={item} className="flex items-center gap-2">
+                <span className="text-pmp-gray-700 text-sm">·</span>
+                <span className="text-pmp-gray-500 text-sm">{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA to rank this player */}
+        <a
+          href="/challenge/rankings"
+          className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
+        >
+          Rank {player?.name?.split(' ')[1] ?? 'This Player'} Now
+        </a>
       </div>
     )
   }

@@ -3,9 +3,9 @@ import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { getServiceClient } from '@/lib/league/db'
 import { getRankings } from '@/lib/oracle/rankings'
+import { getPredictions } from '@/lib/oracle/predictions'
 import { ORACLE_POSITIONS, ORACLE_LOCK_DATE, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
-import { Countdown } from '@/components/oracle/Countdown'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,10 +23,11 @@ export default async function ChallengePage() {
   let rankingCounts: Record<OraclePosition, number> = { QB: 0, RB: 0, WR: 0, TE: 0 }
   let isSubmitted = false
   let totalEntries = 0
+  let predictionCount = 0
 
   if (session && season) {
     const db = getServiceClient()
-    const [profileResult, submittedResult, entryCountResult, ...rankingResults] =
+    const [profileResult, submittedResult, entryCountResult, predictionRows, ...rankingResults] =
       await Promise.all([
         db
           .from('user_profiles')
@@ -45,12 +46,14 @@ export default async function ChallengePage() {
           .select('user_id', { count: 'exact', head: true })
           .eq('season_id', season.id)
           .eq('is_submitted', true),
+        getPredictions(db, session.user.id, season.id),
         ...ORACLE_POSITIONS.map(pos => getRankings(session.user.id, season.id, pos)),
       ])
 
     displayName = (profileResult.data?.display_name as string | null) ?? null
     isSubmitted = submittedResult.data?.is_submitted === true
     totalEntries = entryCountResult.count ?? 0
+    predictionCount = predictionRows.length
     ORACLE_POSITIONS.forEach((pos, i) => {
       rankingCounts[pos] = rankingResults[i]?.length ?? 0
     })
@@ -83,61 +86,80 @@ export default async function ChallengePage() {
           <p className="text-pmp-gray-600 text-sm mt-0.5">2026 Oracle Challenge</p>
         </div>
 
-        {/* Entry status card */}
+        {/* Entry checklist */}
         <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-pmp-white font-bold text-base">My Entry</p>
-              {isSubmitted ? (
-                <p className="text-pmp-red text-xs font-semibold mt-0.5">Officially entered ✓</p>
-              ) : allComplete ? (
-                <p className="text-yellow-400 text-xs font-semibold mt-0.5">Ready to enter</p>
-              ) : (
-                <p className="text-pmp-gray-600 text-xs mt-0.5">In progress</p>
-              )}
-            </div>
-            <div className="flex gap-1.5">
-              {ORACLE_POSITIONS.map(pos => {
-                const done = rankingCounts[pos] >= POSITION_LIST_SIZE[pos]
-                return (
-                  <div
-                    key={pos}
-                    className={[
-                      'flex flex-col items-center gap-0.5 w-10 py-1.5 rounded-lg',
-                      done ? 'bg-pmp-red/10' : 'bg-pmp-gray-800',
-                    ].join(' ')}
-                  >
-                    <span className="text-[10px] font-bold text-pmp-gray-500">{pos}</span>
-                    <span className="text-sm">{done ? '✓' : '·'}</span>
-                  </div>
-                )
-              })}
+          <p className="text-pmp-white font-bold text-base">Your Entry</p>
+
+          <div className="flex flex-col gap-2">
+            {/* Rankings */}
+            <Link href="/challenge/rankings" className="flex items-center gap-3 py-2 group">
+              <span className="text-lg w-6 text-center shrink-0">
+                {allComplete ? '✅' : completedPositions.length > 0 ? '🔵' : '⬜'}
+              </span>
+              <div className="flex-1">
+                <p className={['text-sm font-semibold', allComplete ? 'text-pmp-white' : 'text-pmp-gray-400'].join(' ')}>
+                  Rankings
+                </p>
+                <p className="text-pmp-gray-600 text-xs">
+                  {allComplete
+                    ? 'QB · RB · WR · TE ✓'
+                    : completedPositions.length > 0
+                      ? `${completedPositions.join(' · ')} done · ${ORACLE_POSITIONS.filter(p => !completedPositions.includes(p)).join(' · ')} remaining`
+                      : 'QB · RB · WR · TE'}
+                </p>
+              </div>
+              {!locked && <span className="text-pmp-red text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Edit →</span>}
+            </Link>
+
+            <div className="h-px bg-pmp-gray-800" />
+
+            {/* Predictions */}
+            <Link href="/challenge/predictions" className="flex items-center gap-3 py-2 group">
+              <span className="text-lg w-6 text-center shrink-0">
+                {predictionCount >= 8 ? '✅' : predictionCount > 0 ? '🔵' : '⬜'}
+              </span>
+              <div className="flex-1">
+                <p className={['text-sm font-semibold', predictionCount > 0 ? 'text-pmp-white' : 'text-pmp-gray-400'].join(' ')}>
+                  Predictions
+                </p>
+                <p className="text-pmp-gray-600 text-xs">
+                  {predictionCount > 0 ? `${predictionCount} / 8 answered` : '8 questions · season props'}
+                </p>
+              </div>
+              {!locked && <span className="text-pmp-red text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                {predictionCount > 0 ? 'Edit →' : 'Add →'}
+              </span>}
+            </Link>
+
+            <div className="h-px bg-pmp-gray-800" />
+
+            {/* Entered */}
+            <div className="flex items-center gap-3 py-2">
+              <span className="text-lg w-6 text-center shrink-0">
+                {isSubmitted ? '✅' : '⬜'}
+              </span>
+              <div className="flex-1">
+                <p className={['text-sm font-semibold', isSubmitted ? 'text-pmp-white' : 'text-pmp-gray-400'].join(' ')}>
+                  Entered
+                </p>
+                <p className="text-pmp-gray-600 text-xs">
+                  {isSubmitted ? 'Officially in the 2026 Oracle Challenge' : 'Submit to officially enter'}
+                </p>
+              </div>
             </div>
           </div>
 
+          {/* CTA */}
           {!locked && (
-            <div className="flex gap-2">
-              <Link
-                href="/challenge/rankings"
-                className="flex-1 bg-pmp-red text-pmp-white font-bold py-2.5 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
-              >
-                {allComplete ? 'Edit Rankings' : 'Continue Building'}
-              </Link>
-              {!isSubmitted && allComplete && (
-                <Link
-                  href="/challenge/rankings/review"
-                  className="flex-1 bg-pmp-gray-800 text-pmp-white font-semibold py-2.5 rounded-xl text-sm text-center hover:bg-pmp-gray-700 transition-colors"
-                >
-                  Review & Enter
-                </Link>
-              )}
-            </div>
+            <Link
+              href={isSubmitted ? '/challenge/rankings' : allComplete ? '/challenge/rankings/review' : '/challenge/rankings'}
+              className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
+            >
+              {isSubmitted ? 'Edit Rankings' : allComplete ? 'Review & Enter' : 'Continue Rankings'}
+            </Link>
           )}
           {locked && isSubmitted && (
-            <Link
-              href="/challenge/rankings"
-              className="w-full bg-pmp-gray-800 text-pmp-white font-semibold py-2.5 rounded-xl text-sm text-center hover:bg-pmp-gray-700 transition-colors"
-            >
+            <Link href="/challenge/rankings" className="w-full bg-pmp-gray-800 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:bg-pmp-gray-700 transition-colors">
               View My Rankings
             </Link>
           )}

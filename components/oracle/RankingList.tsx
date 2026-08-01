@@ -224,51 +224,70 @@ export function RankingList({
         </SortableContext>
       </DndContext>
 
-      {/* Player pool search — hidden when full or locked */}
+      {/* Player pool — hidden when full or locked */}
       {!locked && rows.length < maxSize && (
-        <div className="flex flex-col gap-2">
-          {rows.length === 0 && (
-            <p className="text-pmp-gray-500 text-xs text-center pb-1">
-              Search for a player, then tap to add them. Drag to reorder.
-            </p>
-          )}
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={`Search ${position} players…`}
-            className="bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white rounded-xl px-4 py-3 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-red transition-colors"
-            autoFocus={rows.length === 0}
-          />
-          {search.length > 0 && (
-            <div className="flex flex-col gap-1 max-h-52 overflow-y-auto rounded-xl border border-pmp-gray-800 bg-pmp-gray-900">
-              {filtered.length === 0 ? (
-                <p className="px-4 py-3 text-pmp-gray-600 text-sm">
-                  No players found
-                </p>
-              ) : (
-                filtered.map(player => (
-                  <button
-                    key={player.id}
-                    onClick={() => addPlayer(player)}
-                    className="flex items-center gap-2 px-4 py-3 text-left hover:bg-pmp-gray-800 transition-colors min-h-[44px]"
-                  >
-                    <span className="text-pmp-white text-sm flex-1">
-                      {player.name}
-                    </span>
-                    <span className="text-pmp-gray-500 text-xs">
-                      {player.team}
-                    </span>
-                  </button>
-                ))
-              )}
+        <div className="flex flex-col gap-3">
+          {/* Popular players — shown when not actively searching */}
+          {search.length === 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
+                Popular {position}s
+              </p>
+              <div className="flex flex-col gap-1">
+                {players
+                  .filter(p => !rankedIds.has(p.id))
+                  .slice(0, 10)
+                  .map(player => (
+                    <button
+                      key={player.id}
+                      onClick={() => addPlayer(player)}
+                      className="flex items-center gap-3 px-4 py-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl text-left hover:border-pmp-gray-600 active:bg-pmp-gray-800 transition-colors min-h-[48px]"
+                    >
+                      <span className="text-pmp-white text-sm font-medium flex-1">{player.name}</span>
+                      <span className="text-pmp-gray-600 text-xs">{player.team}</span>
+                      <span className="text-pmp-red text-lg leading-none">+</span>
+                    </button>
+                  ))}
+              </div>
             </div>
           )}
+
+          {/* Search */}
+          <div className="flex flex-col gap-2">
+            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
+              Search Everyone
+            </p>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={`Search ${position} players…`}
+              className="bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white rounded-xl px-4 py-3 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-red transition-colors"
+            />
+            {search.length > 0 && (
+              <div className="flex flex-col gap-1 max-h-52 overflow-y-auto rounded-xl border border-pmp-gray-800 bg-pmp-gray-900">
+                {filtered.length === 0 ? (
+                  <p className="px-4 py-3 text-pmp-gray-600 text-sm">No players found</p>
+                ) : (
+                  filtered.map(player => (
+                    <button
+                      key={player.id}
+                      onClick={() => addPlayer(player)}
+                      className="flex items-center gap-2 px-4 py-3 text-left hover:bg-pmp-gray-800 transition-colors min-h-[44px]"
+                    >
+                      <span className="text-pmp-white text-sm flex-1">{player.name}</span>
+                      <span className="text-pmp-gray-500 text-xs">{player.team}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Sticky Save CTA — fixed to bottom of viewport */}
+      {/* Sticky Save CTA — sits above the persistent nav bar */}
       {!locked && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-3 bg-gradient-to-t from-pmp-black via-pmp-black/95 to-transparent pointer-events-none">
+        <div className="fixed bottom-[calc(52px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-50 px-4 pb-3 pt-3 bg-gradient-to-t from-pmp-black via-pmp-black/95 to-transparent pointer-events-none">
           <div className="pointer-events-auto max-w-xl mx-auto">
             <button
               onClick={handleSave}
