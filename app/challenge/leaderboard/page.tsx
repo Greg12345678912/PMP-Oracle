@@ -5,12 +5,21 @@ import { formatDistanceToNow } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
 
+function RankMovement({ change }: { change: number | null }) {
+  if (change == null || change === 0) return null
+  const up = change > 0
+  return (
+    <span className={['text-xs font-semibold shrink-0', up ? 'text-green-400' : 'text-pmp-red'].join(' ')}>
+      {up ? `▲${change}` : `▼${Math.abs(change)}`}
+    </span>
+  )
+}
+
 export default async function LeaderboardPage() {
   const season = await getCurrentSeason()
   const db = getServiceClient()
 
-  // Count distinct submitted users — challenge_rankings has one row per (user, season, position)
-  // so a head: true count would be inflated by up to 4x. Fetch user_ids and deduplicate.
+  // Count distinct submitted users
   const { data: submittedRows } = await db
     .from('challenge_rankings')
     .select('user_id')
@@ -20,20 +29,33 @@ export default async function LeaderboardPage() {
   const totalEntries = new Set((submittedRows ?? []).map(r => r.user_id as string)).size
 
   const isScored = season?.status === 'scored'
-  const pageLabel = isScored
-    ? 'Leaderboard'
-    : (season && isLocked(season))
-      ? 'Entries'
-      : 'Participants'
+  const locked = season ? isLocked(season) : false
 
-  if (isScored) {
-    // Post-season: show accuracy leaderboard
+  // Check if weekly scoring has started (current_week > 0 on any row)
+  const { data: weekCheck } = season
+    ? await db
+        .from('accuracy_scores')
+        .select('current_week')
+        .eq('season_id', season.id)
+        .gt('current_week', 0)
+        .limit(1)
+    : { data: [] }
+
+  const hasWeeklyScores = (weekCheck ?? []).length > 0
+  const showRankings = isScored || hasWeeklyScores
+
+  if (showRankings) {
     const { data: scores } = await db
       .from('accuracy_scores')
-      .select('user_id, overall_score, global_rank, computed_at')
+      .select('user_id, overall_score, global_rank, rank_change, current_week, computed_at')
       .eq('season_id', season!.id)
       .order('global_rank', { ascending: true })
       .limit(50)
+
+    const currentWeek = (scores ?? []).reduce(
+      (max, s) => Math.max(max, (s.current_week as number) ?? 0),
+      0,
+    )
 
     const userIds = (scores ?? []).map(s => s.user_id as string)
     const { data: profiles } = userIds.length > 0
@@ -46,14 +68,26 @@ export default async function LeaderboardPage() {
       <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
         <div className="px-4 py-6 max-w-md mx-auto w-full flex flex-col gap-6">
           <div className="flex flex-col gap-1">
-            <h1 className="text-pmp-white font-bold text-xl">🏆 2026 Oracle Challenge</h1>
-            <p className="text-pmp-gray-500 text-sm">{(totalEntries ?? 0).toLocaleString()} entries · Final standings</p>
+            <h1 className="text-pmp-white font-bold text-xl">
+              {isScored ? '🏆 2026 Oracle Challenge' : '📊 Weekly Standings'}
+            </h1>
+            <p className="text-pmp-gray-500 text-sm">
+              {isScored
+                ? `${totalEntries.toLocaleString()} entries · Final standings`
+                : `${totalEntries.toLocaleString()} entries · Week ${currentWeek} standings`}
+            </p>
+            {!isScored && (
+              <p className="text-pmp-gray-700 text-xs mt-0.5">
+                Scores are recalculated every week based on season-to-date accuracy
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
             {(scores ?? []).map((score, i) => {
               const profile = profileMap.get(score.user_id as string)
               const rank = (score.global_rank as number) ?? i + 1
+              const rankChange = score.rank_change as number | null
               return (
                 <Link
                   key={score.user_id as string}
@@ -76,9 +110,12 @@ export default async function LeaderboardPage() {
                     <p className="text-pmp-white text-sm font-semibold truncate">{(profile?.display_name as string) ?? 'Anonymous'}</p>
                     {profile?.username && <p className="text-pmp-gray-600 text-xs">@{profile.username as string}</p>}
                   </div>
-                  <span className="text-pmp-white font-bold text-sm shrink-0">
-                    {typeof score.overall_score === 'number' ? (score.overall_score as number).toFixed(1) : '—'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <RankMovement change={rankChange} />
+                    <span className="text-pmp-white font-bold text-sm shrink-0">
+                      {typeof score.overall_score === 'number' ? (score.overall_score as number).toFixed(1) : '—'}
+                    </span>
+                  </div>
                 </Link>
               )
             })}
@@ -88,7 +125,7 @@ export default async function LeaderboardPage() {
     )
   }
 
-  // Pre-season / post-lock: show entry count + recent entrants
+  // Pre-scoring: show entry count + recent entrants
   const { data: recentEntries } = await db
     .from('challenge_rankings')
     .select('user_id, updated_at')
@@ -104,7 +141,6 @@ export default async function LeaderboardPage() {
 
   const recentProfileMap = new Map((recentProfiles ?? []).map(p => [p.user_id as string, p]))
 
-  // Deduplicate to one entry per user (keep most recent)
   const seen = new Set<string>()
   const uniqueEntries = (recentEntries ?? []).filter(e => {
     if (seen.has(e.user_id as string)) return false
@@ -112,13 +148,12 @@ export default async function LeaderboardPage() {
     return true
   })
 
-  const entryCount = totalEntries ?? 0
+  const pageLabel = locked ? 'Entries' : 'Participants'
 
   return (
     <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
       <div className="px-4 py-6 max-w-md mx-auto w-full flex flex-col gap-6">
-        {/* Hero: entry count */}
-        {entryCount === 0 ? (
+        {totalEntries === 0 ? (
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-6 py-10 flex flex-col items-center gap-2 text-center">
             <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge</p>
             <p className="text-pmp-white font-bold text-xl">No one has entered yet.</p>
@@ -127,19 +162,20 @@ export default async function LeaderboardPage() {
         ) : (
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-6 py-8 flex flex-col items-center gap-2 text-center">
             <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge</p>
-            <p className="text-pmp-white text-5xl font-black">{entryCount.toLocaleString()}</p>
+            <p className="text-pmp-white text-5xl font-black">{totalEntries.toLocaleString()}</p>
             <p className="text-pmp-gray-500 text-sm">
               {pageLabel === 'Participants'
-                ? (entryCount === 1 ? 'participant so far' : 'participants so far')
-                : (entryCount === 1 ? 'entry so far' : 'entries so far')}
+                ? (totalEntries === 1 ? 'participant so far' : 'participants so far')
+                : (totalEntries === 1 ? 'entry so far' : 'entries so far')}
             </p>
             <p className="text-pmp-gray-600 text-xs mt-2">
-              Leaderboard scores reveal after Week 18. Will you hold the top spot?
+              {locked
+                ? 'Weekly leaderboard updates begin after Week 1'
+                : 'Leaderboard scores reveal after Week 18. Will you hold the top spot?'}
             </p>
           </div>
         )}
 
-        {/* Recent entrants */}
         {uniqueEntries.length > 0 && (
           <div className="flex flex-col gap-3">
             <h2 className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Your Competition</h2>
@@ -171,7 +207,6 @@ export default async function LeaderboardPage() {
           </div>
         )}
 
-        {/* CTA if not yet entered */}
         {!season || season.status === 'open' ? (
           <Link
             href="/challenge/rankings"
