@@ -55,6 +55,7 @@ export default async function ReviewPage() {
       locked={locked}
       isSubmitted={isSubmitted}
       username={username}
+      lockAt={season?.lock_at ?? ''}
     />
   )
 }

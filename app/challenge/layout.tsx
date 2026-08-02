@@ -3,14 +3,10 @@ import Image from 'next/image'
 import { getSession } from '@/lib/auth/server'
 import { getServiceClient } from '@/lib/league/db'
 import { OracleNav } from '@/components/oracle/OracleNav'
-import { ORACLE_LOCK_DATE } from '@/lib/oracle/constants'
+import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 
-function daysUntilLock(): number {
-  return Math.max(0, Math.floor((ORACLE_LOCK_DATE.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-}
-
-function isChallengeLocked(): boolean {
-  return new Date() >= ORACLE_LOCK_DATE
+function daysUntilLock(lockAt: string): number {
+  return Math.max(0, Math.floor((new Date(lockAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
 }
 
 export default async function ChallengeLayout({
@@ -18,7 +14,7 @@ export default async function ChallengeLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await getSession()
+  const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
   let username: string | null = null
 
   if (session) {
@@ -31,8 +27,8 @@ export default async function ChallengeLayout({
     username = (data?.username as string | null) ?? null
   }
 
-  const locked = isChallengeLocked()
-  const daysLeft = daysUntilLock()
+  const locked = season ? isLocked(season) : false
+  const daysLeft = season && !locked ? daysUntilLock(season.lock_at) : 0
 
   return (
     <div className="flex flex-col min-h-[100dvh] bg-pmp-black">

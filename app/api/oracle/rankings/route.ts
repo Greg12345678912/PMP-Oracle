@@ -3,7 +3,7 @@ import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { getRankings, upsertRankings, validateRankings } from '@/lib/oracle/rankings'
 import type { OraclePosition } from '@/lib/oracle/constants'
-import { ORACLE_POSITIONS, ORACLE_LOCK_DATE } from '@/lib/oracle/constants'
+import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import type { RankingRow } from '@/lib/oracle/rankings'
 import { getServiceClient } from '@/lib/league/db'
 
@@ -18,15 +18,14 @@ export async function GET(request: NextRequest) {
 
   const targetUserId = request.nextUrl.searchParams.get('userId') ?? session.user.id
   const isOwner = targetUserId === session.user.id
-  const now = new Date()
-
-  // Non-negotiable product rule: rankings are private until lock date
-  if (!isOwner && now < ORACLE_LOCK_DATE) {
-    return NextResponse.json({ error: 'Rankings are private until lock date' }, { status: 403 })
-  }
 
   const season = await getCurrentSeason()
   if (!season) return NextResponse.json({ rankings: [] })
+
+  // Non-negotiable product rule: rankings are private until lock date
+  if (!isOwner && !isLocked(season)) {
+    return NextResponse.json({ error: 'Rankings are private until lock date' }, { status: 403 })
+  }
 
   // After lock, non-owners can only view public rankings
   if (!isOwner) {
@@ -63,15 +62,10 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid position' }, { status: 400 })
   }
 
-  // Non-negotiable product rule: rankings immutable after lock date
-  if (new Date() >= ORACLE_LOCK_DATE) {
-    return NextResponse.json({ error: 'Rankings are locked' }, { status: 423 })
-  }
-
   const season = await getCurrentSeason()
   if (!season) return NextResponse.json({ error: 'No active season' }, { status: 404 })
 
-  // Also check DB-level lock (season status may be updated early)
+  // Single source of truth: DB season lock date
   if (isLocked(season)) {
     return NextResponse.json({ error: 'Rankings are locked' }, { status: 423 })
   }

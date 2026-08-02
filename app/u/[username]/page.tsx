@@ -3,7 +3,7 @@ import { getServiceClient } from '@/lib/league/db'
 import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason } from '@/lib/oracle/season'
 import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
-import { ORACLE_LOCK_DATE } from '@/lib/oracle/constants'
+import { isLocked } from '@/lib/oracle/season'
 import { generateSummary } from '@/lib/oracle/scoring'
 import type { OracleResult, PositionResult, PlayerScore } from '@/lib/oracle/scoring'
 import { ProfileClient } from './client'
@@ -96,7 +96,7 @@ export default async function UserProfilePage({ params }: PageProps) {
   const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
   const isOwn = session?.user.id === profile.user_id
 
-  const isAfterLock = new Date() >= ORACLE_LOCK_DATE
+  const isAfterLock = season ? isLocked(season) : false
   const isScored = season?.status === 'scored'
 
   // Fetch all data in parallel
@@ -189,7 +189,9 @@ export default async function UserProfilePage({ params }: PageProps) {
     ? computePercentile(rank, totalParticipants)
     : null
 
-  const lockDateLabel = ORACLE_LOCK_DATE.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/New_York' })
+  const lockDateLabel = season
+    ? new Date(season.lock_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/New_York' })
+    : 'the deadline'
 
   // Show scores if: season fully scored OR pipeline has run at least 1 week
   const hasInSeasonScores = (scoreData?.current_week ?? 0) > 0

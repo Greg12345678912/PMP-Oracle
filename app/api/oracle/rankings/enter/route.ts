@@ -1,7 +1,6 @@
 import { getSession } from '@/lib/auth/server'
-import { getCurrentSeason } from '@/lib/oracle/season'
+import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { getServiceClient } from '@/lib/league/db'
-import { ORACLE_LOCK_DATE } from '@/lib/oracle/constants'
 
 // POST /api/oracle/rankings/enter
 // Sets is_submitted = true for all challenge_rankings rows for user + current season.
@@ -10,10 +9,10 @@ import { ORACLE_LOCK_DATE } from '@/lib/oracle/constants'
 export async function POST() {
   const session = await getSession()
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  if (new Date() >= ORACLE_LOCK_DATE) return Response.json({ error: 'Locked' }, { status: 423 })
 
   const season = await getCurrentSeason()
   if (!season) return Response.json({ error: 'No active season' }, { status: 404 })
+  if (isLocked(season)) return Response.json({ error: 'Locked' }, { status: 423 })
 
   const supabase = getServiceClient()
   const userId = session.user.id

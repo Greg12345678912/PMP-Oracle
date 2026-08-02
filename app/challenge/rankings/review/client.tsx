@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { ORACLE_POSITIONS, ORACLE_LOCK_DATE, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
+import { ORACLE_POSITIONS, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import type { RankingRow } from '@/lib/oracle/rankings'
 import { Countdown } from '@/components/oracle/Countdown'
@@ -11,9 +11,10 @@ interface ReviewClientProps {
   locked: boolean
   isSubmitted: boolean
   username: string | null
+  lockAt: string
 }
 
-export function ReviewClient({ rankings, locked, isSubmitted, username }: ReviewClientProps) {
+export function ReviewClient({ rankings, locked, isSubmitted, username, lockAt }: ReviewClientProps) {
   const [entering, setEntering] = useState(false)
   // Always start on the review form — trophy screen only appears after actively submitting.
   // Submission is not a lock; the lock date controls editability.
@@ -207,7 +208,7 @@ export function ReviewClient({ rankings, locked, isSubmitted, username }: Review
         {!locked && (
           <div className="pt-1 border-t border-pmp-gray-800">
             <p className="text-pmp-gray-600 text-xs mb-3">Time remaining to edit</p>
-            <Countdown lockDate={ORACLE_LOCK_DATE.toISOString()} />
+            <Countdown lockDate={lockAt} />
           </div>
         )}
       </div>

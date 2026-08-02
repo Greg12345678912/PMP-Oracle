@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getSession } from '@/lib/auth/server'
-import { getCurrentSeason } from '@/lib/oracle/season'
-import { ORACLE_LOCK_DATE, ORACLE_POSITIONS } from '@/lib/oracle/constants'
+import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
+import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import { getPlayerStats } from '@/lib/oracle/playerStats'
 import { getPlayerPool } from '@/lib/oracle/players'
 
@@ -13,9 +13,12 @@ export default async function PlayerPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
 
-  if (new Date() < ORACLE_LOCK_DATE) {
-    const lockLabel = ORACLE_LOCK_DATE.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+  if (!season || !isLocked(season)) {
+    const lockLabel = season
+      ? new Date(season.lock_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+      : 'the deadline'
 
     // Find player info from the pool
     const pools = await Promise.all(ORACLE_POSITIONS.map(pos => getPlayerPool(pos)))
@@ -73,16 +76,6 @@ export default async function PlayerPage({
         >
           Rank {player?.name?.split(' ')[1] ?? 'This Player'} Now
         </a>
-      </div>
-    )
-  }
-
-  const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
-
-  if (!season) {
-    return (
-      <div className="min-h-[100dvh] bg-pmp-black flex items-center justify-center px-4">
-        <p className="text-pmp-gray-500 text-sm text-center">No active season found.</p>
       </div>
     )
   }

@@ -1,5 +1,6 @@
 import { getPlayerPool } from '@/lib/oracle/players'
-import { ORACLE_POSITIONS, ORACLE_LOCK_DATE } from '@/lib/oracle/constants'
+import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
+import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import type { Player } from '@/lib/data/types'
 import { PlayersClient } from './client'
@@ -7,12 +8,15 @@ import { PlayersClient } from './client'
 export const dynamic = 'force-dynamic'
 
 export default async function PlayersPage() {
-  const poolsArr = await Promise.all(ORACLE_POSITIONS.map(pos => getPlayerPool(pos)))
+  const [poolsArr, season] = await Promise.all([
+    Promise.all(ORACLE_POSITIONS.map(pos => getPlayerPool(pos))),
+    getCurrentSeason(),
+  ])
   const playersByPosition = Object.fromEntries(
     ORACLE_POSITIONS.map((pos, i) => [pos, poolsArr[i]]),
   ) as Record<OraclePosition, Player[]>
 
-  const isPostLock = new Date() >= ORACLE_LOCK_DATE
+  const isPostLock = season ? isLocked(season) : false
 
   return (
     <div className="max-w-md mx-auto">

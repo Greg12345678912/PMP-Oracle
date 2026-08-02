@@ -3,21 +3,21 @@ import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { getServiceClient } from '@/lib/league/db'
 import { getRankings } from '@/lib/oracle/rankings'
-import { ORACLE_POSITIONS, ORACLE_LOCK_DATE, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
+import { ORACLE_POSITIONS, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import { OracleSplashCTA } from '@/components/oracle/OracleSplashCTA'
 import { SignOutButton } from '@/components/oracle/SignOutButton'
 
 export const dynamic = 'force-dynamic'
 
-function daysUntil(date: Date): number {
-  return Math.max(0, Math.floor((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+function daysUntil(lockAt: string): number {
+  return Math.max(0, Math.floor((new Date(lockAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
 }
 
 export default async function ChallengePage() {
   const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
   const locked = season ? isLocked(season) : true
-  const daysLeft = daysUntil(ORACLE_LOCK_DATE)
+  const daysLeft = season ? daysUntil(season.lock_at) : 0
 
   /* ─── Signed-in data ─────────────────────────────────────────────── */
   let displayName: string | null = null
