@@ -1,34 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { getBrowserClient } from '@/lib/auth/client'
-
-const EyeIcon = ({ open }: { open: boolean }) => open ? (
-  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-  </svg>
-) : (
-  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-  </svg>
-)
-
-type Mode = 'signup' | 'signin'
-type View = 'form' | 'check-email'
-type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
-
-const USERNAME_RE = /^[a-z0-9_]{3,20}$/
-
-/** Supabase can return serialized empty objects like "{}" or "[object Object]"
- *  as error messages when the server response body is empty or unparseable.
- *  Always return a clean human-readable string. */
-function readableAuthError(msg: unknown, fallback: string): string {
-  if (typeof msg !== 'string') return fallback
-  const t = msg.trim()
-  if (!t || t === '{}' || t === '[]' || t === '[object Object]') return fallback
-  return t
-}
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" aria-hidden>
@@ -40,42 +11,11 @@ const GoogleIcon = () => (
 )
 
 interface OracleSplashCTAProps {
-  /** Called after successful sign-in (not sign-up). When omitted, navigates to /challenge. */
+  /** Called after successful sign-in. When omitted, navigates to /challenge via OAuth redirect. */
   onSignInSuccess?: () => void
 }
 
-export function OracleSplashCTA({ onSignInSuccess }: OracleSplashCTAProps) {
-  const router = useRouter()
-  const [mode, setMode] = useState<Mode>('signup')
-  const [view, setView] = useState<View>('form')
-  const [username, setUsername] = useState('')
-  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    if (mode !== 'signup') return
-    const val = username.trim().toLowerCase()
-    if (!val) { setUsernameStatus('idle'); return }
-    if (!USERNAME_RE.test(val)) { setUsernameStatus('invalid'); return }
-    setUsernameStatus('checking')
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/oracle/username?u=${encodeURIComponent(val)}`)
-        const data = await res.json()
-        setUsernameStatus(data.available ? 'available' : 'taken')
-      } catch {
-        setUsernameStatus('idle')
-      }
-    }, 350)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [username, mode])
-
+export function OracleSplashCTA({ onSignInSuccess: _ }: OracleSplashCTAProps) {
   const handleGoogle = async () => {
     const supabase = getBrowserClient()
     await supabase.auth.signInWithOAuth({
@@ -86,196 +26,13 @@ export function OracleSplashCTA({ onSignInSuccess }: OracleSplashCTAProps) {
     })
   }
 
-  const handleEmailSubmit = async () => {
-    if (mode === 'signup' && usernameStatus !== 'available') return
-    setLoading(true)
-    setError(null)
-    const supabase = getBrowserClient()
-
-    if (mode === 'signup') {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/challenge/onboarding`,
-          data: { desired_username: username.trim().toLowerCase() },
-        },
-      })
-      if (signUpError) {
-        setError(readableAuthError(signUpError.message, 'Sign up failed — please try again.'))
-      } else if (data.session) {
-        // Email confirmation disabled — session returned immediately
-        router.push('/challenge/onboarding')
-      } else {
-        setView('check-email')
-      }
-    } else {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-      if (signInError) {
-        setError(readableAuthError(signInError.message, 'Incorrect email or password.'))
-      } else if (onSignInSuccess) {
-        onSignInSuccess()
-      } else {
-        router.push('/challenge')
-        router.refresh()
-      }
-    }
-    setLoading(false)
-  }
-
-  const switchMode = (newMode: Mode) => {
-    setMode(newMode)
-    setError(null)
-    setUsername('')
-    setUsernameStatus('idle')
-  }
-
-  if (view === 'check-email') {
-    return (
-      <div className="flex flex-col gap-4 text-center">
-        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-6 py-6 flex flex-col gap-3">
-          <p className="text-pmp-white font-bold text-base">Check your email</p>
-          <p className="text-pmp-gray-400 text-sm leading-relaxed">
-            We sent a confirmation link to{' '}
-            <span className="text-pmp-white font-semibold">{email}</span>.
-            Click it to activate your account and claim your username.
-          </p>
-          <p className="text-pmp-gray-700 text-xs mt-1">Didn&apos;t get it? Check your spam folder.</p>
-        </div>
-        <button
-          onClick={() => { setView('form'); setMode('signin') }}
-          className="text-pmp-gray-600 text-xs hover:text-pmp-gray-500 transition-colors"
-        >
-          Back to sign in
-        </button>
-      </div>
-    )
-  }
-
-  const usernameHint = () => {
-    if (mode !== 'signup' || !username) return null
-    if (usernameStatus === 'invalid') return <p className="text-pmp-red text-xs">3–20 chars · letters, numbers, underscores only</p>
-    if (usernameStatus === 'checking') return <p className="text-pmp-gray-600 text-xs">Checking…</p>
-    if (usernameStatus === 'available') return <p className="text-green-500 text-xs">✓ Available</p>
-    if (usernameStatus === 'taken') return <p className="text-pmp-red text-xs">Already taken — try another</p>
-    return null
-  }
-
-  const canSubmit = mode === 'signin' || usernameStatus === 'available'
-
   return (
-    <div className="flex flex-col gap-3">
-      {/* Google */}
-      <button
-        onClick={handleGoogle}
-        className="w-full bg-pmp-white text-pmp-black font-bold py-4 rounded-2xl text-base hover:opacity-90 transition-opacity flex items-center justify-center gap-2.5 active:scale-[0.98]"
-      >
-        <GoogleIcon />
-        Enter with Google
-      </button>
-
-      {/* Divider */}
-      <div className="flex items-center gap-3 py-1">
-        <div className="flex-1 h-px bg-pmp-gray-800" />
-        <span className="text-pmp-gray-700 text-xs">or</span>
-        <div className="flex-1 h-px bg-pmp-gray-800" />
-      </div>
-
-      {/* Email / password form
-          onSubmit only calls preventDefault — real submission is via button onClick or Enter key.
-          This prevents iOS autofill from auto-submitting the form. */}
-      <form
-        onSubmit={e => e.preventDefault()}
-        onKeyDown={e => {
-          if (e.key === 'Enter' && !loading && canSubmit) {
-            e.preventDefault()
-            void handleEmailSubmit()
-          }
-        }}
-        className="flex flex-col gap-2.5"
-      >
-        {mode === 'signup' && (
-          <div className="flex flex-col gap-1">
-            <input
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-              placeholder="Username"
-              required
-              maxLength={20}
-              autoCorrect="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              autoComplete="username"
-              className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white rounded-xl px-4 py-3.5 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-red transition-colors"
-            />
-            {usernameHint()}
-          </div>
-        )}
-        <input
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          placeholder="Email"
-          required
-          autoComplete="email"
-          className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white rounded-xl px-4 py-3.5 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-red transition-colors"
-        />
-        <div className="relative">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="Password"
-            required
-            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            minLength={6}
-            className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white rounded-xl px-4 pr-11 py-3.5 text-sm placeholder:text-pmp-gray-600 focus:outline-none focus:border-pmp-red transition-colors"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(v => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-pmp-gray-500 hover:text-pmp-gray-300 transition-colors p-1"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-          >
-            <EyeIcon open={showPassword} />
-          </button>
-        </div>
-        {typeof error === 'string' && error && <p className="text-pmp-red text-xs">{error}</p>}
-        <button
-          type="button"
-          onClick={() => void handleEmailSubmit()}
-          disabled={loading || !canSubmit}
-          className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-2xl text-base hover:opacity-90 transition-opacity disabled:opacity-50 active:scale-[0.98]"
-        >
-          {loading ? 'Loading\u2026' : mode === 'signup' ? 'Create Account' : 'Sign In'}
-        </button>
-      </form>
-
-      {/* Mode toggle */}
-      <p className="text-pmp-gray-600 text-xs text-center pt-1">
-        {mode === 'signup' ? (
-          <>
-            Already have an account?{' '}
-            <button
-              onClick={() => switchMode('signin')}
-              className="text-pmp-gray-400 hover:text-pmp-white underline transition-colors"
-            >
-              Sign in
-            </button>
-          </>
-        ) : (
-          <>
-            Don&apos;t have an account?{' '}
-            <button
-              onClick={() => switchMode('signup')}
-              className="text-pmp-gray-400 hover:text-pmp-white underline transition-colors"
-            >
-              Create one
-            </button>
-          </>
-        )}
-      </p>
-    </div>
+    <button
+      onClick={() => void handleGoogle()}
+      className="w-full bg-pmp-white text-pmp-black font-bold py-4 rounded-2xl text-base hover:opacity-90 transition-opacity flex items-center justify-center gap-2.5 active:scale-[0.98]"
+    >
+      <GoogleIcon />
+      Continue with Google
+    </button>
   )
 }
