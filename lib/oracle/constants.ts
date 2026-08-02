@@ -12,3 +12,6 @@ export const POSITION_LIST_SIZE: Record<OraclePosition, number> = {
   WR: 10,
   TE: 10,
 }
+
+export const SCORING_ALGORITHM_VERSION = 'v1' as const
+export type ScoringAlgorithmVersion = typeof SCORING_ALGORITHM_VERSION

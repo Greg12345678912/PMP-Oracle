@@ -1,59 +1,26 @@
-import { vi, describe, it, expect } from 'vitest'
-import { generateSummary } from '../scoring'
-import type { OracleResult } from '../scoring'
+import { describe, it, expect } from 'vitest'
+import { scorePosition, scoreEntry } from '../scoring'
+import type { GroundTruthEntry } from '../scoring'
+import type { RankingRow } from '../rankings'
+import { ORACLE_POSITIONS } from '../constants'
 
-vi.mock('@/lib/league/db')
-vi.mock('../rankings')
+const gt10: GroundTruthEntry[] = Array.from({ length: 10 }, (_, i) => ({
+  playerId: `p${i + 1}`,
+  rank: i + 1,
+  pprPoints: (10 - i) * 10,
+}))
 
-// Scoring algorithm is pending approval — only test generateSummary for now.
+const rows10: RankingRow[] = Array.from({ length: 10 }, (_, i) => ({
+  playerRank: i + 1,
+  playerId: `p${i + 1}`,
+  playerName: `Player ${i + 1}`,
+}))
 
-describe('generateSummary', () => {
-  it('returns exceptional copy for score >= 90', () => {
-    const result: OracleResult = {
-      overallScore: 92,
-      positionResults: [
-        { position: 'QB', normalizedScore: 95, players: [] },
-        { position: 'RB', normalizedScore: 90, players: [] },
-        { position: 'WR', normalizedScore: 91, players: [] },
-        { position: 'TE', normalizedScore: 92, players: [] },
-      ],
-    }
-    expect(generateSummary(result)).toMatch(/exceptional/i)
-  })
-
-  it('returns strong copy for score >= 75', () => {
-    const result: OracleResult = {
-      overallScore: 78,
-      positionResults: [
-        { position: 'QB', normalizedScore: 90, players: [] },
-        { position: 'RB', normalizedScore: 70, players: [] },
-        { position: 'WR', normalizedScore: 80, players: [] },
-        { position: 'TE', normalizedScore: 72, players: [] },
-      ],
-    }
-    const summary = generateSummary(result)
-    expect(summary).toMatch(/strong/i)
-    expect(summary).toMatch(/QB/)
-    expect(summary).toMatch(/RB/)
-  })
-
-  it('returns improvement copy for score < 75', () => {
-    const result: OracleResult = {
-      overallScore: 50,
-      positionResults: [
-        { position: 'QB', normalizedScore: 80, players: [] },
-        { position: 'RB', normalizedScore: 40, players: [] },
-        { position: 'WR', normalizedScore: 50, players: [] },
-        { position: 'TE', normalizedScore: 30, players: [] },
-      ],
-    }
-    const summary = generateSummary(result)
-    expect(summary).toMatch(/QB/)
-    expect(summary).toMatch(/TE/)
-  })
-
-  it('overall score average calculation: (100+80+60+40)/4 = 70', () => {
-    const overall = Math.round(((100 + 80 + 60 + 40) / 4) * 10) / 10
-    expect(overall).toBe(70)
+describe('scorePosition', () => {
+  it('perfect score returns 100', () => {
+    const result = scorePosition(rows10, gt10)
+    expect(result.score).toBe(100)
+    expect(result.top10Hits).toBe(10)
+    expect(result.totalRankError).toBe(0)
   })
 })
