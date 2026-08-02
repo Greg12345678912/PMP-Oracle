@@ -7,9 +7,26 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-  title: 'PMP Fantasy Platform | Pretty Much Picks',
-  description: 'Oracle Challenge, Tier Builder, Mock Draft, and more. The PMP Fantasy Platform by Pretty Much Picks.',
+  title: 'Pretty Much Picks — Oracle Challenge',
+  description: 'Rank every NFL player before Week 1. Prove your fantasy knowledge against the field. Finish #1. Win $500. Free entry.',
   metadataBase: new URL('https://prettymuchpicks.com'),
+  openGraph: {
+    title: 'Pretty Much Picks — Oracle Challenge',
+    description: 'Rank every NFL player before Week 1. Prove your fantasy knowledge. Finish #1. Win $500. Free entry.',
+    url: 'https://prettymuchpicks.com/challenge',
+    siteName: 'Pretty Much Picks',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Pretty Much Picks — Oracle Challenge',
+    description: 'Rank every NFL player before Week 1. Prove your fantasy knowledge. Win $500. Free.',
+  },
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
