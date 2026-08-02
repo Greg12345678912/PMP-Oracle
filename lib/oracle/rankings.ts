@@ -6,12 +6,9 @@ export interface RankingRow {
   playerRank: number
   playerId: string
   playerName: string
-  confidence: 'low' | 'medium' | 'high'
 }
 
 export type ValidateResult = { ok: true } | { ok: false; error: string }
-
-const VALID_CONFIDENCE = new Set<string>(['low', 'medium', 'high'])
 
 export function validateRankings(position: OraclePosition, rows: RankingRow[]): ValidateResult {
   const max = POSITION_LIST_SIZE[position]
@@ -22,12 +19,6 @@ export function validateRankings(position: OraclePosition, rows: RankingRow[]): 
 
   const ids = rows.map(r => r.playerId)
   if (new Set(ids).size !== ids.length) return { ok: false, error: 'Duplicate players' }
-
-  for (const row of rows) {
-    if (!VALID_CONFIDENCE.has(row.confidence)) {
-      return { ok: false, error: 'Invalid confidence value' }
-    }
-  }
 
   return { ok: true }
 }
@@ -41,8 +32,7 @@ function isRankingRowArray(value: unknown): value is RankingRow[] {
       typeof item === 'object' &&
       typeof (item as Record<string, unknown>).playerRank === 'number' &&
       typeof (item as Record<string, unknown>).playerId === 'string' &&
-      typeof (item as Record<string, unknown>).playerName === 'string' &&
-      ['low', 'medium', 'high'].includes((item as Record<string, unknown>).confidence as string),
+      typeof (item as Record<string, unknown>).playerName === 'string',
   )
 }
 

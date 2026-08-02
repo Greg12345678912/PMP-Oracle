@@ -4,7 +4,6 @@ import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason } from '@/lib/oracle/season'
 import { getServiceClient } from '@/lib/league/db'
 import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
-import { PREDICTION_QUESTIONS, getPredictions } from '@/lib/oracle/predictions'
 import { generateSummary } from '@/lib/oracle/scoring'
 import type { OracleResult, PositionResult, PlayerScore } from '@/lib/oracle/scoring'
 import { ResultsShareCard } from '@/components/oracle/ResultsShareCard'
@@ -32,8 +31,6 @@ interface RankingScoreDetailRow {
   user_rank: number
   actual_rank: number | null
   distance: number | null
-  raw_score: number
-  confidence: string
   final_score: number
 }
 
@@ -209,14 +206,12 @@ export default async function ResultsPage() {
 
   // Final results view
   if (season?.status === 'scored') {
-    const [detailResult, predictions, totalCountResult] = await Promise.all([
+    const [detailResult, totalCountResult] = await Promise.all([
       db
         .from('ranking_score_detail')
-        .select('position, player_id, player_name, user_rank, actual_rank, distance, raw_score, confidence, final_score')
+        .select('position, player_id, player_name, user_rank, actual_rank, distance, final_score')
         .eq('user_id', userId)
         .eq('season_id', seasonId),
-
-      getPredictions(db, userId, seasonId),
 
       db
         .from('accuracy_scores')
@@ -235,9 +230,6 @@ export default async function ResultsPage() {
         userRank: r.user_rank,
         actualRank: r.actual_rank,
         distance: r.distance,
-        rawScore: r.raw_score,
-        confidence: r.confidence,
-        finalPoints: r.final_score,
       }))
 
       const normalizedScore =
@@ -257,8 +249,8 @@ export default async function ResultsPage() {
     const summary = generateSummary(oracleResult)
 
     const allPlayers = positionResults.flatMap(pr => pr.players)
-    const bestCall = allPlayers.length ? allPlayers.reduce((a, b) => a.finalPoints >= b.finalPoints ? a : b) : null
-    const biggestMiss = allPlayers.length ? allPlayers.reduce((a, b) => a.finalPoints <= b.finalPoints ? a : b) : null
+    const bestCall = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 999) <= (b.distance ?? 999) ? a : b) : null
+    const biggestMiss = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 0) >= (b.distance ?? 0) ? a : b) : null
 
     return (
       <div className="min-h-[100dvh] bg-pmp-black px-4 py-12">
@@ -298,7 +290,7 @@ export default async function ResultsPage() {
                     <p className="text-xs text-pmp-gray-600">🏆 Best Call</p>
                     <p className="text-pmp-white font-bold text-sm">{bestCall.playerName}</p>
                     <p className="text-pmp-gray-500 text-xs">You ranked #{bestCall.userRank} · Finished #{bestCall.actualRank ?? '—'}</p>
-                    <p className="text-pmp-red text-xs font-bold">+{bestCall.finalPoints.toFixed(0)} pts</p>
+                    <p className="text-pmp-red text-xs font-bold">Distance: {bestCall.distance ?? '—'}</p>
                   </div>
                 )}
                 {biggestMiss && (
@@ -306,26 +298,9 @@ export default async function ResultsPage() {
                     <p className="text-xs text-pmp-gray-600">😬 Biggest Miss</p>
                     <p className="text-pmp-white font-bold text-sm">{biggestMiss.playerName}</p>
                     <p className="text-pmp-gray-500 text-xs">You ranked #{biggestMiss.userRank} · Finished #{biggestMiss.actualRank ?? '—'}</p>
-                    <p className="text-pmp-gray-600 text-xs font-bold">+{biggestMiss.finalPoints.toFixed(0)} pts</p>
+                    <p className="text-pmp-gray-600 text-xs font-bold">Distance: {biggestMiss.distance ?? '—'}</p>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
-
-          {predictions.length > 0 && (
-            <div className="flex flex-col gap-4">
-              <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Prediction Results</p>
-              <div className="grid grid-cols-2 gap-2">
-                {predictions.map(pred => (
-                  <div key={pred.questionId} className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-3 py-3 flex items-center gap-2">
-                    <span>{pred.isCorrect === true ? '✅' : pred.isCorrect === false ? '❌' : '⏳'}</span>
-                    <div>
-                      <p className="text-pmp-gray-500 text-xs">{PREDICTION_QUESTIONS.find(q => q.id === pred.questionId)?.label}</p>
-                      <p className="text-pmp-white text-xs font-semibold">{pred.answer}</p>
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           )}

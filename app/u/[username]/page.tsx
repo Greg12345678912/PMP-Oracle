@@ -4,7 +4,6 @@ import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason } from '@/lib/oracle/season'
 import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import { ORACLE_LOCK_DATE } from '@/lib/oracle/constants'
-import { PREDICTION_QUESTIONS, getPredictions } from '@/lib/oracle/predictions'
 import { generateSummary } from '@/lib/oracle/scoring'
 import type { OracleResult, PositionResult, PlayerScore } from '@/lib/oracle/scoring'
 import { ProfileClient } from './client'
@@ -46,9 +45,6 @@ interface RankingScoreDetailRow {
   user_rank: number
   actual_rank: number | null
   distance: number | null
-  raw_score: number
-  confidence: string
-  final_score: number
 }
 
 interface ChallengeRankingRow {
@@ -65,7 +61,7 @@ function computePercentile(rank: number, total: number): number {
 
 function isRankingRowArray(
   value: unknown,
-): value is Array<{ playerRank: number; playerId: string; playerName: string; confidence: string }> {
+): value is Array<{ playerRank: number; playerId: string; playerName: string }> {
   if (!Array.isArray(value)) return false
   return value.every(
     item =>
@@ -103,7 +99,7 @@ export default async function UserProfilePage({ params }: PageProps) {
   const isScored = season?.status === 'scored'
 
   // Fetch all data in parallel
-  const [accResult, detailResult, rankingRowsResult, totalCountResult, predictionsData] =
+  const [accResult, detailResult, rankingRowsResult, totalCountResult] =
     await Promise.all([
       // Accuracy scores (only meaningful if scored)
       isScored && season
@@ -119,7 +115,7 @@ export default async function UserProfilePage({ params }: PageProps) {
       isScored && season
         ? db
             .from('ranking_score_detail')
-            .select('position, player_id, player_name, user_rank, actual_rank, distance, raw_score, confidence, final_score')
+            .select('position, player_id, player_name, user_rank, actual_rank, distance')
             .eq('user_id', profile.user_id)
             .eq('season_id', season.id)
         : Promise.resolve({ data: [] }),
@@ -140,11 +136,6 @@ export default async function UserProfilePage({ params }: PageProps) {
             .select('*', { count: 'exact', head: true })
             .eq('season_id', season.id)
         : Promise.resolve({ count: 0 }),
-
-      // Predictions (shown after lock)
-      isAfterLock && season
-        ? getPredictions(db, profile.user_id, season.id)
-        : Promise.resolve([]),
     ])
 
   const scoreData = (accResult.data as AccuracyScoreRow | null) ?? null
@@ -161,9 +152,6 @@ export default async function UserProfilePage({ params }: PageProps) {
       userRank: r.user_rank,
       actualRank: r.actual_rank,
       distance: r.distance,
-      rawScore: r.raw_score,
-      confidence: r.confidence,
-      finalPoints: r.final_score,
     }))
     const normalizedScore =
       pos === 'QB'
@@ -177,7 +165,7 @@ export default async function UserProfilePage({ params }: PageProps) {
   })
 
   // Build preview picks (first 3 per position from raw rankings, visible after lock)
-  const rankingPreview: Record<string, Array<{ playerRank: number; playerName: string; confidence: string }>> = {}
+  const rankingPreview: Record<string, Array<{ playerRank: number; playerName: string }>> = {}
   for (const pos of ORACLE_POSITIONS) {
     const row = rawRankingRows.find(r => r.position === pos)
     if (row) {
@@ -187,7 +175,7 @@ export default async function UserProfilePage({ params }: PageProps) {
       rankingPreview[pos] = arr
         .sort((a, b) => a.playerRank - b.playerRank)
         .slice(0, 3)
-        .map(r => ({ playerRank: r.playerRank, playerName: r.playerName, confidence: r.confidence }))
+        .map(r => ({ playerRank: r.playerRank, playerName: r.playerName }))
     } else {
       rankingPreview[pos] = []
     }
@@ -226,7 +214,6 @@ export default async function UserProfilePage({ params }: PageProps) {
       positionResults={isScored ? positionResults : []}
       summary={summary}
       rankingPreview={rankingPreview}
-      predictions={predictionsData}
       lockDateLabel={lockDateLabel}
     />
   )

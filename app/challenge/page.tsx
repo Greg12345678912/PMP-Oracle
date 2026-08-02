@@ -3,7 +3,6 @@ import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { getServiceClient } from '@/lib/league/db'
 import { getRankings } from '@/lib/oracle/rankings'
-import { getPredictions } from '@/lib/oracle/predictions'
 import { ORACLE_POSITIONS, ORACLE_LOCK_DATE, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import { OracleSplashCTA } from '@/components/oracle/OracleSplashCTA'
@@ -25,11 +24,10 @@ export default async function ChallengePage() {
   let rankingCounts: Record<OraclePosition, number> = { QB: 0, RB: 0, WR: 0, TE: 0 }
   let isSubmitted = false
   let totalEntries = 0
-  let predictionCount = 0
 
   if (session && season) {
     const db = getServiceClient()
-    const [profileResult, submittedResult, entryCountResult, predictionRows, ...rankingResults] =
+    const [profileResult, submittedResult, entryCountResult, ...rankingResults] =
       await Promise.all([
         db
           .from('user_profiles')
@@ -48,14 +46,12 @@ export default async function ChallengePage() {
           .select('user_id')
           .eq('season_id', season.id)
           .eq('is_submitted', true),
-        getPredictions(db, session.user.id, season.id),
         ...ORACLE_POSITIONS.map(pos => getRankings(session.user.id, season.id, pos)),
       ])
 
     displayName = (profileResult.data?.display_name as string | null) ?? null
     isSubmitted = submittedResult.data?.is_submitted === true
     totalEntries = new Set((entryCountResult.data ?? []).map((r: { user_id: string }) => r.user_id)).size
-    predictionCount = predictionRows.length
     ORACLE_POSITIONS.forEach((pos, i) => {
       rankingCounts[pos] = rankingResults[i]?.length ?? 0
     })
@@ -73,14 +69,6 @@ export default async function ChallengePage() {
     pos => rankingCounts[pos] >= POSITION_LIST_SIZE[pos],
   )
   const allComplete = completedPositions.length === 4
-  const totalRanked = ORACLE_POSITIONS.reduce((sum, pos) => sum + rankingCounts[pos], 0)
-  const totalPossible = Object.values(POSITION_LIST_SIZE).reduce((a, b) => a + b, 0) // 60
-
-  // Step-based progress: rankings=33%, predictions=33%, submitted=34%
-  const entryPct = isSubmitted
-    ? 100
-    : Math.round((completedPositions.length / 4) * 33) +
-      Math.round((Math.min(predictionCount, 8) / 8) * 33)
 
   /* ─── Signed-in dashboard ─────────────────────────────────────────── */
   if (session) {
@@ -94,11 +82,19 @@ export default async function ChallengePage() {
             Welcome back, {firstName}.
           </h1>
           {isSubmitted ? (
-            <p className="text-pmp-red text-sm font-semibold mt-0.5">Officially entered · 100% complete</p>
-          ) : entryPct > 0 ? (
-            <p className="text-pmp-gray-400 text-sm mt-0.5">{entryPct}% complete</p>
+            <p className="text-pmp-red text-sm font-semibold mt-0.5">Officially entered</p>
+          ) : allComplete ? (
+            <p className="text-pmp-gray-400 text-sm mt-0.5">All rankings saved — ready to submit</p>
+          ) : completedPositions.length > 0 ? (
+            <p className="text-pmp-gray-400 text-sm mt-0.5">
+              {ORACLE_POSITIONS.map(pos => (
+                <span key={pos} className={rankingCounts[pos] >= POSITION_LIST_SIZE[pos] ? 'text-pmp-white' : 'text-pmp-gray-600'}>
+                  {rankingCounts[pos] >= POSITION_LIST_SIZE[pos] ? '✓' : '·'} {pos}{' '}
+                </span>
+              ))}
+            </p>
           ) : (
-            <p className="text-pmp-gray-600 text-sm mt-0.5">0% complete</p>
+            <p className="text-pmp-gray-600 text-sm mt-0.5">Start ranking to enter</p>
           )}
         </div>
 
@@ -125,26 +121,6 @@ export default async function ChallengePage() {
                 </p>
               </div>
               {!locked && <span className="text-pmp-red text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Edit →</span>}
-            </Link>
-
-            <div className="h-px bg-pmp-gray-800" />
-
-            {/* Predictions */}
-            <Link href="/challenge/predictions" className="flex items-center gap-3 py-2 group">
-              <span className="text-lg w-6 text-center shrink-0">
-                {predictionCount >= 8 ? '✅' : predictionCount > 0 ? '🔵' : '⬜'}
-              </span>
-              <div className="flex-1">
-                <p className={['text-sm font-semibold', predictionCount > 0 ? 'text-pmp-white' : 'text-pmp-gray-400'].join(' ')}>
-                  Predictions
-                </p>
-                <p className="text-pmp-gray-600 text-xs">
-                  {predictionCount > 0 ? `${predictionCount} / 8 answered` : '8 season questions'}
-                </p>
-              </div>
-              {!locked && <span className="text-pmp-red text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                {predictionCount > 0 ? 'Edit →' : 'Add →'}
-              </span>}
             </Link>
 
             <div className="h-px bg-pmp-gray-800" />
@@ -186,7 +162,7 @@ export default async function ChallengePage() {
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex items-center justify-between">
             <div>
               <p className="text-pmp-white font-bold text-base">Time Remaining</p>
-              <p className="text-pmp-gray-600 text-xs mt-0.5">Rankings lock Sep 9 at kickoff</p>
+              <p className="text-pmp-gray-600 text-xs mt-0.5">Rankings lock Sep 9 · 5:00 PM ET</p>
             </div>
             <div className="text-right">
               <p className="text-pmp-white font-black text-3xl">{daysLeft}</p>
@@ -262,7 +238,7 @@ export default async function ChallengePage() {
         <div className="flex flex-col gap-3">
           {[
             { n: '1', text: 'Rank every player before Week 1.' },
-            { n: '2', text: 'Your predictions lock September 9.' },
+            { n: '2', text: 'Rankings lock September 9 at 5:00 PM ET.' },
             { n: '3', text: 'We score every pick after the season ends.' },
             { n: '4', text: 'Finish #1 at the end of the season. Win $500. Free entry.' },
           ].map(({ n, text }) => (

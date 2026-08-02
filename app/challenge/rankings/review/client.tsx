@@ -1,19 +1,19 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { ORACLE_POSITIONS, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
+import { ORACLE_POSITIONS, ORACLE_LOCK_DATE, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import type { RankingRow } from '@/lib/oracle/rankings'
+import { Countdown } from '@/components/oracle/Countdown'
 
 interface ReviewClientProps {
   rankings: Record<OraclePosition, RankingRow[]>
   locked: boolean
   isSubmitted: boolean
-  predictionCount: number
   username: string | null
 }
 
-export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, username }: ReviewClientProps) {
+export function ReviewClient({ rankings, locked, isSubmitted, username }: ReviewClientProps) {
   const [entering, setEntering] = useState(false)
   const [entered, setEntered] = useState(isSubmitted)
   const [entryNumber, setEntryNumber] = useState<number | null>(null)
@@ -88,11 +88,11 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, u
             <div className="px-5 py-4 flex flex-col gap-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-pmp-gray-500 text-sm">Rankings locked</span>
-                <span className="text-pmp-white text-sm font-semibold">September 9</span>
+                <span className="text-pmp-white text-sm font-semibold">Sep 9 · 5:00 PM ET</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-pmp-gray-500 text-sm">First update</span>
-                <span className="text-pmp-white text-sm font-semibold">September 15</span>
+                <span className="text-pmp-gray-500 text-sm">Standings update</span>
+                <span className="text-pmp-white text-sm font-semibold">Every Tuesday after Week 1</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-pmp-gray-500 text-sm">First place</span>
@@ -147,12 +147,12 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, u
   return (
     <div className="min-h-[100dvh] bg-pmp-black flex flex-col px-4 py-8 max-w-md mx-auto gap-6">
       <div className="flex flex-col gap-1">
-        <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge</p>
+        <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge (PPR)</p>
         <h1 className="text-pmp-white font-bold text-xl">Review Your Entry</h1>
         <p className="text-pmp-gray-600 text-sm">Review everything before entering.</p>
       </div>
 
-      {/* Checklist */}
+      {/* Rankings checklist */}
       <div className="flex flex-col gap-2">
         {ORACLE_POSITIONS.map(pos => {
           const count = rankings[pos]?.length ?? 0
@@ -177,31 +177,36 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, u
             </div>
           )
         })}
+      </div>
 
-        {/* Predictions checklist item */}
-        <div className="flex items-center justify-between bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3">
-          <div className="flex items-center gap-3">
-            <span className="text-base">{predictionCount > 0 ? '✅' : '⏳'}</span>
-            <div>
-              <p className={['text-sm font-semibold', predictionCount > 0 ? 'text-pmp-white' : 'text-pmp-gray-500'].join(' ')}>
-                Season Predictions
-              </p>
-              <p className="text-pmp-gray-600 text-xs">
-                {predictionCount > 0 ? `${predictionCount} / 8 answered` : '0 / 8 answered'}
-              </p>
-            </div>
+      {/* Entry details card */}
+      <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex flex-col gap-4">
+        <p className="text-pmp-white font-bold text-sm">Entry Details</p>
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-pmp-gray-500 text-sm">Entry Fee</span>
+            <span className="text-green-400 text-sm font-semibold">Free</span>
           </div>
-          {!locked && (
-            <Link href="/challenge/predictions" className="text-pmp-red text-xs font-semibold hover:opacity-80">
-              {predictionCount > 0 ? 'Edit \u2192' : 'Add \u2192'}
-            </Link>
-          )}
+          <div className="flex items-center justify-between">
+            <span className="text-pmp-gray-500 text-sm">Prize</span>
+            <span className="text-pmp-white text-sm font-semibold">$500</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-pmp-gray-500 text-sm">Rankings Lock</span>
+            <span className="text-pmp-white text-sm font-semibold">September 9 · 5:00 PM ET</span>
+          </div>
         </div>
+        {!locked && (
+          <div className="pt-1 border-t border-pmp-gray-800">
+            <p className="text-pmp-gray-600 text-xs mb-3">Time remaining to edit</p>
+            <Countdown lockDate={ORACLE_LOCK_DATE.toISOString()} />
+          </div>
+        )}
       </div>
 
       {/* Lock date note */}
       <p className="text-pmp-gray-600 text-xs text-center">
-        You can continue editing until September 9 at kickoff.<br />
+        You can continue editing until September 9 at 5:00 PM ET.<br />
         After that, rankings lock permanently.
       </p>
 
@@ -212,7 +217,7 @@ export function ReviewClient({ rankings, locked, isSubmitted, predictionCount, u
             ⚠️ You&apos;re entering without {incompletePositions.join(', ')} rankings.
           </p>
           <p className="text-pmp-gray-500 text-xs">
-            You can still compete, but you&apos;ll score 0 points for {incompletePositions.length === 1 ? 'that position' : 'those positions'} unless you complete them before September 9 at kickoff.
+            You can still compete, but you&apos;ll score 0 points for {incompletePositions.length === 1 ? 'that position' : 'those positions'} unless you complete them before September 9 at 5:00 PM ET.
           </p>
           <div className="flex gap-3">
             <button

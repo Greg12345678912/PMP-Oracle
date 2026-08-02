@@ -3,7 +3,7 @@ import { POSITION_LIST_SIZE } from '../constants'
 
 describe('validateRankings', () => {
   const makeRow = (rank: number) => ({
-    playerRank: rank, playerId: `p${rank}`, playerName: `Player ${rank}`, confidence: 'medium' as const,
+    playerRank: rank, playerId: `p${rank}`, playerName: `Player ${rank}`,
   })
 
   it('rejects if too many entries', () => {

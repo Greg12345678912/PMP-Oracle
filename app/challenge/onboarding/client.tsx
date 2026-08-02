@@ -174,7 +174,7 @@ export function OnboardingClient({ initialUsername, displayName }: OnboardingCli
 
       {/* Fine print */}
       <p className="text-pmp-gray-700 text-xs text-center leading-relaxed">
-        Your predictions lock September 9 at kickoff<br />
+        Rankings lock September 9 at 5:00 PM ET<br />
         Your Oracle Rating starts after your first season
       </p>
     </div>

@@ -67,10 +67,10 @@ export function RankingList({
 }: RankingListProps) {
   const maxSize = POSITION_LIST_SIZE[position]
 
-  /** Seed rows: prefer localStorage draft (anonymous) over server rows.
-   *  Always truncate to maxSize in case the limit was reduced after saving. */
+  /** Seed rows from DB (signed-in) or localStorage draft (anonymous).
+   *  Signed-in users always use DB rows — localStorage is anonymous-only. */
   const [rows, setRows] = useState<RankingRow[]>(() => {
-    if (typeof window === 'undefined') return initialRows.slice(0, maxSize)
+    if (typeof window === 'undefined' || isSignedIn) return initialRows.slice(0, maxSize)
     const draft = readDraft(position)
     const source = draft && draft.length > 0 ? draft : initialRows
     return source.slice(0, maxSize)
@@ -83,12 +83,12 @@ export function RankingList({
 
   const rankedIds = new Set(rows.map(r => r.playerId))
 
-  /* Real-time localStorage auto-save whenever rows change */
+  /* Anonymous-only: auto-save draft to localStorage whenever rows change */
   const isFirstRender = useRef(true)
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return }
-    persistDraft(position, rows)
-  }, [position, rows])
+    if (!isSignedIn) persistDraft(position, rows)
+  }, [isSignedIn, position, rows])
 
   /* dnd-kit sensors — PointerSensor handles mouse + touch, TouchSensor for better mobile */
   const sensors = useSensors(
@@ -124,7 +124,6 @@ export function RankingList({
         playerRank: prev.length + 1,
         playerId: player.id,
         playerName: player.name,
-        confidence: 'low' as const,
       },
     ])
     setSearch('')
@@ -135,15 +134,6 @@ export function RankingList({
       prev
         .filter(r => r.playerId !== playerId)
         .map((r, i) => ({ ...r, playerRank: i + 1 })),
-    )
-  }
-
-  const updateConfidence = (
-    playerId: string,
-    confidence: RankingRow['confidence'],
-  ) => {
-    setRows(prev =>
-      prev.map(r => (r.playerId === playerId ? { ...r, confidence } : r)),
     )
   }
 
@@ -212,7 +202,6 @@ export function RankingList({
                 row={row}
                 rank={i + 1}
                 locked={locked}
-                onConfidenceChange={c => updateConfidence(row.playerId, c)}
                 onRemove={() => removePlayer(row.playerId)}
               />
             ))}
@@ -323,7 +312,7 @@ export function RankingList({
             )}
             {!saveError && isSignedIn && !saving && (
               <p className="text-pmp-gray-600 text-xs text-center mt-2">
-                All rankings lock automatically on Sept 9 at kickoff
+                All rankings lock automatically on Sep 9 at 5:00 PM ET
               </p>
             )}
           </div>

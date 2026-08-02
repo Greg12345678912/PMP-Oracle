@@ -7,11 +7,6 @@ export interface PlayerStats {
   communityAvgRank: number
   mostCommonRank: number | null
   userRank: number | null
-  confidenceBreakdown: {
-    low: number
-    medium: number
-    high: number
-  }
 }
 
 export async function getPlayerStats(
@@ -29,7 +24,7 @@ export async function getPlayerStats(
 
   if (error || !rows) return null
 
-  type Entry = { userId: string; playerRank: number; playerName: string; confidence: 'low' | 'medium' | 'high' }
+  type Entry = { userId: string; playerRank: number; playerName: string }
 
   const playerEntries: Entry[] = []
 
@@ -42,7 +37,6 @@ export async function getPlayerStats(
         userId: row.user_id as string,
         playerRank: entry.playerRank,
         playerName: entry.playerName,
-        confidence: entry.confidence,
       })
     }
   }
@@ -58,16 +52,9 @@ export async function getPlayerStats(
   ranks.forEach((r) => rankFreq.set(r, (rankFreq.get(r) ?? 0) + 1))
   const mostCommonRank = [...rankFreq.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 
-  const confidenceCounts = { low: 0, medium: 0, high: 0 }
-  playerEntries.forEach((e) => { confidenceCounts[e.confidence]++ })
-
   const userRank = userId
     ? (playerEntries.find((e) => e.userId === userId)?.playerRank ?? null)
     : null
-
-  const lowPct = Math.round((confidenceCounts.low / total) * 100)
-  const medPct = Math.round((confidenceCounts.medium / total) * 100)
-  const highPct = 100 - lowPct - medPct
 
   return {
     playerName,
@@ -75,10 +62,5 @@ export async function getPlayerStats(
     communityAvgRank,
     mostCommonRank,
     userRank,
-    confidenceBreakdown: {
-      low: lowPct,
-      medium: medPct,
-      high: highPct,
-    },
   }
 }

@@ -1,25 +1,17 @@
 'use client'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ConfidenceDot } from './ConfidenceDot'
 import type { RankingRow as RankingRowData } from '@/lib/oracle/rankings'
 
 interface RankingRowProps {
   row: RankingRowData
   rank: number
   locked: boolean
-  onConfidenceChange: (confidence: RankingRowData['confidence']) => void
   onRemove: () => void
 }
 
 /** Individual ranked player row — drag handle is explicit (44px touch target), not whole-row. */
-export function RankingRowItem({
-  row,
-  rank,
-  locked,
-  onConfidenceChange,
-  onRemove,
-}: RankingRowProps) {
+export function RankingRowItem({ row, rank, locked, onRemove }: RankingRowProps) {
   const {
     attributes,
     listeners,
@@ -58,7 +50,6 @@ export function RankingRowItem({
           </svg>
         </button>
       ) : (
-        /* Spacer so rank + name align identically in locked state */
         <span className="w-11 h-11 shrink-0" />
       )}
 
@@ -71,13 +62,6 @@ export function RankingRowItem({
       <span className="text-pmp-white text-sm font-medium flex-1 truncate px-2">
         {row.playerName}
       </span>
-
-      {/* Confidence dot */}
-      <ConfidenceDot
-        confidence={row.confidence}
-        onChange={onConfidenceChange}
-        disabled={locked}
-      />
 
       {/* Remove button — 44×44px touch target */}
       {!locked && (

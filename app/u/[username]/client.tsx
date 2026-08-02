@@ -4,8 +4,6 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
-import { PREDICTION_QUESTIONS } from '@/lib/oracle/predictions'
-import type { PredictionRow } from '@/lib/oracle/predictions'
 import type { PositionResult } from '@/lib/oracle/scoring'
 import { ResultsShareCard } from '@/components/oracle/ResultsShareCard'
 
@@ -22,7 +20,6 @@ interface ProfileData {
 interface RankingPickPreview {
   playerRank: number
   playerName: string
-  confidence: string
 }
 
 interface ProfileClientProps {
@@ -35,7 +32,6 @@ interface ProfileClientProps {
   positionResults: PositionResult[]
   summary: string | null
   rankingPreview: Record<string, RankingPickPreview[]>
-  predictions: PredictionRow[]
   lockDateLabel: string
 }
 
@@ -67,18 +63,6 @@ function Avatar({ avatarUrl, displayName }: { avatarUrl: string | null; displayN
   )
 }
 
-// ─── Confidence dot ───────────────────────────────────────────────────────────
-
-function ConfidenceDot({ confidence }: { confidence: string }) {
-  const color =
-    confidence === 'high'
-      ? 'bg-pmp-red'
-      : confidence === 'medium'
-        ? 'bg-pmp-gray-500'
-        : 'bg-pmp-gray-700'
-  return <span className={`inline-block w-2 h-2 rounded-full ${color} flex-shrink-0`} />
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function ProfileClient({
@@ -91,7 +75,6 @@ export function ProfileClient({
   positionResults,
   summary,
   rankingPreview,
-  predictions,
   lockDateLabel,
 }: ProfileClientProps) {
   const [activeTab, setActiveTab] = useState<OraclePosition>('QB')
@@ -242,7 +225,6 @@ export function ProfileClient({
                         {pick.playerRank}
                       </span>
                       <span className="text-pmp-white text-sm flex-1">{pick.playerName}</span>
-                      <ConfidenceDot confidence={pick.confidence} />
                     </div>
                   ))
                 )}
@@ -257,37 +239,6 @@ export function ProfileClient({
             </>
           )}
         </div>
-
-        {/* ── 7. Predictions ── */}
-        {isAfterLock && predictions.length > 0 && (
-          <div className="flex flex-col gap-4">
-            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
-              Predictions
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {predictions.map(pred => (
-                <div
-                  key={pred.questionId}
-                  className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-3 py-3 flex items-center gap-2"
-                >
-                  <span>
-                    {pred.isCorrect === true
-                      ? '✅'
-                      : pred.isCorrect === false
-                        ? '❌'
-                        : '⏳'}
-                  </span>
-                  <div>
-                    <p className="text-pmp-gray-500 text-xs">
-                      {PREDICTION_QUESTIONS.find(q => q.id === pred.questionId)?.label}
-                    </p>
-                    <p className="text-pmp-white text-xs font-semibold">{pred.answer}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Back link */}
         <div className="text-center pb-4">

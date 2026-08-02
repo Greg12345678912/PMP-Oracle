@@ -90,7 +90,7 @@ export default async function PlayerPage({
   const stats = await getPlayerStats(id, season.id, session?.user.id ?? null)
   if (!stats) notFound()
 
-  const { playerName, total, communityAvgRank, mostCommonRank, userRank, confidenceBreakdown } = stats
+  const { playerName, total, communityAvgRank, mostCommonRank, userRank } = stats
 
   const rankDelta =
     userRank !== null ? userRank - communityAvgRank : null
@@ -154,43 +154,9 @@ export default async function PlayerPage({
           </div>
         )}
 
-        {/* Confidence breakdown */}
-        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-3">
-          <p className="text-pmp-gray-500 text-xs uppercase tracking-widest">Confidence Breakdown</p>
-
-          <ConfidenceBar label="High" pct={confidenceBreakdown.high} color="bg-pmp-red" />
-          <ConfidenceBar label="Medium" pct={confidenceBreakdown.medium} color="bg-pmp-gray-600" />
-          <ConfidenceBar label="Low" pct={confidenceBreakdown.low} color="bg-pmp-gray-700" />
-        </div>
-
         <p className="text-pmp-gray-500 text-xs text-center">
           Rankings locked · {total} oracle{total === 1 ? '' : 's'} weighed in
         </p>
-      </div>
-    </div>
-  )
-}
-
-function ConfidenceBar({
-  label,
-  pct,
-  color,
-}: {
-  label: string
-  pct: number
-  color: string
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex justify-between text-xs">
-        <span className="text-pmp-gray-500">{label}</span>
-        <span className="text-pmp-white font-medium">{pct}%</span>
-      </div>
-      <div className="h-2 bg-pmp-gray-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full ${color}`}
-          style={{ width: `${pct}%` }}
-        />
       </div>
     </div>
   )

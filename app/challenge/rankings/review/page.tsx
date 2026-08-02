@@ -7,7 +7,6 @@ import type { OraclePosition } from '@/lib/oracle/constants'
 import type { RankingRow } from '@/lib/oracle/rankings'
 import { ReviewClient } from './client'
 import { redirect } from 'next/navigation'
-import { getPredictions } from '@/lib/oracle/predictions'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,10 +29,9 @@ export default async function ReviewPage() {
 
   // Check if already submitted — separate query since getRankings doesn't return is_submitted
   let isSubmitted = false
-  let predictionCount = 0
   let username: string | null = null
   if (season) {
-    const [submittedData, predictionRows, profileData] = await Promise.all([
+    const [submittedData, profileData] = await Promise.all([
       db
         .from('challenge_rankings')
         .select('is_submitted')
@@ -41,7 +39,6 @@ export default async function ReviewPage() {
         .eq('season_id', season.id)
         .limit(1)
         .maybeSingle(),
-      getPredictions(db, session.user.id, season.id),
       db
         .from('user_profiles')
         .select('username')
@@ -49,7 +46,6 @@ export default async function ReviewPage() {
         .maybeSingle(),
     ])
     isSubmitted = submittedData.data?.is_submitted === true
-    predictionCount = predictionRows.length
     username = (profileData.data?.username as string | null) ?? null
   }
 
@@ -58,7 +54,6 @@ export default async function ReviewPage() {
       rankings={rankings}
       locked={locked}
       isSubmitted={isSubmitted}
-      predictionCount={predictionCount}
       username={username}
     />
   )

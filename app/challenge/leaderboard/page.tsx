@@ -197,10 +197,10 @@ export default async function LeaderboardPage() {
             </p>
             <div className="mt-3 flex flex-col gap-1 text-center">
               <p className="text-pmp-white text-sm font-semibold">
-                🏆 {locked ? 'First leaderboard: Sept. 15' : 'Leaderboard starts Sept. 15'}
+                🏆 Official standings begin after Week 1
               </p>
               <p className="text-pmp-gray-600 text-xs">
-                Then updated every Tuesday throughout the NFL season.
+                Updated every Tuesday throughout the NFL season.
               </p>
             </div>
           </div>

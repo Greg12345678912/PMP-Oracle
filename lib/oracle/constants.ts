@@ -1,6 +1,6 @@
 /** Lock date for The Oracle Challenge 2026.
- *  Wednesday September 9, 2026 — NFL Week 1 opening kickoff (8:20 PM ET). */
-export const ORACLE_LOCK_DATE = new Date('2026-09-09T20:20:00-04:00')
+ *  Wednesday September 9, 2026 — 5:00 PM ET (before NFL Week 1 kickoff). */
+export const ORACLE_LOCK_DATE = new Date('2026-09-09T17:00:00-04:00')
 
 export const ORACLE_POSITIONS = ['QB', 'RB', 'WR', 'TE'] as const
 export type OraclePosition = typeof ORACLE_POSITIONS[number]
