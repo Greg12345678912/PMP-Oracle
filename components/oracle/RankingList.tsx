@@ -1,5 +1,6 @@
 'use client'
 import { useState, useCallback, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import {
   DndContext,
   closestCenter,
@@ -53,6 +54,8 @@ interface RankingListProps {
   players: Player[]
   locked: boolean
   isSignedIn: boolean
+  /** True when all 4 positions have been saved — enables "Submit Picks →" mode */
+  allSaved?: boolean
   /** Called when user clicks "Save Rankings" — handles auth gate externally */
   onSave: (position: OraclePosition, rows: RankingRow[]) => Promise<void>
 }
@@ -63,6 +66,7 @@ export function RankingList({
   players,
   locked,
   isSignedIn,
+  allSaved = false,
   onSave,
 }: RankingListProps) {
   const maxSize = POSITION_LIST_SIZE[position]
@@ -80,14 +84,17 @@ export function RankingList({
   const [saving, setSaving] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
+  // dirty = rows have changed since last save (or since mount if never saved)
+  const [dirty, setDirty] = useState(false)
 
   const rankedIds = new Set(rows.map(r => r.playerId))
 
-  /* Anonymous-only: auto-save draft to localStorage whenever rows change */
+  /* Auto-save draft (anonymous) and mark dirty whenever rows change */
   const isFirstRender = useRef(true)
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return }
     if (!isSignedIn) persistDraft(position, rows)
+    setDirty(true)
   }, [isSignedIn, position, rows])
 
   /* dnd-kit sensors — PointerSensor handles mouse + touch, TouchSensor for better mobile */
@@ -143,6 +150,7 @@ export function RankingList({
     try {
       await onSave(position, rows)
       setLastSavedAt(new Date())
+      setDirty(false)
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : 'Save failed — try again')
     } finally {
@@ -285,35 +293,46 @@ export function RankingList({
         </div>
       )}
 
-      {/* Sticky Save CTA — sits above the persistent nav bar */}
+      {/* Single sticky CTA — morphs between Save Rankings and Submit Picks */}
       {!locked && (
         <div className="fixed bottom-[calc(52px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-50 px-4 pb-3 pt-3 bg-gradient-to-t from-pmp-black via-pmp-black/95 to-transparent pointer-events-none">
           <div className="pointer-events-auto max-w-xl mx-auto">
-            <button
-              onClick={handleSave}
-              disabled={saving || rows.length === 0}
-              className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm tracking-wide hover:opacity-90 transition-opacity disabled:opacity-40 active:scale-[0.98]"
-            >
-              {saving
-                ? 'Saving\u2026'
-                : lastSavedAt
-                  ? `\u2713 Saved at ${lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                  : isSignedIn
-                    ? 'Save Rankings'
-                    : `Save Draft (${rows.length}/${maxSize})`}
-            </button>
-            {saveError && (
-              <p className="text-pmp-red text-xs text-center mt-2">{saveError}</p>
-            )}
-            {!saveError && !isSignedIn && rows.length > 0 && (
-              <p className="text-pmp-gray-600 text-xs text-center mt-2">
-                Draft saved locally · Sign in to lock in permanently
-              </p>
-            )}
-            {!saveError && isSignedIn && !saving && (
-              <p className="text-pmp-gray-600 text-xs text-center mt-2">
-                All rankings lock automatically on Sep 9 at 5:00 PM ET
-              </p>
+            {allSaved && !dirty ? (
+              <Link
+                href="/challenge/rankings/review"
+                className="block w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm tracking-wide text-center hover:opacity-90 transition-opacity active:scale-[0.98]"
+              >
+                Submit Picks &rarr;
+              </Link>
+            ) : (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={saving || rows.length === 0}
+                  className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm tracking-wide hover:opacity-90 transition-opacity disabled:opacity-40 active:scale-[0.98]"
+                >
+                  {saving
+                    ? 'Saving\u2026'
+                    : (!dirty && lastSavedAt)
+                      ? `\u2713 Saved \u00b7 ${lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                      : isSignedIn
+                        ? 'Save Rankings'
+                        : `Save Draft (${rows.length}/${maxSize})`}
+                </button>
+                {saveError && (
+                  <p className="text-pmp-red text-xs text-center mt-2">{saveError}</p>
+                )}
+                {!saveError && !isSignedIn && rows.length > 0 && (
+                  <p className="text-pmp-gray-600 text-xs text-center mt-2">
+                    Draft saved locally · Sign in to lock in permanently
+                  </p>
+                )}
+                {!saveError && isSignedIn && !saving && (
+                  <p className="text-pmp-gray-600 text-xs text-center mt-2">
+                    All rankings lock automatically on Sep 9 at 5:00 PM ET
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>

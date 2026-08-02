@@ -1,6 +1,5 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
-import Link from 'next/link'
 import { RankingList } from '@/components/oracle/RankingList'
 import { ProfileGate } from '@/components/oracle/ProfileGate'
 import type { RankingRow } from '@/lib/oracle/rankings'
@@ -182,34 +181,11 @@ export function RankingsClient({
           players={players[activePosition] ?? []}
           locked={locked}
           isSignedIn={isSignedIn}
+          allSaved={savedPositions.size === 4}
           onSave={handleSave}
         />
       </div>
 
-      {/* Submit Picks CTA */}
-      {!locked && (
-        <div className="px-4 py-4 border-t border-pmp-gray-800 shrink-0 flex flex-col gap-2">
-          {savedPositions.size === 4 && (
-            <p className="text-pmp-gray-500 text-xs text-center">
-              Your rankings are saved and can be edited until September 9 at 5:00 PM ET.
-            </p>
-          )}
-          <Link
-            href="/challenge/rankings/review"
-            className={[
-              'w-full font-bold py-3.5 rounded-xl text-sm text-center transition-colors',
-              savedPositions.size === 4
-                ? 'bg-pmp-red text-pmp-white hover:opacity-90'
-                : 'bg-pmp-gray-800 text-pmp-gray-500 pointer-events-none',
-            ].join(' ')}
-            aria-disabled={savedPositions.size < 4}
-          >
-            {savedPositions.size === 4
-              ? 'Submit Picks \u2192'
-              : `Save all 4 positions to submit (${savedPositions.size}/4)`}
-          </Link>
-        </div>
-      )}
     </div>
   )
 }

@@ -15,7 +15,9 @@ interface ReviewClientProps {
 
 export function ReviewClient({ rankings, locked, isSubmitted, username }: ReviewClientProps) {
   const [entering, setEntering] = useState(false)
-  const [entered, setEntered] = useState(isSubmitted)
+  // Always start on the review form — trophy screen only appears after actively submitting.
+  // Submission is not a lock; the lock date controls editability.
+  const [entered, setEntered] = useState(false)
   const [entryNumber, setEntryNumber] = useState<number | null>(null)
   const [showWarning, setShowWarning] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -241,14 +243,29 @@ export function ReviewClient({ rankings, locked, isSubmitted, username }: Review
         <p className="text-pmp-red text-sm text-center">{error}</p>
       )}
 
-      {/* Enter CTA */}
+      {/* Already-submitted status */}
+      {isSubmitted && !locked && (
+        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 flex items-center gap-3">
+          <span className="text-base">✅</span>
+          <div>
+            <p className="text-pmp-white text-sm font-semibold">You&apos;re already entered</p>
+            <p className="text-pmp-gray-500 text-xs">Submitting again will update your picks.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Enter / Update CTA */}
       {!showWarning && !locked && (
         <button
           onClick={() => handleEnter(false)}
           disabled={entering}
           className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm tracking-wide hover:opacity-90 disabled:opacity-40 transition-opacity"
         >
-          {entering ? 'Entering\u2026' : 'Enter the Oracle Challenge'}
+          {entering
+            ? 'Saving\u2026'
+            : isSubmitted
+              ? 'Update Your Entry'
+              : 'Enter the Oracle Challenge'}
         </button>
       )}
 
