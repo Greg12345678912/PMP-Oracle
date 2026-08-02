@@ -81,7 +81,7 @@ describe('scorePosition', () => {
     expect(result.score).toBe(82)             // 9×9 + 1 (p1 at position 10 but actual rank 1 = distance 9 = 1pt)
     expect(result.top10Hits).toBe(10)
     expect(result.totalRankError).toBe(18)    // 1+1+1+1+1+1+1+1+1+9
-    expect(result.details.slice(0, 9).forEach(d => expect(d.points).toBe(9)))
+    result.details.slice(0, 9).forEach(d => expect(d.points).toBe(9))
     expect(result.details[9].points).toBe(1)  // p1 at position 10 has only 1 pt
   })
 
