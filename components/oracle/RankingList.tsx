@@ -97,6 +97,17 @@ export function RankingList({
     setDirty(true)
   }, [isSignedIn, position, rows])
 
+  /* Warn before leaving with unsaved changes */
+  useEffect(() => {
+    if (!dirty) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [dirty])
+
   /* dnd-kit sensors — PointerSensor handles mouse + touch, TouchSensor for better mobile */
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -234,8 +245,8 @@ export function RankingList({
         </SortableContext>
       </DndContext>
 
-      {/* Player pool — hidden when full or locked */}
-      {!locked && rows.length < maxSize && (
+      {/* Player pool — hidden only when locked */}
+      {!locked && (
         <div className="flex flex-col gap-3">
           {/* Popular players — secondary suggestion, shown when not searching */}
           {search.length === 0 && (
@@ -326,11 +337,9 @@ export function RankingList({
                 >
                   {saving
                     ? 'Saving\u2026'
-                    : (!dirty && lastSavedAt)
-                      ? `\u2713 Saved \u00b7 ${lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                      : isSignedIn
-                        ? 'Save Rankings'
-                        : `Save Draft (${rows.length}/${maxSize})`}
+                    : isSignedIn
+                      ? 'Save Rankings'
+                      : `Save Draft (${rows.length}/${maxSize})`}
                 </button>
                 {saveError && (
                   <p className="text-pmp-red text-xs text-center mt-2">{saveError}</p>
