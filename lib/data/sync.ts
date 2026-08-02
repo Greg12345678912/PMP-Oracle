@@ -98,6 +98,7 @@ export async function syncPlayersToCache(scoring: 'ppr' | 'half_ppr' | 'standard
       adp_value: adpValue,
       adp_format: adpValue != null ? scoring : null,
       last_synced_at: now,
+      updated_at: now,
     })
   }
 
