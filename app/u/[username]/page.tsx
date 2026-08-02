@@ -35,6 +35,7 @@ interface AccuracyScoreRow {
   score_wr: number
   score_te: number
   global_rank: number | null
+  current_week: number | null
   computed_at: string | null
 }
 
@@ -101,18 +102,18 @@ export default async function UserProfilePage({ params }: PageProps) {
   // Fetch all data in parallel
   const [accResult, detailResult, rankingRowsResult, totalCountResult] =
     await Promise.all([
-      // Accuracy scores (only meaningful if scored)
-      isScored && season
+      // Accuracy scores — always fetch if season exists; display gated on current_week > 0
+      season
         ? db
             .from('accuracy_scores')
-            .select('overall_score, score_qb, score_rb, score_wr, score_te, global_rank, computed_at')
+            .select('overall_score, score_qb, score_rb, score_wr, score_te, global_rank, current_week, computed_at')
             .eq('user_id', profile.user_id)
             .eq('season_id', season.id)
             .maybeSingle()
         : Promise.resolve({ data: null }),
 
-      // Ranking score detail (only if scored)
-      isScored && season
+      // Ranking score detail — show when in-season scores exist or fully scored
+      season
         ? db
             .from('ranking_score_detail')
             .select('position, player_id, player_name, user_rank, actual_rank, distance')
@@ -129,8 +130,8 @@ export default async function UserProfilePage({ params }: PageProps) {
             .eq('season_id', season.id)
         : Promise.resolve({ data: [] }),
 
-      // Total participant count (for percentile)
-      isScored && season
+      // Total participant count (for percentile) — show when scores exist
+      season
         ? db
             .from('accuracy_scores')
             .select('*', { count: 'exact', head: true })
@@ -190,8 +191,12 @@ export default async function UserProfilePage({ params }: PageProps) {
 
   const lockDateLabel = ORACLE_LOCK_DATE.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/New_York' })
 
+  // Show scores if: season fully scored OR pipeline has run at least 1 week
+  const hasInSeasonScores = (scoreData?.current_week ?? 0) > 0
+  const showScores = isScored || hasInSeasonScores
+
   const oracleResult: OracleResult | null =
-    isScored && scoreData
+    showScores && scoreData
       ? { overallScore: scoreData.overall_score, positionResults }
       : null
 
@@ -208,10 +213,10 @@ export default async function UserProfilePage({ params }: PageProps) {
       }}
       isOwn={isOwn}
       isAfterLock={isAfterLock}
-      isScored={isScored}
+      isScored={showScores}
       overallScore={overallScore}
       percentile={percentile}
-      positionResults={isScored ? positionResults : []}
+      positionResults={showScores ? positionResults : []}
       summary={summary}
       rankingPreview={rankingPreview}
       lockDateLabel={lockDateLabel}
