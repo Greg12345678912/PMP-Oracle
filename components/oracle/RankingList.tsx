@@ -298,12 +298,25 @@ export function RankingList({
         <div className="fixed bottom-[calc(52px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-50 px-4 pb-3 pt-3 bg-gradient-to-t from-pmp-black via-pmp-black/95 to-transparent pointer-events-none">
           <div className="pointer-events-auto max-w-xl mx-auto">
             {allSaved && !dirty ? (
-              <Link
-                href="/challenge/rankings/review"
-                className="block w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm tracking-wide text-center hover:opacity-90 transition-opacity active:scale-[0.98]"
-              >
-                Submit Picks &rarr;
-              </Link>
+              <>
+                <Link
+                  href="/challenge/rankings/review"
+                  className="block w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm tracking-wide text-center hover:opacity-90 transition-opacity active:scale-[0.98]"
+                >
+                  Submit Picks &rarr;
+                </Link>
+                {lastSavedAt && (
+                  <p className="text-pmp-gray-500 text-xs text-center mt-1.5">
+                    {'\u2713'} All rankings saved &middot; Last saved: Today at{' '}
+                    {lastSavedAt.toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      timeZone: 'America/New_York',
+                      timeZoneName: 'short',
+                    })}
+                  </p>
+                )}
+              </>
             ) : (
               <>
                 <button
@@ -324,12 +337,14 @@ export function RankingList({
                 )}
                 {!saveError && !isSignedIn && rows.length > 0 && (
                   <p className="text-pmp-gray-600 text-xs text-center mt-2">
-                    Draft saved locally · Sign in to lock in permanently
+                    Draft saved locally &middot; Sign in to lock in permanently
                   </p>
                 )}
                 {!saveError && isSignedIn && !saving && (
                   <p className="text-pmp-gray-600 text-xs text-center mt-2">
-                    All rankings lock automatically on Sep 9 at 5:00 PM ET
+                    {(!dirty && lastSavedAt)
+                      ? `Last saved: Today at ${lastSavedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' })}`
+                      : 'All rankings lock automatically on Sep 9 at 5:00 PM ET'}
                   </p>
                 )}
               </>

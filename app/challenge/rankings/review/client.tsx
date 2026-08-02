@@ -71,9 +71,15 @@ export function ReviewClient({ rankings, locked, isSubmitted, username }: Review
 
           {/* Header */}
           <div className="text-center flex flex-col gap-1">
-            <p className="text-3xl">🏆</p>
-            <h1 className="text-pmp-white font-black text-2xl mt-2">You&apos;re officially in.</h1>
-            <p className="text-pmp-gray-600 text-sm">2026 Oracle Challenge</p>
+            <p className="text-3xl">{isSubmitted ? '✅' : '🏆'}</p>
+            <h1 className="text-pmp-white font-black text-2xl mt-2">
+              {isSubmitted ? 'Rankings Updated.' : 'You\u2019re officially in.'}
+            </h1>
+            <p className="text-pmp-gray-600 text-sm">
+              {isSubmitted
+                ? 'Your Oracle entry has been updated.'
+                : '2026 Oracle Challenge'}
+            </p>
           </div>
 
           {/* Entry receipt card */}
