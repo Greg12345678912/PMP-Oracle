@@ -128,35 +128,47 @@ export async function runWeeklyPipeline(opts?: {
 
   // ── Stage 3: Build ground truth ──────────────────────────────────────────────
   let groundTruthResults: Awaited<ReturnType<typeof buildGroundTruth>> = []
+  let groundTruthFailed = false
   try {
     groundTruthResults = await buildGroundTruth(season.id, currentWeek, { dryRun })
   } catch (err) {
     errors.push(`ground-truth: ${err instanceof Error ? err.message : String(err)}`)
+    groundTruthFailed = true
   }
 
   // ── Stage 4: Score all submitted entries ─────────────────────────────────────
+  // SAFETY: if ground truth failed or produced no results, skip scoring entirely.
+  // Running scoreUser with empty ground truth would upsert overall_score=0 for
+  // every user, silently wiping all valid scores from previous pipeline runs.
   let usersScored = 0
   let usersFailed = 0
-  try {
-    const scoringResult = await runScoringForSeason(season.id, groundTruthResults, {
-      pipelineRunId,
-      dryRun,
-    })
-    usersScored = scoringResult.scored
-    usersFailed = scoringResult.failed
-    errors.push(...scoringResult.errors)
-  } catch (err) {
-    errors.push(`scoring-runner: ${err instanceof Error ? err.message : String(err)}`)
+  if (groundTruthFailed || groundTruthResults.length === 0) {
+    errors.push('scoring-runner: skipped — ground truth unavailable, preserving existing scores')
+  } else {
+    try {
+      const scoringResult = await runScoringForSeason(season.id, groundTruthResults, {
+        pipelineRunId,
+        dryRun,
+      })
+      usersScored = scoringResult.scored
+      usersFailed = scoringResult.failed
+      errors.push(...scoringResult.errors)
+    } catch (err) {
+      errors.push(`scoring-runner: ${err instanceof Error ? err.message : String(err)}`)
+    }
   }
 
   // ── Stage 5: Rank entries ────────────────────────────────────────────────────
+  // Skip ranking if scoring was skipped — ranks are still valid from last run.
   let usersRanked = 0
-  try {
-    const rankResult = await rankSeason(season.id, currentWeek, { dryRun })
-    usersRanked = rankResult.ranked
-    errors.push(...rankResult.errors)
-  } catch (err) {
-    errors.push(`ranker: ${err instanceof Error ? err.message : String(err)}`)
+  if (!groundTruthFailed && groundTruthResults.length > 0) {
+    try {
+      const rankResult = await rankSeason(season.id, currentWeek, { dryRun })
+      usersRanked = rankResult.ranked
+      errors.push(...rankResult.errors)
+    } catch (err) {
+      errors.push(`ranker: ${err instanceof Error ? err.message : String(err)}`)
+    }
   }
 
   const completedAt = new Date().toISOString()

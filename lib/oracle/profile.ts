@@ -71,7 +71,10 @@ export async function createProfile(params: {
 }
 
 /** Fetch or create a profile for the given user.
- *  Returns the profile and whether it was just created. */
+ *  Returns the profile and whether it was just created.
+ *  Safe against concurrent requests (TOCTOU): if two requests race between the
+ *  getProfile check and the insert, the loser catches the error and falls back
+ *  to reading the profile the winner already created. */
 export async function getOrCreateProfile(
   userId: string,
   googleDisplayName: string,
@@ -79,8 +82,17 @@ export async function getOrCreateProfile(
 ): Promise<{ profile: UserProfile; isNew: boolean }> {
   const existing = await getProfile(userId)
   if (existing) return { profile: existing, isNew: false }
-  const profile = await createProfile({ userId, displayName: googleDisplayName, avatarUrl })
-  return { profile, isNew: true }
+
+  try {
+    const profile = await createProfile({ userId, displayName: googleDisplayName, avatarUrl })
+    return { profile, isNew: true }
+  } catch {
+    // A concurrent request may have created the profile between our getProfile
+    // check and the insert attempt. Re-fetch before giving up.
+    const recovered = await getProfile(userId)
+    if (recovered) return { profile: recovered, isNew: false }
+    throw new Error(`Failed to create profile for user ${userId}`)
+  }
 }
 
 function mapRow(row: Record<string, unknown>): UserProfile {

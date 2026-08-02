@@ -21,6 +21,10 @@ export async function getServerClient() {
 
 export async function getSession() {
   const supabase = await getServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  return session
+  // getUser() validates the JWT with the Supabase auth server on every call.
+  // getSession() only reads from the cookie without server-side verification —
+  // a forged or tampered cookie would pass. Always use getUser() in server code.
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) return null
+  return { user }
 }
