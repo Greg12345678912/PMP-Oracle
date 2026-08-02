@@ -46,6 +46,7 @@ export default async function RankingsPage() {
       players={players}
       locked={locked}
       isSignedIn={!!session}
+      lockAt={season?.lock_at ?? ''}
     />
   )
 }

@@ -112,10 +112,10 @@ export function ProfileClient({
 
           {isOwn && (
             <Link
-              href="/challenge"
+              href="/challenge/rankings"
               className="text-pmp-red text-xs font-semibold hover:opacity-80"
             >
-              Edit my challenge →
+              Edit my rankings →
             </Link>
           )}
         </div>

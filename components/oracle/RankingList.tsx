@@ -56,8 +56,18 @@ interface RankingListProps {
   isSignedIn: boolean
   /** True when all 4 positions have been saved — enables "Submit Picks →" mode */
   allSaved?: boolean
+  /** ISO date string from season.lock_at — used for the deadline hint */
+  lockAt?: string
   /** Called when user clicks "Save Rankings" — handles auth gate externally */
   onSave: (position: OraclePosition, rows: RankingRow[]) => Promise<void>
+}
+
+function formatLockDeadline(lockAt: string) {
+  if (!lockAt) return 'the deadline'
+  const d = new Date(lockAt)
+  const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' })
+  return `${date} at ${time}`
 }
 
 export function RankingList({
@@ -67,6 +77,7 @@ export function RankingList({
   locked,
   isSignedIn,
   allSaved = false,
+  lockAt,
   onSave,
 }: RankingListProps) {
   const maxSize = POSITION_LIST_SIZE[position]
@@ -197,6 +208,13 @@ export function RankingList({
           style={{ width: `${Math.min(100, (rows.length / maxSize) * 100)}%` }}
         />
       </div>
+
+      {/* Drag hint — shown once players are added */}
+      {rows.length > 0 && !locked && (
+        <p className="text-pmp-gray-700 text-[10px] text-center">
+          Hold the ⠿ handle on any player to drag and reorder
+        </p>
+      )}
 
       {locked && (
         <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 text-pmp-gray-500 text-sm text-center">
@@ -353,7 +371,7 @@ export function RankingList({
                   <p className="text-pmp-gray-600 text-xs text-center mt-2">
                     {(!dirty && lastSavedAt)
                       ? `Last saved: Today at ${lastSavedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' })}`
-                      : 'All rankings lock automatically on Sep 9 at 5:00 PM ET'}
+                      : lockAt ? `Rankings lock ${formatLockDeadline(lockAt)}` : 'Rankings lock at the deadline'}
                   </p>
                 )}
               </>

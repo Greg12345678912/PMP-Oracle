@@ -7,9 +7,10 @@ const USERNAME_RE = /^[a-z0-9_]{3,20}$/
 interface OnboardingClientProps {
   initialUsername: string
   displayName: string
+  lockAt?: string
 }
 
-export function OnboardingClient({ initialUsername, displayName }: OnboardingClientProps) {
+export function OnboardingClient({ initialUsername, displayName, lockAt }: OnboardingClientProps) {
   const router = useRouter()
   const [step, setStep] = useState<'username' | 'welcome'>('username')
   const [username, setUsername] = useState(initialUsername)
@@ -84,14 +85,15 @@ export function OnboardingClient({ initialUsername, displayName }: OnboardingCli
           Welcome, {firstName}.
         </h1>
         <p className="text-pmp-gray-400 text-base">
-          Your fantasy profile is ready.
+          Your fantasy profile is ready. Time to rank your players.
         </p>
-        <div className="mt-2 flex flex-col items-center gap-0.5">
-          <p className="text-pmp-gray-600 text-xs font-bold uppercase tracking-widest">Oracle Rating</p>
-          <p className="text-pmp-white font-black text-3xl">—</p>
-          <p className="text-pmp-gray-700 text-xs mt-0.5">Unlocked after your first season</p>
-        </div>
-        <p className="text-pmp-gray-700 text-xs mt-4">Taking you to your dashboard…</p>
+        <button
+          onClick={() => router.replace('/challenge/rankings')}
+          className="mt-2 bg-pmp-red text-pmp-white font-bold py-4 px-8 rounded-xl text-sm hover:opacity-90 transition-opacity active:scale-[0.98]"
+        >
+          Start Ranking &rarr;
+        </button>
+        <p className="text-pmp-gray-700 text-xs">Taking you there automatically…</p>
       </div>
     )
   }
@@ -106,7 +108,7 @@ export function OnboardingClient({ initialUsername, displayName }: OnboardingCli
       <div className="flex flex-col gap-2">
         <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em]">Oracle Challenge</p>
         <h1 className="text-pmp-white font-black text-3xl leading-tight">
-          Claim your username
+          Choose your username
         </h1>
         <p className="text-pmp-gray-500 text-sm leading-relaxed">
           This is how you&apos;ll appear on the leaderboard.
@@ -169,13 +171,15 @@ export function OnboardingClient({ initialUsername, displayName }: OnboardingCli
         disabled={!canSubmit}
         className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm tracking-wide hover:opacity-90 transition-opacity disabled:opacity-40 active:scale-[0.98]"
       >
-        {saving ? 'Saving\u2026' : 'Claim Username \u2192'}
+        {saving ? 'Saving\u2026' : 'Set Username \u2192'}
       </button>
 
       {/* Fine print */}
       <p className="text-pmp-gray-700 text-xs text-center leading-relaxed">
-        Rankings lock September 9 at 5:00 PM ET<br />
-        Your Oracle Rating starts after your first season
+        {lockAt
+          ? <>Rankings lock {new Date(lockAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/New_York' })} &middot; Your Oracle Rating starts after your first season</>
+          : 'Your Oracle Rating starts after your first season'
+        }
       </p>
     </div>
   )

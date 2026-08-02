@@ -49,9 +49,9 @@ function HoldingPage() {
       <div className="w-full max-w-xs flex flex-col gap-6 text-center">
         <div className="flex flex-col gap-2">
           <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge</p>
-          <h1 className="text-pmp-white font-bold text-2xl">Your first score arrives September 15.</h1>
+          <h1 className="text-pmp-white font-bold text-2xl">Your first score arrives after Week 1.</h1>
           <p className="text-pmp-gray-500 text-sm leading-relaxed">
-            After Week 1 we'll score your rankings and show you:
+            Once Week 1 games complete we&apos;ll score your rankings and show you:
           </p>
         </div>
 
@@ -321,12 +321,16 @@ export default async function ResultsPage() {
               <div className="flex gap-3 items-center">
                 <span>📅</span>
                 <span className="text-pmp-gray-600">Rankings locked:</span>
-                <span className="text-pmp-white">September 9, 2026</span>
+                <span className="text-pmp-white">
+                  {season?.lock_at
+                    ? new Date(season.lock_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })
+                    : 'Start of season'}
+                </span>
               </div>
               <div className="flex gap-3 items-center">
                 <span>🏁</span>
                 <span className="text-pmp-gray-600">Season ended:</span>
-                <span className="text-pmp-white">January 2027</span>
+                <span className="text-pmp-white">End of NFL season</span>
               </div>
               <div className="flex gap-3 items-center">
                 <span>📊</span>

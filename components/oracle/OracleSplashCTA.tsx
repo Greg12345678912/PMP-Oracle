@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import { getBrowserClient } from '@/lib/auth/client'
 
 const GoogleIcon = () => (
@@ -10,13 +11,23 @@ const GoogleIcon = () => (
   </svg>
 )
 
+const Spinner = () => (
+  <svg className="w-5 h-5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+  </svg>
+)
+
 interface OracleSplashCTAProps {
   /** Called after successful sign-in. When omitted, navigates to /challenge via OAuth redirect. */
   onSignInSuccess?: () => void
 }
 
 export function OracleSplashCTA({ onSignInSuccess: _ }: OracleSplashCTAProps) {
+  const [loading, setLoading] = useState(false)
+
   const handleGoogle = async () => {
+    setLoading(true)
     const supabase = getBrowserClient()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -29,10 +40,11 @@ export function OracleSplashCTA({ onSignInSuccess: _ }: OracleSplashCTAProps) {
   return (
     <button
       onClick={() => void handleGoogle()}
-      className="w-full bg-pmp-white text-pmp-black font-bold py-4 rounded-2xl text-base hover:opacity-90 transition-opacity flex items-center justify-center gap-2.5 active:scale-[0.98]"
+      disabled={loading}
+      className="w-full bg-pmp-white text-pmp-black font-bold py-4 rounded-2xl text-base hover:opacity-90 transition-opacity flex items-center justify-center gap-2.5 active:scale-[0.98] disabled:opacity-70"
     >
-      <GoogleIcon />
-      Continue with Google
+      {loading ? <Spinner /> : <GoogleIcon />}
+      {loading ? 'Signing in\u2026' : 'Sign in with Google'}
     </button>
   )
 }

@@ -1,12 +1,13 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/server'
+import { getCurrentSeason } from '@/lib/oracle/season'
 import { getProfile, createProfile } from '@/lib/oracle/profile'
 import { OnboardingClient } from './client'
 
 export const dynamic = 'force-dynamic'
 
 export default async function OnboardingPage() {
-  const session = await getSession()
+  const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
   if (!session) redirect('/challenge')
 
   let profile = await getProfile(session.user.id)
@@ -30,6 +31,7 @@ export default async function OnboardingPage() {
     <OnboardingClient
       initialUsername={profile.username}
       displayName={profile.displayName}
+      lockAt={season?.lock_at ?? ''}
     />
   )
 }

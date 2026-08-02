@@ -7,27 +7,32 @@ import { ORACLE_POSITIONS, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import { OracleSplashCTA } from '@/components/oracle/OracleSplashCTA'
 import { SignOutButton } from '@/components/oracle/SignOutButton'
+import { Countdown } from '@/components/oracle/Countdown'
 
 export const dynamic = 'force-dynamic'
 
-function daysUntil(lockAt: string): number {
-  return Math.max(0, Math.floor((new Date(lockAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+function formatLockLabel(lockAt: string) {
+  const d = new Date(lockAt)
+  const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' })
+  return `${date} · ${time}`
 }
 
 export default async function ChallengePage() {
   const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
   const locked = season ? isLocked(season) : true
-  const daysLeft = season ? daysUntil(season.lock_at) : 0
+  const lockLabel = season ? formatLockLabel(season.lock_at) : ''
 
   /* ─── Signed-in data ─────────────────────────────────────────────── */
   let displayName: string | null = null
   let rankingCounts: Record<OraclePosition, number> = { QB: 0, RB: 0, WR: 0, TE: 0 }
   let isSubmitted = false
   let totalEntries = 0
+  let entryNumber: number | null = null
 
   if (session && season) {
     const db = getServiceClient()
-    const [profileResult, submittedResult, entryCountResult, ...rankingResults] =
+    const [profileResult, submittedResult, entryCountResult, entryNumberResult, ...rankingResults] =
       await Promise.all([
         db
           .from('user_profiles')
@@ -46,12 +51,19 @@ export default async function ChallengePage() {
           .select('user_id')
           .eq('season_id', season.id)
           .eq('is_submitted', true),
+        db
+          .from('oracle_entries')
+          .select('entry_number')
+          .eq('user_id', session.user.id)
+          .eq('season_id', season.id)
+          .maybeSingle(),
         ...ORACLE_POSITIONS.map(pos => getRankings(session.user.id, season.id, pos)),
       ])
 
     displayName = (profileResult.data?.display_name as string | null) ?? null
     isSubmitted = submittedResult.data?.is_submitted === true
     totalEntries = new Set((entryCountResult.data ?? []).map((r: { user_id: string }) => r.user_id)).size
+    entryNumber = (entryNumberResult.data?.entry_number as number | null) ?? null
     ORACLE_POSITIONS.forEach((pos, i) => {
       rankingCounts[pos] = rankingResults[i]?.length ?? 0
     })
@@ -138,6 +150,11 @@ export default async function ChallengePage() {
                   {isSubmitted ? 'Officially in the 2026 Oracle Challenge' : 'Submit to officially enter'}
                 </p>
               </div>
+              {isSubmitted && entryNumber !== null && (
+                <span className="text-pmp-red font-black text-base shrink-0">
+                  #{entryNumber.toLocaleString()}
+                </span>
+              )}
             </div>
           </div>
 
@@ -158,16 +175,13 @@ export default async function ChallengePage() {
         </div>
 
         {/* Countdown card */}
-        {!locked && (
-          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex items-center justify-between">
+        {!locked && season && (
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex flex-col gap-3">
             <div>
               <p className="text-pmp-white font-bold text-base">Time Remaining</p>
-              <p className="text-pmp-gray-600 text-xs mt-0.5">Rankings lock Sep 9 · 5:00 PM ET</p>
+              <p className="text-pmp-gray-600 text-xs mt-0.5">Rankings lock {lockLabel}</p>
             </div>
-            <div className="text-right">
-              <p className="text-pmp-white font-black text-3xl">{daysLeft}</p>
-              <p className="text-pmp-gray-600 text-xs">days left</p>
-            </div>
+            <Countdown lockDate={season.lock_at} />
           </div>
         )}
         {locked && (

@@ -215,11 +215,9 @@ export default async function LeaderboardPage() {
                 const timeAgo = entry.updated_at
                   ? formatDistanceToNow(new Date(entry.updated_at as string), { addSuffix: true })
                   : 'recently'
-                return (
-                  <div
-                    key={entry.user_id as string}
-                    className="flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3"
-                  >
+                const username = profile?.username as string | undefined
+                const inner = (
+                  <>
                     <div className="w-8 h-8 rounded-full bg-pmp-gray-800 flex items-center justify-center shrink-0 overflow-hidden">
                       {profile?.avatar_url
                         ? <img src={profile.avatar_url as string} alt="" className="w-full h-full object-cover" />
@@ -230,6 +228,22 @@ export default async function LeaderboardPage() {
                       <p className="text-pmp-white text-sm font-semibold truncate">{(profile?.display_name as string) ?? 'Anonymous'}</p>
                     </div>
                     <span className="text-pmp-gray-600 text-xs shrink-0">{timeAgo}</span>
+                  </>
+                )
+                return username ? (
+                  <Link
+                    key={entry.user_id as string}
+                    href={`/u/${username}`}
+                    className="flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 hover:border-pmp-gray-600 transition-colors"
+                  >
+                    {inner}
+                  </Link>
+                ) : (
+                  <div
+                    key={entry.user_id as string}
+                    className="flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3"
+                  >
+                    {inner}
                   </div>
                 )
               })}
@@ -237,14 +251,15 @@ export default async function LeaderboardPage() {
           </div>
         )}
 
-        {/* Dynamic CTA */}
+        {/* Dynamic CTA — "See My Results" only appears once weekly scoring has started */}
         {userIsEntered ? (
-          <Link
-            href="/challenge/results"
-            className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
-          >
-            See My Results →
-          </Link>
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-4 flex items-center gap-3">
+            <span className="text-base shrink-0">✅</span>
+            <div>
+              <p className="text-pmp-white text-sm font-semibold">You&apos;re entered</p>
+              <p className="text-pmp-gray-500 text-xs">Scores arrive after Week 1 games complete</p>
+            </div>
+          </div>
         ) : (!season || season.status === 'open') ? (
           <Link
             href="/challenge/rankings"

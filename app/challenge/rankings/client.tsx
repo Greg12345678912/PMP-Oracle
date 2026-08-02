@@ -17,6 +17,7 @@ interface RankingsClientProps {
   players: Record<OraclePosition, Player[]>
   locked: boolean
   isSignedIn: boolean
+  lockAt?: string
 }
 
 export function RankingsClient({
@@ -24,6 +25,7 @@ export function RankingsClient({
   players,
   locked,
   isSignedIn,
+  lockAt,
 }: RankingsClientProps) {
   const [activePosition, setActivePosition] = useState<OraclePosition>('QB')
   const [savedPositions, setSavedPositions] = useState<Set<OraclePosition>>(
@@ -184,6 +186,7 @@ export function RankingsClient({
           locked={locked}
           isSignedIn={isSignedIn}
           allSaved={savedPositions.size === 4}
+          lockAt={lockAt}
           onSave={handleSave}
         />
       </div>

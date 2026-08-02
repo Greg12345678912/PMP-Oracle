@@ -14,6 +14,22 @@ interface ReviewClientProps {
   lockAt: string
 }
 
+function formatLockShort(lockAt: string) {
+  if (!lockAt) return 'the deadline'
+  const d = new Date(lockAt)
+  const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' })
+  return `${date} · ${time}`
+}
+
+function formatLockLong(lockAt: string) {
+  if (!lockAt) return 'the deadline'
+  const d = new Date(lockAt)
+  const date = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/New_York' })
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York', timeZoneName: 'short' })
+  return `${date} at ${time}`
+}
+
 export function ReviewClient({ rankings, locked, isSubmitted, username, lockAt }: ReviewClientProps) {
   const [entering, setEntering] = useState(false)
   // Always start on the review form — trophy screen only appears after actively submitting.
@@ -97,7 +113,7 @@ export function ReviewClient({ rankings, locked, isSubmitted, username, lockAt }
             <div className="px-5 py-4 flex flex-col gap-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-pmp-gray-500 text-sm">Rankings locked</span>
-                <span className="text-pmp-white text-sm font-semibold">Sep 9 · 5:00 PM ET</span>
+                <span className="text-pmp-white text-sm font-semibold">{formatLockShort(lockAt)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-pmp-gray-500 text-sm">Standings update</span>
@@ -140,12 +156,17 @@ export function ReviewClient({ rankings, locked, isSubmitted, username, lockAt }
                 View Your Profile →
               </Link>
             )}
-            <Link
-              href="/challenge/rankings"
-              className="text-pmp-gray-700 text-xs text-center hover:text-pmp-gray-500 transition-colors py-1"
-            >
-              Edit Rankings (until Sep 9)
-            </Link>
+            <div className="flex flex-col items-center gap-0.5">
+              <Link
+                href="/challenge/rankings"
+                className="text-pmp-gray-700 text-xs text-center hover:text-pmp-gray-500 transition-colors py-1"
+              >
+                Edit Rankings
+              </Link>
+              <p className="text-pmp-gray-800 text-[10px] text-center">
+                Come back here and re-submit to update your entry
+              </p>
+            </div>
           </div>
 
         </div>
@@ -202,7 +223,7 @@ export function ReviewClient({ rankings, locked, isSubmitted, username, lockAt }
           </div>
           <div className="flex items-center justify-between">
             <span className="text-pmp-gray-500 text-sm">Rankings Lock</span>
-            <span className="text-pmp-white text-sm font-semibold">September 9 · 5:00 PM ET</span>
+            <span className="text-pmp-white text-sm font-semibold">{formatLockShort(lockAt)}</span>
           </div>
         </div>
         {!locked && (
@@ -215,7 +236,7 @@ export function ReviewClient({ rankings, locked, isSubmitted, username, lockAt }
 
       {/* Lock date note */}
       <p className="text-pmp-gray-600 text-xs text-center">
-        You can continue editing until September 9 at 5:00 PM ET.<br />
+        You can continue editing until {formatLockLong(lockAt)}.<br />
         After that, rankings lock permanently.
       </p>
 
@@ -226,7 +247,7 @@ export function ReviewClient({ rankings, locked, isSubmitted, username, lockAt }
             ⚠️ You&apos;re entering without {incompletePositions.join(', ')} rankings.
           </p>
           <p className="text-pmp-gray-500 text-xs">
-            You can still compete, but you&apos;ll score 0 points for {incompletePositions.length === 1 ? 'that position' : 'those positions'} unless you complete them before September 9 at 5:00 PM ET.
+            You can still compete, but you&apos;ll score 0 points for {incompletePositions.length === 1 ? 'that position' : 'those positions'} unless you complete them before {formatLockLong(lockAt)}.
           </p>
           <div className="flex gap-3">
             <button
