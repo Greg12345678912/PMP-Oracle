@@ -23,36 +23,30 @@ export default function OGImage() {
           padding: '80px',
         }}
       >
-        {/* Logo */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logoSrc} width={420} height={420} alt="Pretty Much Picks" />
+        <img src={logoSrc} width={420} height={420} alt="" />
 
-        {/* Text */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div
-            style={{
-              color: '#DC2626',
-              fontSize: '22px',
-              fontWeight: 700,
-              letterSpacing: '0.25em',
-              textTransform: 'uppercase',
-            }}
-          >
+          <span style={{ color: '#DC2626', fontSize: '22px', fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase' }}>
             2026 Oracle Challenge
+          </span>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+            <span style={{ color: '#FFFFFF', fontSize: '72px', fontWeight: 900, lineHeight: 1.05 }}>
+              Prove Your
+            </span>
+            <span style={{ color: '#FFFFFF', fontSize: '72px', fontWeight: 900, lineHeight: 1.05 }}>
+              Fantasy IQ.
+            </span>
           </div>
-          <div
-            style={{
-              color: '#FFFFFF',
-              fontSize: '72px',
-              fontWeight: 900,
-              lineHeight: 1.05,
-            }}
-          >
-            Prove Your<br />Fantasy IQ.
-          </div>
-          <div style={{ color: '#6B7280', fontSize: '30px', lineHeight: 1.4 }}>
-            Rank every player before Week 1.<br />
-            Finish #1. Win $500. Free entry.
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <span style={{ color: '#6B7280', fontSize: '28px' }}>
+              Rank every player before Week 1.
+            </span>
+            <span style={{ color: '#6B7280', fontSize: '28px' }}>
+              Finish #1. Win $500. Free entry.
+            </span>
           </div>
         </div>
       </div>
