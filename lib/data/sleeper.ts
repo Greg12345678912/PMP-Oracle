@@ -7,7 +7,7 @@ const SLEEPER_API = 'https://api.sleeper.app/v1/players/nfl'
 const HEADSHOT_BASE = 'https://sleepercdn.com/content/nfl/players/thumb'
 
 // Players excluded from all position pools (retired, irrelevant, etc.)
-const EXCLUDED_PLAYER_IDS = new Set([
+export const EXCLUDED_PLAYER_IDS = new Set([
   '13269', // Fernando Mendoza
   '167',   // Tom Brady
   '13275', // Ty Simpson
@@ -26,7 +26,7 @@ const EXCLUDED_PLAYER_IDS = new Set([
 ])
 
 // Players to always include regardless of search_rank (Sleeper doesn't rank them but they're relevant)
-const ALWAYS_INCLUDE_IDS = new Set([
+export const ALWAYS_INCLUDE_IDS = new Set([
   '96',   // Aaron Rodgers
   '1166', // Kirk Cousins
   '4017', // Deshaun Watson
@@ -37,7 +37,7 @@ interface FantasyCalcEntry {
   overallRank: number
 }
 
-interface SleeperPlayer {
+export interface SleeperPlayer {
   player_id: string
   full_name: string
   first_name: string

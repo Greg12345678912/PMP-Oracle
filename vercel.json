@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/sync/players",
+      "schedule": "0 6 * * *"
+    },
+    {
       "path": "/api/oracle/scoring/recalculate",
       "schedule": "0 14 * * 2"
     }
