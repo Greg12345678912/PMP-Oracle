@@ -16,7 +16,7 @@ const EXAMPLES = [
   },
   {
     label: 'Close miss',
-    desc: 'You ranked a wide receiver #4. She finishes #7 in PPR points.',
+    desc: 'You ranked a wide receiver #4. He finishes #7 in PPR points.',
     your: 4,
     actual: 7,
     dist: 3,
@@ -88,7 +88,7 @@ export default function ScoringPage() {
           <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">Oracle Challenge</p>
           <h1 className="text-pmp-white font-black text-3xl leading-tight">How Scoring Works</h1>
           <p className="text-pmp-gray-500 text-base leading-relaxed">
-            The closer your pre-season rankings match how players actually performed, the higher your score. A perfect score is 100.
+            Oracle is a season-long prediction challenge, not a fantasy league. You are not managing a roster — you are predicting how players will finish before a single game is played. The closer your pre-season rankings match how players actually performed, the higher your score. A perfect score is 100.
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export default function ScoringPage() {
           <div className="flex flex-col gap-3">
             {[
               { n: '1', text: 'Before the season, you rank the top 10 players at each position — QB, RB, WR, and TE.' },
-              { n: '2', text: 'After the season ends, we calculate the actual top 10 PPR fantasy point scorers at each position.' },
+              { n: '2', text: 'Throughout the season, we track cumulative full-PPR fantasy points for every player. Scores update every Tuesday. Final standings are determined after the NFL regular season ends.' },
               { n: '3', text: 'For every player you ranked who made the actual top 10, you earn points based on how accurate your rank was. The closer, the more points. Miss the top 10 entirely, and that pick scores zero.' },
             ].map(({ n, text }) => (
               <div key={n} className="flex items-start gap-4">
@@ -190,7 +190,7 @@ export default function ScoringPage() {
           <h2 className="text-pmp-white font-bold text-lg">Why this scoring system?</h2>
           <div className="flex flex-col gap-3 text-pmp-gray-400 text-sm leading-relaxed">
             <p>
-              Oracle is designed to reward genuine conviction. It is not enough to have a player somewhere in your list — your specific rank matters. Ranking a player #1 who finishes #1 earns the maximum score. Ranking that same player #9 earns far less, because the prediction was imprecise.
+              Oracle rewards both identifying the right players and ranking them accurately. It is not enough to have a player somewhere in your list — your specific rank matters. Ranking a player #1 who finishes #1 earns the maximum score. Ranking that same player #9 earns far less, because the prediction was imprecise.
             </p>
             <p>
               Every position is weighted equally. A great tight end call is worth exactly as much as a great quarterback call. Your overall score is the average of all four positions, so expertise in any one position cannot carry you to #1 alone.
@@ -233,11 +233,12 @@ export default function ScoringPage() {
           </div>
         </section>
 
-        {/* Back link */}
-        <div className="flex justify-center pt-2 pb-6">
+        {/* Back link + last updated */}
+        <div className="flex flex-col items-center gap-3 pt-2 pb-6">
           <Link href="/challenge" className="text-pmp-gray-600 text-sm hover:text-pmp-gray-500 transition-colors">
             ← Back to Oracle Challenge
           </Link>
+          <p className="text-pmp-gray-800 text-xs">Last updated: August 2026 · Official rules for the 2026 Oracle Challenge</p>
         </div>
 
       </div>
