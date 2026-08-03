@@ -66,6 +66,7 @@ export class DBProvider implements DataProvider {
       .eq('sport', 'nfl')
       .in('position', ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'])
       .not('adp_value', 'is', null)
+      .eq('adp_format', scoring)
       .order('adp_value', { ascending: true, nullsFirst: false })
       .limit(500)
 
