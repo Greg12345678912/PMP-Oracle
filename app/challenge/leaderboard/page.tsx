@@ -208,7 +208,7 @@ export default async function LeaderboardPage() {
 
         {uniqueEntries.length > 0 && (
           <div className="flex flex-col gap-3">
-            <h2 className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Your Competition</h2>
+            <h2 className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Recent Entrants</h2>
             <div className="flex flex-col gap-2">
               {uniqueEntries.map((entry) => {
                 const profile = recentProfileMap.get(entry.user_id as string)

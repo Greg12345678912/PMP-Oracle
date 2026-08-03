@@ -54,12 +54,12 @@ export default async function PlayerPage({
           </div>
           <div className="h-px bg-pmp-gray-800" />
           <div className="flex flex-col gap-2">
-            <p className="text-pmp-gray-600 text-xs font-bold uppercase tracking-widest">After lock you&apos;ll see</p>
+            <p className="text-pmp-gray-600 text-xs font-bold uppercase tracking-widest">Coming after kickoff</p>
             {[
               'Average community rank',
-              'Confidence breakdown',
-              'Rank distribution chart',
-              'Biggest believers vs. biggest fades',
+              'Biggest believers & biggest fades',
+              'Rank distribution',
+              'Community consensus',
             ].map(item => (
               <div key={item} className="flex items-center gap-2">
                 <span className="text-pmp-gray-700 text-sm">·</span>
