@@ -83,9 +83,14 @@ export default async function LeaderboardPage() {
       <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
         <div className="px-4 py-6 max-w-md mx-auto w-full flex flex-col gap-6">
           <div className="flex flex-col gap-1">
-            <h1 className="text-pmp-white font-bold text-xl">
-              {isScored ? '🏆 2026 Oracle Challenge' : '📊 Weekly Standings'}
-            </h1>
+            <div className="flex items-center justify-between gap-2">
+              <h1 className="text-pmp-white font-bold text-xl">
+                {isScored ? '🏆 2026 Oracle Challenge' : '📊 Weekly Standings'}
+              </h1>
+              <Link href="/challenge/scoring" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-400 transition-colors shrink-0">
+                Scoring rules →
+              </Link>
+            </div>
             <p className="text-pmp-gray-500 text-sm">
               {isScored
                 ? `${totalEntries.toLocaleString()} entries · Final standings`

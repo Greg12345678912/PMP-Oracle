@@ -172,6 +172,9 @@ export default async function ChallengePage() {
               View My Rankings
             </Link>
           )}
+          <Link href="/challenge/scoring" className="text-pmp-gray-600 text-xs text-center hover:text-pmp-gray-500 transition-colors">
+            How scoring works →
+          </Link>
         </div>
 
         {/* Countdown card */}
