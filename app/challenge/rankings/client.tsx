@@ -1,5 +1,6 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { RankingList } from '@/components/oracle/RankingList'
 import { ProfileGate } from '@/components/oracle/ProfileGate'
 import type { RankingRow } from '@/lib/oracle/rankings'
@@ -27,6 +28,7 @@ export function RankingsClient({
   isSignedIn,
   lockAt,
 }: RankingsClientProps) {
+  const router = useRouter()
   const [activePosition, setActivePosition] = useState<OraclePosition>('QB')
   const [savedPositions, setSavedPositions] = useState<Set<OraclePosition>>(
     () => new Set(ORACLE_POSITIONS.filter(p => (initialRankings[p]?.length ?? 0) > 0))
@@ -98,6 +100,7 @@ export function RankingsClient({
         }
         return next
       })
+      router.refresh()
     },
     [isSignedIn],
   )
