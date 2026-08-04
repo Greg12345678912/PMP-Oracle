@@ -7,9 +7,9 @@ import { getCurrentSeason } from '@/lib/oracle/season'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'PMP Fantasy Platform | Pretty Much Picks',
+  title: 'Pretty Much Picks',
   description:
-    'Rank every NFL player. Lock in before Week 1. Win $500. The Oracle Challenge by Pretty Much Picks.',
+    'Pretty Much Picks is a fantasy football prediction platform. Sign in with Google to rank NFL players before Week 1 and compete in the Oracle Challenge. The best ranker wins $500.',
 }
 
 const POSITIONS = [
