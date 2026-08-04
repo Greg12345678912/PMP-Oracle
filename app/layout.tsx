@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { GeistSans } from 'geist/font/sans'
 import { PostHogProvider } from '@/components/PostHogProvider'
+import Script from 'next/script'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -38,6 +39,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PostHogProvider>
           {children}
         </PostHogProvider>
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-528VZXX8H5" strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-528VZXX8H5');
+          `}
+        </Script>
       </body>
     </html>
   )
