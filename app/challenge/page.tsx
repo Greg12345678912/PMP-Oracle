@@ -62,7 +62,7 @@ export default async function ChallengePage() {
 
     displayName = (profileResult.data?.display_name as string | null) ?? null
     isSubmitted = submittedResult.data?.is_submitted === true
-    totalEntries = new Set((entryCountResult.data ?? []).map((r: { user_id: string }) => r.user_id)).size
+    totalEntries = new Set((entryCountResult.data ?? []).map((r: { user_id: string }) => r.user_id)).size + 1
     entryNumber = (entryNumberResult.data?.entry_number as number | null) ?? null
     ORACLE_POSITIONS.forEach((pos, i) => {
       rankingCounts[pos] = rankingResults[i]?.length ?? 0
@@ -74,7 +74,7 @@ export default async function ChallengePage() {
       .select('user_id')
       .eq('season_id', season.id)
       .eq('is_submitted', true)
-    totalEntries = new Set((submittedRows ?? []).map((r: { user_id: string }) => r.user_id)).size
+    totalEntries = new Set((submittedRows ?? []).map((r: { user_id: string }) => r.user_id)).size + 1
   }
 
   const completedPositions = ORACLE_POSITIONS.filter(
