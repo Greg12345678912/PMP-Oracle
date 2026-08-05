@@ -53,6 +53,8 @@ class SimDB {
   // oracle_entries: key = user_id → entry_number (written once; never changes)
   entries = new Map<string, number>()
   private _nextEntry = 0
+  // sync_jobs: simulates concurrent-run lock
+  jobRunning = false
 
   registerEntry(userId: string): number {
     if (!this.entries.has(userId)) this.entries.set(userId, ++this._nextEntry)
@@ -73,6 +75,7 @@ class SimDB {
     copy.scores = new Map(this.scores)
     copy.entries = new Map(this.entries)
     copy._nextEntry = this._nextEntry
+    copy.jobRunning = this.jobRunning
     return copy
   }
 }
@@ -86,14 +89,19 @@ function syncStats(
   db: SimDB,
   week: number,
   rawStats: RawStatRow[],
-): { upserted: number; skipped: number } {
+  opts?: { simulateError?: string },
+): { upserted: number; skipped: number; errors: string[] } {
+  if (opts?.simulateError) {
+    // Simulate a Sleeper API or DB batch failure — no rows written
+    return { upserted: 0, skipped: 0, errors: [opts.simulateError] }
+  }
   let upserted = 0; let skipped = 0
   for (const row of rawStats) {
     if (!SYNC_POSITIONS.has(row.position) || row.ppr_points <= 0) { skipped++; continue }
     db.upsertStat(week, row as RawStatRow & { position: Pos })
     upserted++
   }
-  return { upserted, skipped }
+  return { upserted, skipped, errors: [] }
 }
 
 /** Stage 2: ground-truth.ts — cumulative PPR top-10 per position */
@@ -117,7 +125,12 @@ function buildGroundTruth(
   for (const pos of POSITIONS) {
     const ranked = [...totals.entries()]
       .filter(([, v]) => v.position === pos)
-      .sort((a, b) => b[1].total - a[1].total)
+      .sort((a, b) => {
+        const diff = b[1].total - a[1].total
+        if (diff !== 0) return diff
+        // Stable tiebreaker: player_id alphabetically
+        return a[0] < b[0] ? -1 : 1
+      })
       .slice(0, 10)
       .map(([playerId, v], i) => ({
         playerId,
@@ -238,31 +251,65 @@ function positionPicks(pattern: 'perfect' | 'swapped' | 'half' | 'reversed' | 'm
 
 interface UserEntry { userId: string; picks: Record<Pos, RankingRow[]> }
 
+interface RunPipelineOpts {
+  /** Simulate a Sleeper API / DB batch failure during stats sync */
+  statsError?: string
+}
+
+/**
+ * Mirrors pipeline.ts orchestrator logic:
+ *   - Aborts if concurrent job is running (db.jobRunning)
+ *   - Aborts after stats sync if syncResult.errors.length > 0
+ *   - Returns { aborted, reason } when either guard triggers
+ */
 function runPipeline(
   db: SimDB,
   week: number,
   stats: RawStatRow[],
   userEntries: UserEntry[],
-) {
+  opts?: RunPipelineOpts,
+): {
+  syncResult: ReturnType<typeof syncStats>
+  gt?: Record<Pos, GroundTruthEntry[]>
+  scored?: Record<string, EntryScore>
+  rankings?: ReturnType<typeof rankAll>
+  aborted?: boolean
+  abortReason?: string
+} {
+  // Concurrent-run lock (mirrors pipeline.ts guard)
+  if (db.jobRunning) {
+    return { syncResult: { upserted: 0, skipped: 0, errors: [] }, aborted: true, abortReason: 'concurrent-run lock' }
+  }
+
   // Register oracle_entries (idempotent: only inserts once per user)
   for (const u of userEntries) db.registerEntry(u.userId)
 
-  // Stage 1: stats sync
-  const syncResult = syncStats(db, week, stats)
+  db.jobRunning = true
+  try {
+    // Stage 1: stats sync
+    const syncResult = syncStats(db, week, stats, { simulateError: opts?.statsError })
 
-  // Stage 2: ground truth
-  const gt = buildGroundTruth(db, week)
+    // SAFETY ABORT: if stats sync produced errors, stop here (mirrors pipeline.ts guard)
+    if (syncResult.errors.length > 0) {
+      return { syncResult, aborted: true, abortReason: `stats-sync: ${syncResult.errors[0]}` }
+    }
 
-  // Stages 3+4: score all users
-  const scored: Record<string, EntryScore> = {}
-  for (const u of userEntries) {
-    scored[u.userId] = scoreUser(db, u.userId, u.picks, gt)
+    // Stage 2: ground truth
+    const gt = buildGroundTruth(db, week)
+
+    // Stages 3+4: score all users
+    const scored: Record<string, EntryScore> = {}
+    for (const u of userEntries) {
+      scored[u.userId] = scoreUser(db, u.userId, u.picks, gt)
+    }
+
+    // Stage 5: rank
+    const rankings = rankAll(db, week)
+
+    return { syncResult, gt, scored, rankings }
+  } finally {
+    db.jobRunning = false
   }
-
-  // Stage 5: rank
-  const rankings = rankAll(db, week)
-
-  return { syncResult, gt, scored, rankings }
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -555,6 +602,54 @@ describe('Catch-up Run — out-of-order pipeline execution', () => {
     expect(alice2.overallScore).toBeGreaterThan(bob2.overallScore)
   })
 
+  it('late stat correction — re-running with updated PPR changes scores correctly', () => {
+    // Simulate a common scenario: Sleeper posts corrected stats after scoring already ran.
+    // The pipeline must be re-runnable and produce updated (not additive) scores.
+
+    const db = new SimDB()
+    for (const u of USERS) db.registerEntry(u.userId)
+
+    // Initial Week 1 run: qb1 posted with wrong points (30.0 instead of 38.2)
+    const WEEK1_WRONG = WEEK1_STATS.map(r =>
+      r.player_id === 'qb1' ? { ...r, ppr_points: 30.0 } : r
+    )
+    syncStats(db, 1, WEEK1_WRONG)
+    const gt_wrong = buildGroundTruth(db, 1)
+    for (const u of USERS) scoreUser(db, u.userId, u.picks, gt_wrong)
+    rankAll(db, 1)
+
+    // qb1 was ranked correctly at #1 by alice — but PPR is wrong, so score is same
+    // (rank order unchanged since qb1 is still highest even at 30.0)
+    const aliceBeforeCorrection = db.scores.get('alice')!.overall_score
+
+    // Correction run: Sleeper updates qb1 to 38.2; upsert overwrites the row
+    // (UNIQUE week:player_id → Map.set() replaces the existing entry)
+    const correctedStat: RawStatRow = {
+      player_id: 'qb1', player_name: 'QB Player 1', position: 'QB', ppr_points: 38.2,
+    }
+    syncStats(db, 1, [correctedStat])
+
+    // Stat row must be updated, not duplicated
+    expect(db.statsCount()).toBe(44) // still 44 rows — no new row added
+    expect(db.playerStats.get('1:qb1')!.ppr_points).toBe(38.2)
+
+    // Re-run GT + scoring with corrected data
+    const gt_corrected = buildGroundTruth(db, 1)
+    for (const u of USERS) scoreUser(db, u.userId, u.picks, gt_corrected)
+    rankAll(db, 1)
+
+    // qb1 PPR is now correct: alice's score must equal the original perfect score
+    expect(db.scores.get('alice')!.overall_score).toBe(100)
+
+    // Scores are upserted (overwritten), not accumulated
+    expect(db.scores.size).toBe(5) // still exactly 5 users
+
+    // Rank order is same as original correct run
+    const byUserId = Object.fromEntries([...db.scores.entries()].map(([uid, s]) => [uid, s]))
+    expect(byUserId['alice'].global_rank).toBe(1)
+    expect(byUserId['bob'].global_rank).toBe(2)
+  })
+
   it('catch-up produces correct final standings — same as on-schedule run', () => {
     // Both DBs run Week 1 and Week 2, just in different order relative to GT build
     const dbA = new SimDB()
@@ -586,5 +681,318 @@ describe('Catch-up Run — out-of-order pipeline execution', () => {
       expect(rankingsB2[i].userId).toBe(rankingsA[i].userId)
       expect(rankingsB2[i].score).toBe(rankingsA[i].score)
     }
+  })
+})
+
+describe('PPR Ties — deterministic ground truth ordering', () => {
+  it('two players with identical PPR are ranked alphabetically by player_id (stable)', () => {
+    // Create two QB players with exactly equal PPR points
+    const db = new SimDB()
+    const tiedStats: RawStatRow[] = [
+      // qb_alpha and qb_beta tied at 30.0 — should always resolve alpha < beta
+      { player_id: 'qb_alpha', player_name: 'Alpha QB', position: 'QB', ppr_points: 30.0 },
+      { player_id: 'qb_beta',  player_name: 'Beta QB',  position: 'QB', ppr_points: 30.0 },
+      // 8 more QBs to fill the top-10
+      ...([3,4,5,6,7,8,9,10]).map(n => ({
+        player_id: `qb${n}`, player_name: `QB ${n}`, position: 'QB', ppr_points: 40 - n,
+      })),
+      // Placeholder RB/WR/TE so GT doesn't error on missing positions
+      { player_id: 'rb1', player_name: 'RB 1', position: 'RB', ppr_points: 20.0 },
+      { player_id: 'wr1', player_name: 'WR 1', position: 'WR', ppr_points: 20.0 },
+      { player_id: 'te1', player_name: 'TE 1', position: 'TE', ppr_points: 20.0 },
+    ]
+
+    syncStats(db, 1, tiedStats)
+    const gt = buildGroundTruth(db, 1)
+
+    const alphaEntry = gt.QB.find(p => p.playerId === 'qb_alpha')
+    const betaEntry  = gt.QB.find(p => p.playerId === 'qb_beta')
+
+    // Both must appear in the top-10
+    expect(alphaEntry).toBeDefined()
+    expect(betaEntry).toBeDefined()
+
+    // qb_alpha < qb_beta alphabetically → alpha gets the lower rank number (higher position)
+    expect(alphaEntry!.rank).toBeLessThan(betaEntry!.rank)
+  })
+
+  it('running GT twice with tied players produces the same ranking both times', () => {
+    const tiedStats: RawStatRow[] = [
+      { player_id: 'qb_z', player_name: 'Z QB', position: 'QB', ppr_points: 30.0 },
+      { player_id: 'qb_a', player_name: 'A QB', position: 'QB', ppr_points: 30.0 },
+      ...([3,4,5,6,7,8,9,10]).map(n => ({
+        player_id: `qb${n}`, player_name: `QB ${n}`, position: 'QB', ppr_points: 40 - n,
+      })),
+      { player_id: 'rb1', player_name: 'RB 1', position: 'RB', ppr_points: 20.0 },
+      { player_id: 'wr1', player_name: 'WR 1', position: 'WR', ppr_points: 20.0 },
+      { player_id: 'te1', player_name: 'TE 1', position: 'TE', ppr_points: 20.0 },
+    ]
+
+    const db1 = new SimDB()
+    const db2 = new SimDB()
+    syncStats(db1, 1, tiedStats)
+    syncStats(db2, 1, tiedStats)
+
+    const gt1 = buildGroundTruth(db1, 1)
+    const gt2 = buildGroundTruth(db2, 1)
+
+    // Must produce identical ordering on both runs
+    expect(gt1.QB.map(p => p.playerId)).toEqual(gt2.QB.map(p => p.playerId))
+    expect(gt1.QB.map(p => p.rank)).toEqual(gt2.QB.map(p => p.rank))
+
+    // qb_a comes before qb_z alphabetically
+    const aIdx = gt1.QB.findIndex(p => p.playerId === 'qb_a')
+    const zIdx = gt1.QB.findIndex(p => p.playerId === 'qb_z')
+    expect(aIdx).toBeLessThan(zIdx)
+  })
+})
+
+describe('Missing pts_ppr — null and zero-point rows are excluded', () => {
+  it('rows with ppr_points=0 are skipped at sync stage and do not appear in GT', () => {
+    const db = new SimDB()
+    const statsWithZeros: RawStatRow[] = [
+      ...WEEK1_STATS,
+      // Extra zero-point QBs — must not pollute GT
+      { player_id: 'qb_dnp1', player_name: 'DNP QB 1', position: 'QB', ppr_points: 0 },
+      { player_id: 'qb_dnp2', player_name: 'DNP QB 2', position: 'QB', ppr_points: 0 },
+    ]
+
+    const { upserted, skipped } = syncStats(db, 1, statsWithZeros)
+
+    // The 2 extra zero-point rows must be skipped (plus the 3 original skips = 5 total)
+    expect(skipped).toBe(5)
+    expect(upserted).toBe(44)
+
+    const gt = buildGroundTruth(db, 1)
+    // Zero-point QBs must not appear in GT
+    expect(gt.QB.find(p => p.playerId === 'qb_dnp1')).toBeUndefined()
+    expect(gt.QB.find(p => p.playerId === 'qb_dnp2')).toBeUndefined()
+    // GT still has exactly 10 QBs
+    expect(gt.QB).toHaveLength(10)
+  })
+
+  it('week where all players score 0 produces empty GT for that position', () => {
+    // Edge case: bye week or game cancellation wipes out all stats for a position
+    const db = new SimDB()
+    const noQBPoints: RawStatRow[] = [
+      { player_id: 'qb1', player_name: 'QB 1', position: 'QB', ppr_points: 0 },
+      { player_id: 'rb1', player_name: 'RB 1', position: 'RB', ppr_points: 20.0 },
+      { player_id: 'wr1', player_name: 'WR 1', position: 'WR', ppr_points: 20.0 },
+      { player_id: 'te1', player_name: 'TE 1', position: 'TE', ppr_points: 20.0 },
+    ]
+
+    syncStats(db, 1, noQBPoints)
+    const gt = buildGroundTruth(db, 1)
+
+    // QB GT is empty — no rows survived the filter
+    expect(gt.QB).toHaveLength(0)
+    // Other positions still populated
+    expect(gt.RB.length).toBeGreaterThan(0)
+  })
+
+  it('player missing from one week is still scored correctly from cumulative total', () => {
+    // Player qb1 has no stats in Week 2 (injured/bye) but scored Week 1
+    // Their cumulative total after Week 2 must equal only their Week 1 points
+    const db = new SimDB()
+    syncStats(db, 1, WEEK1_STATS)
+
+    // Week 2 stats — qb1 is absent (not even in the raw payload)
+    const week2NoQB1 = WEEK2_STATS.filter(r => r.player_id !== 'qb1')
+    syncStats(db, 2, week2NoQB1)
+
+    const gt = buildGroundTruth(db, 2)
+
+    // qb1's cumulative total is just their Week 1 score (38.2)
+    const qb1Entry = gt.QB.find(p => p.playerId === 'qb1')
+    expect(qb1Entry).toBeDefined()
+    expect(qb1Entry!.pprPoints).toBe(38.2)
+  })
+})
+
+describe('Interrupted Import — partial batch failure + recovery', () => {
+  it('partial sync failure leaves consistent state and full re-run completes correctly', () => {
+    // Simulate: stats for QB and RB were loaded, but WR/TE sync was interrupted.
+    // On re-run, all 4 positions are synced. Final state must be correct.
+
+    const db = new SimDB()
+    for (const u of USERS) db.registerEntry(u.userId)
+
+    // Partial sync: only QB and RB make it through before failure
+    const partialStats = WEEK1_STATS.filter(r => r.position === 'QB' || r.position === 'RB')
+    const { upserted: firstBatch } = syncStats(db, 1, partialStats)
+    expect(firstBatch).toBe(22) // 11 QB + 11 RB
+
+    // GT built on partial data — WR/TE are empty
+    const gtPartial = buildGroundTruth(db, 1)
+    expect(gtPartial.QB).toHaveLength(10)
+    expect(gtPartial.RB).toHaveLength(10)
+    expect(gtPartial.WR).toHaveLength(0) // not synced yet
+    expect(gtPartial.TE).toHaveLength(0) // not synced yet
+
+    // Recovery: full re-run with all positions
+    // QB+RB rows already exist → upsert overwrites them (no duplicates)
+    const { upserted: secondBatch } = syncStats(db, 1, WEEK1_STATS)
+    // All 44 rows processed, but only WR/TE (22) are net-new; QB/RB rows overwrite
+    // Total DB row count is still 44 (upsert = no duplication)
+    expect(db.statsCount()).toBe(44)
+
+    // GT after full sync is correct
+    const gtFull = buildGroundTruth(db, 1)
+    expect(gtFull.WR).toHaveLength(10)
+    expect(gtFull.TE).toHaveLength(10)
+
+    // Score all users against the correct GT
+    for (const u of USERS) scoreUser(db, u.userId, u.picks, gtFull)
+    const rankings = rankAll(db, 1)
+
+    // Alice (perfect picks) must still rank #1
+    const alice = rankings.find(r => r.userId === 'alice')!
+    expect(alice.rank).toBe(1)
+    expect(db.scores.get('alice')!.overall_score).toBe(100)
+
+    // Scores must not be inflated/accumulated from the partial run
+    expect(db.scores.size).toBe(5)
+  })
+
+  it('duplicate sync run after partial failure does not double-count PPR', () => {
+    // If the scheduler retries and sends Week 1 stats twice,
+    // cumulative totals must not be doubled.
+    const db = new SimDB()
+
+    // First sync
+    syncStats(db, 1, WEEK1_STATS)
+    // Second sync (retry) — exact same payload
+    syncStats(db, 1, WEEK1_STATS)
+
+    // Stats store must still be exactly 44 rows (UNIQUE week:player_id)
+    expect(db.statsCount()).toBe(44)
+
+    // GT must show the original PPR totals, not 2× totals
+    const gt = buildGroundTruth(db, 1)
+    expect(gt.QB[0].pprPoints).toBe(38.2)  // not 76.4
+    expect(gt.RB[0].pprPoints).toBe(42.3)  // not 84.6
+  })
+})
+
+describe('Pipeline Guard — stats sync failure aborts scoring', () => {
+  it('aborts the pipeline and writes no scores when Sleeper fetch fails', () => {
+    const db = new SimDB()
+
+    // First run Week 1 correctly so there are valid scores to preserve
+    runPipeline(db, 1, WEEK1_STATS, USERS)
+    const scoresBeforeFailure = new Map(db.scores)
+    const statsCountBeforeFailure = db.statsCount()
+
+    // Week 2: Sleeper returns a 503 — syncStats produces 0 rows + an error
+    const result = runPipeline(db, 2, WEEK1_STATS, USERS, {
+      statsError: 'HTTP 503: Sleeper unavailable',
+    })
+
+    // Pipeline must abort
+    expect(result.aborted).toBe(true)
+    expect(result.abortReason).toContain('stats-sync')
+
+    // Ground truth must NOT have been rebuilt (no stage 2 ran)
+    expect(result.gt).toBeUndefined()
+
+    // No scoring happened — scores map must be identical to before the failed run
+    expect(db.scores.size).toBe(scoresBeforeFailure.size)
+    for (const [userId, score] of scoresBeforeFailure) {
+      expect(db.scores.get(userId)!.overall_score).toBe(score.overall_score)
+      expect(db.scores.get(userId)!.global_rank).toBe(score.global_rank)
+    }
+
+    // Stats table must not have grown (no rows from failed week 2)
+    expect(db.statsCount()).toBe(statsCountBeforeFailure)
+
+    // jobRunning must be released (lock cleaned up even on abort)
+    expect(db.jobRunning).toBe(false)
+  })
+
+  it('aborts even if some stats were written before the batch error', () => {
+    // Real scenario: first 100-row batch succeeds, second fails.
+    // Pipeline should abort — partial stats are worse than no new stats.
+    const db = new SimDB()
+
+    // Simulate: syncStats returned errors (some batches failed)
+    const result = runPipeline(db, 1, WEEK1_STATS, USERS, {
+      statsError: 'Supabase upsert batch failed: connection timeout',
+    })
+
+    expect(result.aborted).toBe(true)
+    expect(result.gt).toBeUndefined()      // stage 2 never ran
+    expect(result.scored).toBeUndefined()  // stage 3 never ran
+    expect(db.scores.size).toBe(0)         // no scores written
+    expect(db.jobRunning).toBe(false)      // lock always released
+  })
+
+  it('does NOT abort when stats sync succeeds with zero errors', () => {
+    // Pre-season sanity: upserted=0 with no errors is valid (no games yet)
+    const db = new SimDB()
+
+    // Empty stats — no games this week — should NOT trigger the abort guard
+    const result = runPipeline(db, 1, [], USERS)
+
+    // Pipeline ran all stages; no abort
+    expect(result.aborted).toBeUndefined()
+    expect(result.gt).toBeDefined()
+
+    // All positions have empty GT (no stats = no top-10)
+    expect(result.gt!.QB).toHaveLength(0)
+    expect(result.gt!.RB).toHaveLength(0)
+
+    // Scoring ran but produced 0 points for everyone (empty GT)
+    expect(result.scored).toBeDefined()
+    expect(result.scored!['alice'].overallScore).toBe(0)
+    expect(db.jobRunning).toBe(false)
+  })
+})
+
+describe('Pipeline Guard — concurrent-run lock', () => {
+  it('rejects a second invocation while a job is already running', () => {
+    const db = new SimDB()
+
+    // Simulate: a pipeline run is in progress (db.jobRunning = true)
+    db.jobRunning = true
+
+    const result = runPipeline(db, 1, WEEK1_STATS, USERS)
+
+    // Second invocation must be rejected immediately
+    expect(result.aborted).toBe(true)
+    expect(result.abortReason).toContain('concurrent-run lock')
+
+    // No stages ran — nothing was written
+    expect(db.statsCount()).toBe(0)
+    expect(db.scores.size).toBe(0)
+  })
+
+  it('releases the lock after a successful run so the next run proceeds', () => {
+    const db = new SimDB()
+
+    // First run: completes normally
+    const run1 = runPipeline(db, 1, WEEK1_STATS, USERS)
+    expect(run1.aborted).toBeUndefined()
+    expect(db.jobRunning).toBe(false)  // lock released
+
+    // Second run: must not be blocked
+    const run2 = runPipeline(db, 1, WEEK1_STATS, USERS)
+    expect(run2.aborted).toBeUndefined()
+    expect(db.scores.size).toBe(5)
+  })
+
+  it('releases the lock even if the pipeline aborts due to stats failure', () => {
+    const db = new SimDB()
+
+    // Run that fails at stats stage
+    const result = runPipeline(db, 1, WEEK1_STATS, USERS, {
+      statsError: 'HTTP 503',
+    })
+    expect(result.aborted).toBe(true)
+    expect(db.jobRunning).toBe(false)  // lock must be released even on abort
+
+    // Subsequent run must not be blocked by the stale lock
+    const recovery = runPipeline(db, 1, WEEK1_STATS, USERS)
+    expect(recovery.aborted).toBeUndefined()
+    expect(db.scores.size).toBe(5)
   })
 })

@@ -5,9 +5,10 @@ import { useRef } from 'react'
 interface ResultsShareCardProps {
   overallScore: number
   percentile: number
+  username?: string
 }
 
-export function ResultsShareCard({ overallScore, percentile }: ResultsShareCardProps) {
+export function ResultsShareCard({ overallScore, percentile, username }: ResultsShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
 
   async function handleDownload() {
@@ -24,18 +25,35 @@ export function ResultsShareCard({ overallScore, percentile }: ResultsShareCardP
     <div className="flex flex-col items-center gap-4">
       <div
         ref={cardRef}
-        className="bg-pmp-black w-[340px] p-8 flex flex-col items-center gap-4 rounded-2xl"
+        className="w-[340px] p-8 flex flex-col items-center gap-3 rounded-2xl border border-[#222]"
         style={{ backgroundColor: '#0d0d0d' }}
       >
-        <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">
-          Oracle Challenge
-        </p>
-        <p className="text-pmp-white text-[64px] font-black leading-none">
+        {/* Header */}
+        <div className="flex flex-col items-center gap-0.5">
+          <p className="text-[#e11d48] text-[10px] font-bold uppercase tracking-[0.4em]">
+            Pretty Much Picks
+          </p>
+          <p className="text-[#888] text-[10px] font-bold uppercase tracking-widest">
+            Oracle Challenge 2026
+          </p>
+        </div>
+
+        {/* Score */}
+        <p className="text-white text-[72px] font-black leading-none mt-2">
           {overallScore.toFixed(1)}
         </p>
-        <p className="text-pmp-gray-500 text-sm">Accuracy</p>
-        <p className="text-pmp-white font-bold">Top {percentile}%</p>
-        <p className="text-pmp-gray-600 text-xs mt-4">Pretty Much Picks</p>
+        <p className="text-[#666] text-sm">Overall Accuracy</p>
+
+        {/* Rank */}
+        <div className="flex flex-col items-center gap-1 mt-1">
+          <p className="text-white text-2xl font-black">Top {percentile}%</p>
+          {username && (
+            <p className="text-[#555] text-xs">@{username}</p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <p className="text-[#333] text-[10px] mt-3 tracking-wide">prettymuchpicks.com</p>
       </div>
 
       <button

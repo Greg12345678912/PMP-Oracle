@@ -62,7 +62,12 @@ export async function buildGroundTruth(
     // Filter to position, sort by total PPR desc, take top 10
     const positionPlayers = [...totals.entries()]
       .filter(([, v]) => v.position === position)
-      .sort((a, b) => b[1].total - a[1].total)
+      .sort((a, b) => {
+        const diff = b[1].total - a[1].total
+        if (diff !== 0) return diff
+        // Stable tiebreaker: player_id alphabetically (deterministic across environments)
+        return a[0] < b[0] ? -1 : 1
+      })
       .slice(0, 10)
 
     const topPlayers: GroundTruthEntry[] = positionPlayers.map(([playerId, v], i) => ({

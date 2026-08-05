@@ -1,5 +1,9 @@
 import { runWeeklyPipeline } from '@/lib/oracle/pipeline/pipeline'
 
+// Allow up to 5 minutes — the pipeline scores all users + writes rankings sequentially.
+// Default Vercel Pro timeout (60s) is insufficient once user counts grow into the hundreds.
+export const maxDuration = 300
+
 /**
  * POST /api/sync/weekly
  * Runs the full Oracle weekly pipeline:

@@ -73,6 +73,27 @@ export async function runWeeklyPipeline(opts?: {
   const season = await getCurrentSeason()
   if (!season) throw new Error('No active season found')
 
+  // ── Concurrent-run lock ──────────────────────────────────────────────────────
+  // Reject if another pipeline run started within the last 10 minutes and is
+  // still marked 'running'. The 10-minute window prevents a crashed run (which
+  // never updated its status to 'failed') from permanently locking the pipeline.
+  if (!dryRun) {
+    const lockWindowStart = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+    const { data: activeJobs } = await db
+      .from('sync_jobs')
+      .select('id, started_at')
+      .eq('resource', 'oracle_pipeline')
+      .eq('status', 'running')
+      .gte('started_at', lockWindowStart)
+      .limit(1)
+
+    if ((activeJobs ?? []).length > 0) {
+      throw new Error(
+        `Pipeline already running (started ${(activeJobs![0] as { started_at: string }).started_at}). Concurrent invocation rejected.`,
+      )
+    }
+  }
+
   // ── Stage 1: Determine current week ─────────────────────────────────────────
   let currentWeek = opts?.week ?? 0
 
@@ -117,13 +138,50 @@ export async function runWeeklyPipeline(opts?: {
   // ── Stage 2: Sync weekly stats ───────────────────────────────────────────────
   let statsUpserted = 0
   let statsSkipped = 0
+  let statsSyncFailed = false
+
   try {
     const statsResult = await syncWeeklyStats(season.id, season.year, currentWeek, { dryRun })
     statsUpserted = statsResult.upserted
     statsSkipped = statsResult.skipped
-    errors.push(...statsResult.errors)
+    if (statsResult.errors.length > 0) {
+      // At least one DB upsert batch failed — stats are incomplete.
+      // Treating partial stats as valid would produce wrong ground truth.
+      errors.push(...statsResult.errors)
+      statsSyncFailed = true
+    }
   } catch (err) {
     errors.push(`stats-sync: ${err instanceof Error ? err.message : String(err)}`)
+    statsSyncFailed = true
+  }
+
+  // SAFETY ABORT: if stats sync failed in any way, stop here.
+  // Proceeding would score every user against stale/incomplete ground truth and
+  // publish wrong leaderboard results with no visible error to users.
+  if (statsSyncFailed && !dryRun) {
+    if (jobId) {
+      await db.from('sync_jobs').update({
+        status: 'failed',
+        completed_at: new Date().toISOString(),
+        records_processed: 0,
+        error: errors[0] ?? 'stats-sync failed',
+      }).eq('id', jobId)
+    }
+    return {
+      pipelineRunId,
+      seasonId: season.id,
+      seasonYear: season.year,
+      week: currentWeek,
+      statsUpserted,
+      statsSkipped,
+      groundTruthPositions: 0,
+      usersScored: 0,
+      usersFailed: 0,
+      usersRanked: 0,
+      dryRun,
+      errors,
+      completedAt: new Date().toISOString(),
+    }
   }
 
   // ── Stage 3: Build ground truth ──────────────────────────────────────────────

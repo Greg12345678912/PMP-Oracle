@@ -7,6 +7,13 @@ import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import { generateSummary } from '@/lib/oracle/scoring'
 import type { OracleResult, PositionResult, PlayerScore } from '@/lib/oracle/scoring'
 import { ResultsShareCard } from '@/components/oracle/ResultsShareCard'
+import {
+  getPreviewState,
+  mockSeason,
+  mockAccuracyScore,
+  mockDetailRows,
+  MOCK_TOTAL_PARTICIPANTS,
+} from '@/lib/oracle/dev-preview'
 
 export const dynamic = 'force-dynamic'
 
@@ -186,18 +193,213 @@ function WeeklyRankPage({
   )
 }
 
+// ─── Final results view ──────────────────────────────────────────────────────
+
+interface FinalResultsViewProps {
+  overallScore: number
+  percentile: number
+  rank: number
+  totalParticipants: number
+  positionResults: PositionResult[]
+  bestCall: PlayerScore | null
+  biggestMiss: PlayerScore | null
+  summary: string
+  season: { lock_at: string; scored_at: string | null } | null
+  scoredAt: string | null
+}
+
+function distanceLabel(distance: number | null): string {
+  if (distance === null) return '—'
+  if (distance === 0) return 'Perfect pick!'
+  return `Off by ${distance} spot${distance === 1 ? '' : 's'}`
+}
+
+function FinalResultsView({
+  overallScore,
+  percentile,
+  rank,
+  totalParticipants,
+  positionResults,
+  bestCall,
+  biggestMiss,
+  summary,
+  season,
+  scoredAt,
+}: FinalResultsViewProps) {
+  return (
+    <div className="min-h-[100dvh] bg-pmp-black px-4 py-12">
+      <div className="max-w-md mx-auto flex flex-col gap-10">
+
+        <div className="text-center flex flex-col items-center gap-2">
+          <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge Results</p>
+          <p className="text-pmp-white text-[72px] font-black leading-none">{overallScore.toFixed(1)}</p>
+          <p className="text-pmp-gray-500 text-sm">Overall Accuracy</p>
+          <div className="flex gap-4 mt-1">
+            <span className="text-pmp-white font-bold text-sm">Top {percentile}%</span>
+            <span className="text-pmp-gray-600 text-sm">#{rank} of {totalParticipants}</span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Position Breakdown</p>
+          <div className="flex flex-col gap-3">
+            {positionResults.map(pr => (
+              <div key={pr.position} className="flex items-center gap-3">
+                <span className="text-pmp-gray-500 text-sm w-6">{pr.position}</span>
+                <div className="flex-1 h-2 bg-pmp-gray-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-pmp-red rounded-full" style={{ width: `${pr.normalizedScore}%` }} />
+                </div>
+                <span className="text-pmp-white text-sm font-bold w-12 text-right">{pr.normalizedScore.toFixed(1)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {(bestCall || biggestMiss) && (
+          <div className="flex flex-col gap-4">
+            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Your Story</p>
+            <div className="grid grid-cols-2 gap-3">
+              {bestCall && (
+                <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
+                  <p className="text-xs text-pmp-gray-600">🏆 Best Call</p>
+                  <p className="text-pmp-white font-bold text-sm">{bestCall.playerName}</p>
+                  <p className="text-pmp-gray-500 text-xs">You #{bestCall.userRank} · Finished #{bestCall.actualRank ?? '—'}</p>
+                  <p className={['text-xs font-bold', bestCall.distance === 0 ? 'text-green-400' : 'text-pmp-red'].join(' ')}>
+                    {distanceLabel(bestCall.distance)}
+                  </p>
+                </div>
+              )}
+              {biggestMiss && (
+                <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
+                  <p className="text-xs text-pmp-gray-600">😬 Biggest Miss</p>
+                  <p className="text-pmp-white font-bold text-sm">{biggestMiss.playerName}</p>
+                  <p className="text-pmp-gray-500 text-xs">You #{biggestMiss.userRank} · Finished #{biggestMiss.actualRank ?? '—'}</p>
+                  <p className="text-pmp-gray-500 text-xs font-bold">{distanceLabel(biggestMiss.distance)}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-4">
+          <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Season Summary</p>
+          <p className="text-pmp-gray-500 text-sm leading-relaxed italic text-center">&ldquo;{summary}&rdquo;</p>
+        </div>
+
+        <div className="flex flex-col gap-4 items-center">
+          <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest self-start">Share Your Results</p>
+          <ResultsShareCard overallScore={overallScore} percentile={percentile} />
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Timeline</p>
+          <div className="flex flex-col gap-2 text-sm">
+            {season?.lock_at && (
+              <div className="flex gap-3 items-center">
+                <span>📅</span>
+                <span className="text-pmp-gray-600">Rankings locked:</span>
+                <span className="text-pmp-white">
+                  {new Date(season.lock_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })}
+                </span>
+              </div>
+            )}
+            {(season?.scored_at ?? scoredAt) && (
+              <div className="flex gap-3 items-center">
+                <span>📊</span>
+                <span className="text-pmp-gray-600">Scored:</span>
+                <span className="text-pmp-white">
+                  {new Date(season?.scored_at ?? scoredAt!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="text-center pb-4">
+          <Link href="/challenge" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-500 transition-colors">
+            ← Back to Challenge
+          </Link>
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ──────────────────────────────────────────────────────────────
 
 export default async function ResultsPage() {
-  const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
+  const previewState = await getPreviewState()
+  const [session, rawSeason] = await Promise.all([getSession(), getCurrentSeason()])
 
-  if (!session) {
+  // In preview mode, bypass the session redirect so the page renders without login
+  if (!session && !previewState) {
     redirect('/challenge')
   }
 
+  const season = previewState ? mockSeason(previewState) : rawSeason
   const db = getServiceClient()
-  const userId = session.user.id
+  const userId = session?.user.id ?? 'preview-user'
   const seasonId = season?.id ?? ''
+
+  // ── Preview mode: inject mock score data ─────────────────────────────────
+  if (previewState) {
+    const scoreData = mockAccuracyScore(previewState)
+    const allDetail = previewState === 'scored' ? mockDetailRows() : (scoreData ? mockDetailRows() : [])
+    const totalParticipants = MOCK_TOTAL_PARTICIPANTS
+
+    if (previewState === 'scored' && scoreData) {
+      // Render final results view with mock data
+      const positionResults: PositionResult[] = ORACLE_POSITIONS.map(pos => {
+        const rows = allDetail.filter(r => r.position === pos)
+        const players: PlayerScore[] = rows.map(r => ({
+          playerId: r.player_id,
+          playerName: r.player_name,
+          userRank: r.user_rank,
+          actualRank: r.actual_rank,
+          distance: r.distance,
+        }))
+        const normalizedScore =
+          pos === 'QB' ? scoreData.score_qb
+          : pos === 'RB' ? scoreData.score_rb
+          : pos === 'WR' ? scoreData.score_wr
+          : scoreData.score_te
+        return { position: pos, normalizedScore, players }
+      })
+
+      const overallScore = scoreData.overall_score
+      const rank = scoreData.global_rank ?? totalParticipants
+      const percentile = computePercentile(rank, totalParticipants)
+      const oracleResult: OracleResult = { overallScore, positionResults }
+      const summary = generateSummary(oracleResult)
+
+      const allPlayers = positionResults.flatMap(pr => pr.players)
+      const bestCall = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 999) <= (b.distance ?? 999) ? a : b) : null
+      const biggestMiss = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 0) >= (b.distance ?? 0) ? a : b) : null
+
+      return (
+        <FinalResultsView
+          overallScore={overallScore}
+          percentile={percentile}
+          rank={rank}
+          totalParticipants={totalParticipants}
+          positionResults={positionResults}
+          bestCall={bestCall}
+          biggestMiss={biggestMiss}
+          summary={summary}
+          season={season}
+          scoredAt={scoreData.computed_at}
+        />
+      )
+    }
+
+    if (scoreData && scoreData.current_week > 0) {
+      return <WeeklyRankPage scoreData={scoreData} totalParticipants={totalParticipants} />
+    }
+
+    return <HoldingPage />
+  }
+  // ── End preview mode ─────────────────────────────────────────────────────
 
   // Always fetch the user's accuracy score — needed for weekly card and final results
   const { data: rawScore } = seasonId
@@ -260,105 +462,18 @@ export default async function ResultsPage() {
     const biggestMiss = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 0) >= (b.distance ?? 0) ? a : b) : null
 
     return (
-      <div className="min-h-[100dvh] bg-pmp-black px-4 py-12">
-        <div className="max-w-md mx-auto flex flex-col gap-10">
-
-          <div className="text-center flex flex-col items-center gap-2">
-            <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge Results</p>
-            <p className="text-pmp-white text-[72px] font-black leading-none">{overallScore.toFixed(1)}</p>
-            <p className="text-pmp-gray-500 text-sm">Overall Accuracy</p>
-            <div className="flex gap-4 mt-1">
-              <span className="text-pmp-white font-bold text-sm">Top {percentile}%</span>
-              <span className="text-pmp-gray-600 text-sm">#{rank} of {totalParticipants}</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Position Breakdown</p>
-            <div className="flex flex-col gap-3">
-              {positionResults.map(pr => (
-                <div key={pr.position} className="flex items-center gap-3">
-                  <span className="text-pmp-gray-500 text-sm w-6">{pr.position}</span>
-                  <div className="flex-1 h-2 bg-pmp-gray-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-pmp-red rounded-full" style={{ width: `${pr.normalizedScore}%` }} />
-                  </div>
-                  <span className="text-pmp-white text-sm font-bold w-12 text-right">{pr.normalizedScore.toFixed(1)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {(bestCall || biggestMiss) && (
-            <div className="flex flex-col gap-4">
-              <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Your Story</p>
-              <div className="grid grid-cols-2 gap-3">
-                {bestCall && (
-                  <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
-                    <p className="text-xs text-pmp-gray-600">🏆 Best Call</p>
-                    <p className="text-pmp-white font-bold text-sm">{bestCall.playerName}</p>
-                    <p className="text-pmp-gray-500 text-xs">You ranked #{bestCall.userRank} · Finished #{bestCall.actualRank ?? '—'}</p>
-                    <p className="text-pmp-red text-xs font-bold">Distance: {bestCall.distance ?? '—'}</p>
-                  </div>
-                )}
-                {biggestMiss && (
-                  <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
-                    <p className="text-xs text-pmp-gray-600">😬 Biggest Miss</p>
-                    <p className="text-pmp-white font-bold text-sm">{biggestMiss.playerName}</p>
-                    <p className="text-pmp-gray-500 text-xs">You ranked #{biggestMiss.userRank} · Finished #{biggestMiss.actualRank ?? '—'}</p>
-                    <p className="text-pmp-gray-600 text-xs font-bold">Distance: {biggestMiss.distance ?? '—'}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-4">
-            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Season Summary</p>
-            <p className="text-pmp-gray-500 text-sm leading-relaxed italic text-center">&ldquo;{summary}&rdquo;</p>
-          </div>
-
-          <div className="flex flex-col gap-4 items-center">
-            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest self-start">Share Your Results</p>
-            <ResultsShareCard overallScore={overallScore} percentile={percentile} />
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Timeline</p>
-            <div className="flex flex-col gap-2 text-sm">
-              <div className="flex gap-3 items-center">
-                <span>📅</span>
-                <span className="text-pmp-gray-600">Rankings locked:</span>
-                <span className="text-pmp-white">
-                  {season?.lock_at
-                    ? new Date(season.lock_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })
-                    : 'Start of season'}
-                </span>
-              </div>
-              <div className="flex gap-3 items-center">
-                <span>🏁</span>
-                <span className="text-pmp-gray-600">Season ended:</span>
-                <span className="text-pmp-white">End of NFL season</span>
-              </div>
-              <div className="flex gap-3 items-center">
-                <span>📊</span>
-                <span className="text-pmp-gray-600">Scored:</span>
-                <span className="text-pmp-white">
-                  {scoredAt
-                    ? new Date(scoredAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                    : 'January 2027'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center pb-4">
-            <Link href="/challenge" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-500 transition-colors">
-              ← Back to Challenge
-            </Link>
-          </div>
-
-        </div>
-      </div>
+      <FinalResultsView
+        overallScore={overallScore}
+        percentile={percentile}
+        rank={rank}
+        totalParticipants={totalParticipants}
+        positionResults={positionResults}
+        bestCall={bestCall}
+        biggestMiss={biggestMiss}
+        summary={summary}
+        season={season}
+        scoredAt={scoredAt}
+      />
     )
   }
 
