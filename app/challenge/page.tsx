@@ -8,7 +8,7 @@ import type { OraclePosition } from '@/lib/oracle/constants'
 import { OracleSplashCTA } from '@/components/oracle/OracleSplashCTA'
 import { SignOutButton } from '@/components/oracle/SignOutButton'
 import { Countdown } from '@/components/oracle/Countdown'
-import { getPreviewState, mockSeason } from '@/lib/oracle/dev-preview'
+import { getPreviewState, mockSeason, mockAccuracyScore } from '@/lib/oracle/dev-preview'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,10 +33,12 @@ export default async function ChallengePage() {
   let totalEntries = 0
   let entryNumber: number | null = null
   let hasWeeklyScores = false
+  let currentWeek = 0
 
   if (previewState && previewState !== 'locked') {
     // Inject mock data for scoring/scored preview states
     hasWeeklyScores = true
+    currentWeek = mockAccuracyScore(previewState)?.current_week ?? 0
     isSubmitted = true
     totalEntries = 247
     entryNumber = 42
@@ -87,6 +89,7 @@ export default async function ChallengePage() {
     totalEntries = new Set((entryCountResult.data ?? []).map((r: { user_id: string }) => r.user_id)).size + 1
     entryNumber = (entryNumberResult.data?.entry_number as number | null) ?? null
     hasWeeklyScores = ((weeklyScoresResult.data ?? []) as unknown[]).length > 0
+    currentWeek = (weeklyScoresResult.data as Array<{ current_week: number }> | null)?.[0]?.current_week ?? 0
     ORACLE_POSITIONS.forEach((pos, i) => {
       rankingCounts[pos] = rankingResults[i]?.length ?? 0
     })
@@ -221,7 +224,7 @@ export default async function ChallengePage() {
               {season?.status === 'scored'
                 ? 'Season Complete'
                 : isSubmitted && hasWeeklyScores
-                  ? 'Week 1 Results Live'
+                  ? `Week ${currentWeek} Results Live`
                   : isSubmitted
                     ? "You're Locked In"
                     : 'Entry Closed'}
@@ -230,7 +233,7 @@ export default async function ChallengePage() {
               {season?.status === 'scored'
                 ? 'Results are available'
                 : isSubmitted && hasWeeklyScores
-                  ? 'Week 1 results are live. See how your rankings performed.'
+                  ? `Week ${currentWeek} results are live. See how your rankings performed.`
                   : isSubmitted
                     ? 'Your picks are locked in. First score update arrives after Week 1.'
                     : 'The entry window has closed for the 2026 season.'}
