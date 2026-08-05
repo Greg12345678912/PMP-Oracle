@@ -13,12 +13,12 @@ export function SignOutButton() {
   }
 
   return (
-    <a
-      href="#"
-      onClick={e => { e.preventDefault(); void handleSignOut() }}
+    <button
+      type="button"
+      onClick={() => void handleSignOut()}
       className="text-pmp-gray-700 text-xs hover:text-pmp-gray-500 transition-colors py-2 px-4"
     >
       Sign out
-    </a>
+    </button>
   )
 }

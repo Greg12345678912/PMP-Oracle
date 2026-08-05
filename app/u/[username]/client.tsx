@@ -219,18 +219,18 @@ export function ProfileClient({
               {/* Position tab strip */}
               <div className="flex gap-2">
                 {ORACLE_POSITIONS.map(pos => (
-                  <a
+                  <button
                     key={pos}
-                    href="#"
-                    onClick={e => { e.preventDefault(); setActiveTab(pos) }}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-colors min-h-[44px] flex items-center justify-center no-underline ${
+                    type="button"
+                    onClick={() => setActiveTab(pos)}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-colors min-h-[44px] flex items-center justify-center ${
                       activeTab === pos
                         ? 'bg-pmp-red text-pmp-white'
                         : 'bg-pmp-gray-800 text-pmp-gray-500 hover:text-pmp-white'
                     }`}
                   >
                     {pos}
-                  </a>
+                  </button>
                 ))}
               </div>
 
