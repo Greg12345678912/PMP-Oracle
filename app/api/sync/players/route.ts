@@ -8,6 +8,10 @@ import { syncPlayersToCache } from '@/lib/data/sync'
  *   curl -X POST https://<domain>/api/sync/players \
  *     -H "Authorization: Bearer $CRON_SECRET"
  */
+export async function GET(request: Request) {
+  return POST(request)
+}
+
 export async function POST(request: Request) {
   const auth = request.headers.get('authorization')
   if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {

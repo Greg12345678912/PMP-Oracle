@@ -17,6 +17,10 @@ export const maxDuration = 300
  *     -d '{"week": 8}'          # optional week override
  *     -d '{"dryRun": true}'     # optional dry-run mode
  */
+export async function GET(request: Request) {
+  return POST(request)
+}
+
 export async function POST(request: Request) {
   const auth = request.headers.get('authorization')
   if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
