@@ -172,7 +172,7 @@ function WeeklyRankPage({
           href="/challenge/leaderboard"
           className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:border-pmp-gray-500 transition-colors"
         >
-          See Full Leaderboard →
+          View Final Standings →
         </Link>
 
         <Link
@@ -236,10 +236,11 @@ function FinalResultsView({
           <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge · Final Results</p>
           <p className="text-pmp-white text-[72px] font-black leading-none">{overallScore.toFixed(1)}</p>
           <p className="text-pmp-gray-500 text-sm">Overall Accuracy</p>
-          <div className="flex gap-4 mt-1">
-            <span className="text-pmp-white font-bold text-sm">Top {percentile}%</span>
-            <span className="text-pmp-gray-600 text-sm">#{rank} of {totalParticipants}</span>
+          <div className="flex flex-col items-center gap-0.5 mt-1">
+            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Final Rank</p>
+            <p className="text-pmp-white font-bold text-2xl">#{rank.toLocaleString()} of {totalParticipants.toLocaleString()}</p>
           </div>
+          <span className="text-pmp-gray-500 text-sm">Top {percentile}%</span>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -321,7 +322,7 @@ function FinalResultsView({
           href="/challenge/leaderboard"
           className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:border-pmp-gray-500 transition-colors"
         >
-          See Full Leaderboard →
+          View Final Standings →
         </Link>
 
         <div className="text-center pb-4">
