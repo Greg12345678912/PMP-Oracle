@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
@@ -37,6 +38,7 @@ export default async function PlayerPage({
 
     return (
       <div className="px-4 py-8 max-w-md mx-auto flex flex-col gap-6">
+        <Link href="/players" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-500 transition-colors">← Back to Players</Link>
         {/* Player identity */}
         <div className="flex flex-col gap-1.5">
           <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
@@ -127,6 +129,7 @@ export default async function PlayerPage({
 
     return (
       <div className="px-4 py-8 max-w-md mx-auto flex flex-col gap-6">
+        <Link href="/players" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-500 transition-colors">← Back to Players</Link>
         {/* Player identity */}
         <div className="flex flex-col gap-1.5">
           <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
@@ -174,8 +177,32 @@ export default async function PlayerPage({
   }
 
   // ── Post-Week-1 / scored state ──────────────────────────────────────────────
-  const stats = await getPlayerStats(id, season.id, session?.user.id ?? null)
-  if (!stats) notFound()
+  // Always use the real season ID for data lookups — mock season IDs have no rows in challenge_rankings
+  const realSeasonId = rawSeason?.id ?? season.id
+  const stats = await getPlayerStats(id, realSeasonId, session?.user.id ?? null)
+
+  // If no community stats exist yet (e.g. preview with no real data, or obscure player),
+  // render a graceful no-data view rather than a 404.
+  if (!stats) {
+    const pools = await Promise.all(ORACLE_POSITIONS.map(pos => getPlayerPool(pos)))
+    const fallbackPlayer = pools.flat().find(p => p.id === id)
+    if (!fallbackPlayer) notFound()
+    return (
+      <div className="min-h-[100dvh] bg-pmp-black text-pmp-white">
+        <div className="px-4 pt-8 pb-6 max-w-lg mx-auto">
+          <Link href="/players" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-500 transition-colors">← Back to Players</Link>
+          <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em] mt-4 mb-2">The Oracle Challenge</p>
+          <h1 className="text-2xl font-bold leading-tight">{fallbackPlayer!.name}</h1>
+          <p className="text-pmp-gray-500 text-sm mt-1">Community Rankings</p>
+        </div>
+        <div className="px-4 max-w-lg mx-auto pb-16">
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-5 text-center">
+            <p className="text-pmp-gray-500 text-sm">No community rankings yet for this player.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const { playerName, total, communityAvgRank, mostCommonRank, userRank } = stats
 
@@ -185,8 +212,9 @@ export default async function PlayerPage({
   return (
     <div className="min-h-[100dvh] bg-pmp-black text-pmp-white">
       {/* Header */}
-      <div className="px-4 pt-12 pb-6 max-w-lg mx-auto">
-        <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em] mb-2">
+      <div className="px-4 pt-8 pb-6 max-w-lg mx-auto">
+        <Link href="/players" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-500 transition-colors">← Back to Players</Link>
+        <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em] mt-4 mb-2">
           The Oracle Challenge
         </p>
         <h1 className="text-2xl font-bold leading-tight">{playerName}</h1>

@@ -1,6 +1,8 @@
 import { getServiceClient } from '@/lib/league/db'
 import type { RankingRow } from '@/lib/oracle/rankings'
 
+const TOP_N = 10 // Oracle Challenge is top 10 per position
+
 export interface PlayerStats {
   playerName: string
   total: number
@@ -31,7 +33,7 @@ export async function getPlayerStats(
   for (const row of rows) {
     const rankings = row.rankings as RankingRow[] | null
     if (!Array.isArray(rankings)) continue
-    const entry = rankings.find((r) => r.playerId === playerId)
+    const entry = rankings.find((r) => r.playerId === playerId && r.playerRank <= TOP_N)
     if (entry) {
       playerEntries.push({
         userId: row.user_id as string,

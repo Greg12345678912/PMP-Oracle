@@ -6,9 +6,10 @@ import { formatDistanceToNow } from 'date-fns'
 import {
   getPreviewState,
   mockSeason,
-  mockLeaderboardScores,
-  mockLeaderboardProfiles,
   MOCK_TOTAL_PARTICIPANTS,
+  generatePreviewLeaderboardScores,
+  mockAccuracyScore,
+  type PreviewState,
 } from '@/lib/oracle/dev-preview'
 
 export const dynamic = 'force-dynamic'
@@ -35,10 +36,96 @@ export default async function LeaderboardPage() {
     const hasWeeklyScores = previewState !== 'locked'
 
     if (hasWeeklyScores) {
-      const scores = mockLeaderboardScores(previewState)
-      const profiles = mockLeaderboardProfiles()
-      const profileMap = new Map(profiles.map(p => [p.user_id, p]))
-      const currentWeek = scores[0]?.current_week ?? 1
+      // Try real accuracy_scores first (rawSeason.id so links and profiles are real)
+      const { data: realScores } = rawSeason
+        ? await db
+            .from('accuracy_scores')
+            .select('user_id, overall_score, global_rank, rank_change, current_week, computed_at')
+            .eq('season_id', rawSeason.id)
+            .order('global_rank', { ascending: true })
+            .limit(50)
+        : { data: [] }
+
+      type DisplayScore = { user_id: string; overall_score: number; global_rank: number; rank_change: number | null; current_week: number; previewRank?: number }
+      type DisplayProfile = { user_id: string; display_name: string | null; username: string | null; avatar_url: string | null }
+
+      let displayScores: DisplayScore[]
+      let profileMap: Map<string, DisplayProfile>
+      let currentWeek: number
+
+      if ((realScores ?? []).length > 0) {
+        // ── Real data path ─────────────────────────────────────────────────────
+        currentWeek = (realScores ?? []).reduce((max, s) => Math.max(max, (s.current_week as number) ?? 0), 0)
+        displayScores = (realScores ?? []).map(s => ({
+          user_id: s.user_id as string,
+          overall_score: s.overall_score as number,
+          global_rank: (s.global_rank as number) ?? 0,
+          rank_change: s.rank_change as number | null,
+          current_week: s.current_week as number,
+        }))
+        const userIds = displayScores.map(s => s.user_id)
+        const { data: profiles } = await db
+          .from('user_profiles')
+          .select('user_id, display_name, username, avatar_url')
+          .in('user_id', userIds)
+        profileMap = new Map((profiles ?? []).map(p => [p.user_id as string, p as DisplayProfile]))
+      } else {
+        // ── Preview fallback: generated scores + real profiles ─────────────────
+        // (only reached in dev preview when the scoring pipeline hasn't run yet)
+        const state = previewState as Exclude<PreviewState, 'locked'>
+        const genEntries = generatePreviewLeaderboardScores(state)
+        const mockScore = mockAccuracyScore(state)!
+        const userRankSlot = mockScore.global_rank! // e.g. 47 for week1
+        currentWeek = mockScore.current_week
+
+        // Session user's own profile (pinned at their rank slot)
+        let sessionProfile: DisplayProfile | null = null
+        if (session) {
+          const { data: sp } = await db
+            .from('user_profiles')
+            .select('user_id, display_name, username, avatar_url')
+            .eq('user_id', session.user.id)
+            .maybeSingle()
+          if (sp) sessionProfile = sp as DisplayProfile
+        }
+
+        // Other public profiles to fill the remaining 49 slots
+        const { data: otherRows } = await db
+          .from('user_profiles')
+          .select('user_id, display_name, username, avatar_url')
+          .neq('user_id', session?.user.id ?? '')
+          .limit(60)
+        const otherProfiles = (otherRows ?? []) as DisplayProfile[]
+
+        profileMap = new Map<string, DisplayProfile>()
+        displayScores = genEntries.map(entry => {
+          let uid: string
+          let profile: DisplayProfile
+
+          if (entry.rank === userRankSlot && sessionProfile) {
+            // Pin the signed-in user at their preview rank
+            uid = sessionProfile.user_id
+            profile = sessionProfile
+          } else {
+            // Ranks before the user's slot use indices 0..(userRankSlot-2);
+            // ranks after shift by one to skip the pinned slot.
+            const idx = entry.rank < userRankSlot ? entry.rank - 1 : entry.rank - 2
+            const p = otherProfiles[idx]
+            uid = p?.user_id ?? `preview-anon-${entry.rank}`
+            profile = p ?? { user_id: uid, display_name: null, username: null, avatar_url: null }
+          }
+
+          profileMap.set(uid, profile)
+          return {
+            user_id: uid,
+            overall_score: entry.overall_score,
+            global_rank: entry.rank,
+            rank_change: entry.rank_change,
+            current_week: entry.current_week,
+            previewRank: entry.rank,
+          }
+        })
+      }
 
       return (
         <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
@@ -64,14 +151,20 @@ export default async function LeaderboardPage() {
               )}
             </div>
             <div className="flex flex-col gap-2">
-              {scores.map((score, i) => {
+              {displayScores.map((score, i) => {
                 const profile = profileMap.get(score.user_id)
                 const rank = score.global_rank ?? i + 1
                 const rankChange = score.rank_change
+                const profileHref = profile?.username
+                  ? score.previewRank
+                    ? `/u/${profile.username}?preview_rank=${score.previewRank}`
+                    : `/u/${profile.username}`
+                  : '#'
                 return (
-                  <div
+                  <Link
                     key={score.user_id}
-                    className="flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3"
+                    href={profileHref}
+                    className="flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 hover:border-pmp-gray-600 transition-colors"
                   >
                     <span className={[
                       'text-sm font-black w-7 text-right shrink-0',
@@ -79,8 +172,11 @@ export default async function LeaderboardPage() {
                     ].join(' ')}>
                       {rank}
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-pmp-gray-800 flex items-center justify-center shrink-0">
-                      <span className="text-pmp-white text-xs font-bold">{(profile?.display_name ?? 'U')[0]}</span>
+                    <div className="w-8 h-8 rounded-full bg-pmp-gray-800 flex items-center justify-center shrink-0 overflow-hidden">
+                      {profile?.avatar_url
+                        ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                        : <span className="text-pmp-white text-xs font-bold">{(profile?.display_name ?? 'U')[0]}</span>
+                      }
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-pmp-white text-sm font-semibold truncate">{profile?.display_name ?? 'Anonymous'}</p>
@@ -92,7 +188,7 @@ export default async function LeaderboardPage() {
                         {score.overall_score.toFixed(1)}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 )
               })}
             </div>
@@ -100,7 +196,7 @@ export default async function LeaderboardPage() {
               href="/challenge/results"
               className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
             >
-              See My Results →
+              View My Results →
             </Link>
           </div>
         </div>
@@ -327,7 +423,7 @@ export default async function LeaderboardPage() {
               href="/challenge/results"
               className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
             >
-              See My Results →
+              View My Results →
             </Link>
           ) : session ? null : (
             <Link

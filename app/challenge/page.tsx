@@ -192,7 +192,7 @@ export default async function ChallengePage() {
           )}
           {locked && isSubmitted && hasWeeklyScores && (
             <Link href="/challenge/results" className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm text-center hover:opacity-90 transition-opacity">
-              See My Results →
+              View My Results →
             </Link>
           )}
           {locked && isSubmitted && !hasWeeklyScores && (
@@ -218,13 +218,19 @@ export default async function ChallengePage() {
         {locked && (
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 text-center">
             <p className="text-pmp-white font-bold text-base">
-              {season?.status === 'scored' ? 'Season Complete' : isSubmitted ? "You're Locked In" : 'Entry Closed'}
+              {season?.status === 'scored'
+                ? 'Season Complete'
+                : isSubmitted && hasWeeklyScores
+                  ? 'Week 1 Results Live'
+                  : isSubmitted
+                    ? "You're Locked In"
+                    : 'Entry Closed'}
             </p>
             <p className="text-pmp-gray-600 text-xs mt-1">
               {season?.status === 'scored'
                 ? 'Results are available'
                 : isSubmitted && hasWeeklyScores
-                  ? 'Scoring is underway. Check your results to see how you rank.'
+                  ? 'Week 1 results are live. See how your rankings performed.'
                   : isSubmitted
                     ? 'Your picks are locked in. First score update arrives after Week 1.'
                     : 'The entry window has closed for the 2026 season.'}

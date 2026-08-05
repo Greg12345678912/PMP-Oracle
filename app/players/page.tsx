@@ -20,6 +20,9 @@ export default async function PlayersPage() {
 
   const season = previewState ? mockSeason(previewState) : rawSeason
   const isPostLock = season ? isLocked(season) : false
+  const hasWeeklyScores = season
+    ? season.status === 'scoring' || season.status === 'scored'
+    : false
 
   return (
     <div className="max-w-md mx-auto">
@@ -27,7 +30,7 @@ export default async function PlayersPage() {
         <h1 className="text-pmp-white font-bold text-xl">Players</h1>
         <p className="text-pmp-gray-600 text-xs mt-0.5">2026 Oracle · PPR</p>
       </div>
-      <PlayersClient playersByPosition={playersByPosition} isPostLock={isPostLock} />
+      <PlayersClient playersByPosition={playersByPosition} isPostLock={isPostLock} hasWeeklyScores={hasWeeklyScores} />
     </div>
   )
 }

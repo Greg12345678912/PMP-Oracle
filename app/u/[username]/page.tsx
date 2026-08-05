@@ -13,13 +13,16 @@ import {
   mockAccuracyScore,
   mockDetailRows,
   mockRawRankings,
+  generatePreviewLeaderboardScores,
   MOCK_TOTAL_PARTICIPANTS,
+  type PreviewState,
 } from '@/lib/oracle/dev-preview'
 
 export const dynamic = 'force-dynamic'
 
 interface PageProps {
   params: Promise<{ username: string }>
+  searchParams: Promise<{ preview_rank?: string }>
 }
 
 // ─── DB row types ────────────────────────────────────────────────────────────
@@ -65,7 +68,7 @@ interface ChallengeRankingRow {
 
 function computePercentile(rank: number, total: number): number {
   if (total <= 1) return 1
-  return Math.max(1, Math.round(((total - rank + 1) / total) * 100))
+  return Math.max(1, Math.min(100, Math.round((rank / total) * 100)))
 }
 
 function isRankingRowArray(
@@ -84,8 +87,8 @@ function isRankingRowArray(
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function UserProfilePage({ params }: PageProps) {
-  const { username } = await params
+export default async function UserProfilePage({ params, searchParams }: PageProps) {
+  const [{ username }, { preview_rank }] = await Promise.all([params, searchParams])
   const db = getServiceClient()
 
   const { data: profileData } = await db
@@ -111,10 +114,35 @@ export default async function UserProfilePage({ params }: PageProps) {
 
   // ── Preview mode: substitute mock score data ──────────────────────────────
   if (previewState) {
-    const previewScore = mockAccuracyScore(previewState)
-    const hasInSeasonScores = (previewScore?.current_week ?? 0) > 0
+    const baseScore = mockAccuracyScore(previewState)
+    const hasInSeasonScores = (baseScore?.current_week ?? 0) > 0
     const showScores = (previewState === 'scored') || hasInSeasonScores
     const totalParticipants = MOCK_TOTAL_PARTICIPANTS
+
+    // For non-own profiles arriving from the generated leaderboard, derive a
+    // per-rank score by proportionally scaling the mock position breakdowns so
+    // their average equals the entry's overall score.
+    const previewRankNum = preview_rank ? parseInt(preview_rank, 10) : null
+    const usePerRankScore = showScores && previewRankNum !== null && !isOwn && baseScore
+
+    let previewScore = baseScore
+    if (usePerRankScore && baseScore) {
+      const genEntries = generatePreviewLeaderboardScores(previewState as Exclude<PreviewState, 'locked'>)
+      const entry = genEntries.find(e => e.rank === previewRankNum)
+      if (entry) {
+        const scale = baseScore.overall_score > 0 ? entry.overall_score / baseScore.overall_score : 1
+        previewScore = {
+          ...baseScore,
+          overall_score: entry.overall_score,
+          score_qb: Math.min(100, parseFloat((baseScore.score_qb * scale).toFixed(1))),
+          score_rb: Math.min(100, parseFloat((baseScore.score_rb * scale).toFixed(1))),
+          score_wr: Math.min(100, parseFloat((baseScore.score_wr * scale).toFixed(1))),
+          score_te: Math.min(100, parseFloat((baseScore.score_te * scale).toFixed(1))),
+          global_rank: previewRankNum,
+          rank_change: null,
+        }
+      }
+    }
 
     const allDetail = showScores ? mockDetailRows() : []
 
@@ -147,6 +175,9 @@ export default async function UserProfilePage({ params }: PageProps) {
       return { position: pos, normalizedScore, players }
     })
 
+    // Build ranking preview — real data first, fall back to mock rankings so
+    // preview profiles never show "No rankings submitted."
+    const mockRankingFallback = mockRawRankings()
     const rankingPreview: Record<string, Array<{ playerRank: number; playerName: string }>> = {}
     for (const pos of ORACLE_POSITIONS) {
       const row = rawRankingRows.find(r => r.position === pos)
@@ -156,14 +187,19 @@ export default async function UserProfilePage({ params }: PageProps) {
         rankingPreview[pos] = arr.sort((a, b) => a.playerRank - b.playerRank).slice(0, 10)
           .map(r => ({ playerRank: r.playerRank, playerName: r.playerName }))
       } else {
-        rankingPreview[pos] = []
+        // No real submission for this position — show mock picks
+        const fallbackPos = mockRankingFallback.find(m => m.position === pos)
+        const fallbackArr = Array.isArray(fallbackPos?.rankings)
+          ? (fallbackPos.rankings as Array<{ playerRank: number; playerId: string; playerName: string }>)
+          : []
+        rankingPreview[pos] = fallbackArr.slice(0, 10).map(r => ({ playerRank: r.playerRank, playerName: r.playerName }))
       }
     }
 
     const overallScore = previewScore?.overall_score ?? null
     const rank = previewScore?.global_rank ?? null
     const percentile = overallScore !== null && rank !== null
-      ? Math.max(1, Math.round(((totalParticipants - rank + 1) / totalParticipants) * 100))
+      ? computePercentile(rank, totalParticipants)
       : null
 
     const oracleResult: OracleResult | null =

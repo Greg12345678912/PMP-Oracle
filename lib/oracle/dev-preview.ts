@@ -63,7 +63,7 @@ export function mockAccuracyScore(state: PreviewState): MockAccuracyScore | null
 
   const configs = {
     week1:     { score: 71.4, qb: 75.5, rb: 63.2, wr: 74.1, te: 72.8, rank: 47,  change: null as null, week: 1  },
-    midseason: { score: 68.2, qb: 72.1, rb: 59.4, wr: 70.8, te: 70.5, rank: 312, change: -15,          week: 9  },
+    midseason: { score: 68.2, qb: 72.1, rb: 59.4, wr: 70.8, te: 70.5, rank: 156, change: -15,          week: 9  },
     scored:    { score: 73.8, qb: 80.2, rb: 62.1, wr: 76.4, te: 76.5, rank: 89,  change: 8,            week: 18 },
   }
 
@@ -232,6 +232,76 @@ export function mockLeaderboardProfiles(): MockLeaderboardProfile[] {
     username: u.username,
     avatar_url: null,
   }))
+}
+
+// ── Preview leaderboard score generation ──────────────────────────────────────
+//
+// Used only when no real accuracy_scores exist yet, so the Sept. 15 preview
+// feels like a complete post-Week-1 leaderboard before the pipeline has run.
+// Production always uses real accuracy_scores and never calls this.
+
+export interface PreviewLeaderboardEntry {
+  rank: number
+  overall_score: number
+  current_week: number
+  rank_change: null
+}
+
+/**
+ * Generates 50 realistic leaderboard entries for the preview fallback.
+ *
+ * If the preview user's rank is in the top 50 (week1 = #47), their score is
+ * pinned at that exact slot so the leaderboard matches the Results page.
+ * Scores form a smooth, realistic distribution around that anchor.
+ *
+ * For states where the user is outside the top 50 (midseason = #312,
+ * scored = #89), a simple linear distribution fills all 50 slots.
+ */
+export function generatePreviewLeaderboardScores(
+  state: Exclude<PreviewState, 'locked'>,
+): PreviewLeaderboardEntry[] {
+  const mockScore = mockAccuracyScore(state)!
+  const userRank = mockScore.global_rank!
+  const userScore = mockScore.overall_score
+  const currentWeek = mockScore.current_week
+
+  // Top/bottom of the 50-entry distribution — state-specific to feel realistic
+  const topScore = state === 'scored' ? 97.0 : state === 'midseason' ? 95.0 : 92.0
+  const bottomScore = state === 'scored' ? 85.0 : state === 'midseason' ? 82.0 : 70.4
+
+  const userInTop50 = userRank <= 50
+  const entries: PreviewLeaderboardEntry[] = []
+
+  for (let rank = 1; rank <= 50; rank++) {
+    let score: number
+
+    if (!userInTop50) {
+      // Simple linear distribution — no user anchor needed
+      score = topScore - (rank - 1) * (topScore - bottomScore) / 49
+    } else if (rank < userRank) {
+      // Linear from topScore down to userScore+0.6 over ranks 1..userRank-1
+      const topEnd = userScore + 0.6
+      score = topScore - (rank - 1) * (topScore - topEnd) / Math.max(userRank - 2, 1)
+    } else if (rank === userRank) {
+      score = userScore // pinned — must match Results page
+    } else {
+      // Linear from userScore-0.4 down to bottomScore over ranks userRank+1..50
+      const bottomStart = userScore - 0.4
+      const remaining = 50 - userRank
+      score =
+        bottomStart -
+        (rank - userRank - 1) * (bottomStart - bottomScore) / Math.max(remaining - 1, 1)
+    }
+
+    entries.push({
+      rank,
+      overall_score: parseFloat(score.toFixed(1)),
+      current_week: currentWeek,
+      rank_change: null,
+    })
+  }
+
+  return entries
 }
 
 // ── Mock recent entrants (pre-scoring leaderboard) ────────────────────────────

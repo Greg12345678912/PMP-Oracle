@@ -45,7 +45,7 @@ interface RankingScoreDetailRow {
 
 function computePercentile(rank: number, total: number): number {
   if (total <= 1) return 1
-  return Math.max(1, Math.round(((total - rank + 1) / total) * 100))
+  return Math.max(1, Math.min(100, Math.round((rank / total) * 100)))
 }
 
 // ─── Holding page (pre-Week 1) ──────────────────────────────────────────────

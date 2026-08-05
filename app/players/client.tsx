@@ -7,6 +7,7 @@ import type { OraclePosition } from '@/lib/oracle/constants'
 interface PlayersClientProps {
   playersByPosition: Record<OraclePosition, Player[]>
   isPostLock: boolean
+  hasWeeklyScores: boolean
 }
 
 const POSITIONS: OraclePosition[] = ['QB', 'RB', 'WR', 'TE']
@@ -42,7 +43,7 @@ function PlayerCard({ player }: { player: Player }) {
   )
 }
 
-export function PlayersClient({ playersByPosition, isPostLock }: PlayersClientProps) {
+export function PlayersClient({ playersByPosition, isPostLock, hasWeeklyScores }: PlayersClientProps) {
   const [query, setQuery] = useState('')
   const [activePos, setActivePos] = useState<OraclePosition | 'ALL'>('ALL')
 
@@ -115,6 +116,14 @@ export function PlayersClient({ playersByPosition, isPostLock }: PlayersClientPr
               <div>
                 <p className="text-pmp-white text-sm font-semibold">Community opinions unlock Sep 9</p>
                 <p className="text-pmp-gray-600 text-xs">Trending, divisive picks, and consensus rankings reveal after lock</p>
+              </div>
+            </div>
+          ) : hasWeeklyScores ? (
+            <div className="mx-4 mt-4 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 flex items-center gap-3">
+              <span className="text-lg">📊</span>
+              <div>
+                <p className="text-pmp-white text-sm font-semibold">Week 1 results are live</p>
+                <p className="text-pmp-gray-600 text-xs">See how the community ranked each player</p>
               </div>
             </div>
           ) : (
