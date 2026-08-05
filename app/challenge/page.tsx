@@ -8,7 +8,7 @@ import type { OraclePosition } from '@/lib/oracle/constants'
 import { OracleSplashCTA } from '@/components/oracle/OracleSplashCTA'
 import { SignOutButton } from '@/components/oracle/SignOutButton'
 import { Countdown } from '@/components/oracle/Countdown'
-import { getPreviewState, mockSeason, mockAccuracyScore } from '@/lib/oracle/dev-preview'
+import { getPreviewState, mockSeason, mockAccuracyScore, PREVIEW_USERNAME } from '@/lib/oracle/dev-preview'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,18 +44,24 @@ export default async function ChallengePage() {
       hasWeeklyScores = true
       currentWeek = mockAccuracyScore(previewState)?.current_week ?? 0
     }
-    // Personal data: use real values when signed in, mock otherwise
-    if (session && rawSeason) {
+    // Personal data: prefer real session user, fall back to PREVIEW_USERNAME lookup
+    {
       const db = getServiceClient()
-      const [profileRow, entryRow] = await Promise.all([
-        db.from('user_profiles').select('display_name').eq('user_id', session.user.id).maybeSingle(),
-        db.from('oracle_entries').select('entry_number').eq('user_id', session.user.id).eq('season_id', rawSeason.id).maybeSingle(),
-      ])
-      displayName = (profileRow.data?.display_name as string | null) ?? null
-      entryNumber = (entryRow.data?.entry_number as number | null) ?? null
-    } else {
-      displayName = 'Greg Spunt'
-      entryNumber = 42
+      const lookupId = session?.user.id ?? await (async () => {
+        const { data } = await db.from('user_profiles').select('user_id').eq('username', PREVIEW_USERNAME).maybeSingle()
+        return (data as { user_id: string } | null)?.user_id ?? null
+      })()
+      if (lookupId && rawSeason) {
+        const [profileRow, entryRow] = await Promise.all([
+          db.from('user_profiles').select('display_name').eq('user_id', lookupId).maybeSingle(),
+          db.from('oracle_entries').select('entry_number').eq('user_id', lookupId).eq('season_id', rawSeason.id).maybeSingle(),
+        ])
+        displayName = (profileRow.data?.display_name as string | null) ?? 'Greg Spunt'
+        entryNumber = (entryRow.data?.entry_number as number | null) ?? 42
+      } else {
+        displayName = 'Greg Spunt'
+        entryNumber = 42
+      }
     }
   } else if (session && season) {
     const db = getServiceClient()
