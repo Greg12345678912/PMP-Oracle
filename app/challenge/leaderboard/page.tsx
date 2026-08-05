@@ -159,13 +159,10 @@ export default async function LeaderboardPage() {
                   ? score.previewRank
                     ? `/u/${profile.username}?preview_rank=${score.previewRank}`
                     : `/u/${profile.username}`
-                  : '#'
-                return (
-                  <Link
-                    key={score.user_id}
-                    href={profileHref}
-                    className="flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 hover:border-pmp-gray-600 transition-colors"
-                  >
+                  : null
+                const rowClass = 'flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 transition-colors'
+                const inner = (
+                  <>
                     <span className={[
                       'text-sm font-black w-7 text-right shrink-0',
                       rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-pmp-gray-400' : rank === 3 ? 'text-amber-600' : 'text-pmp-gray-600',
@@ -188,7 +185,16 @@ export default async function LeaderboardPage() {
                         {score.overall_score.toFixed(1)}
                       </span>
                     </div>
+                  </>
+                )
+                return profileHref ? (
+                  <Link key={score.user_id} href={profileHref} className={`${rowClass} hover:border-pmp-gray-600`}>
+                    {inner}
                   </Link>
+                ) : (
+                  <div key={score.user_id} className={rowClass}>
+                    {inner}
+                  </div>
                 )
               })}
             </div>
@@ -385,12 +391,10 @@ export default async function LeaderboardPage() {
               const profile = profileMap.get(score.user_id as string)
               const rank = (score.global_rank as number) ?? i + 1
               const rankChange = score.rank_change as number | null
-              return (
-                <Link
-                  key={score.user_id as string}
-                  href={profile?.username ? `/u/${profile.username}` : '#'}
-                  className="flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 hover:border-pmp-gray-600 transition-colors"
-                >
+              const profileHref = profile?.username ? `/u/${profile.username}` : null
+              const rowClass = 'flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 transition-colors'
+              const inner = (
+                <>
                   <span className={[
                     'text-sm font-black w-7 text-right shrink-0',
                     rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-pmp-gray-400' : rank === 3 ? 'text-amber-600' : 'text-pmp-gray-600',
@@ -413,7 +417,16 @@ export default async function LeaderboardPage() {
                       {typeof score.overall_score === 'number' ? (score.overall_score as number).toFixed(1) : '—'}
                     </span>
                   </div>
+                </>
+              )
+              return profileHref ? (
+                <Link key={score.user_id as string} href={profileHref} className={`${rowClass} hover:border-pmp-gray-600`}>
+                  {inner}
                 </Link>
+              ) : (
+                <div key={score.user_id as string} className={rowClass}>
+                  {inner}
+                </div>
               )
             })}
           </div>

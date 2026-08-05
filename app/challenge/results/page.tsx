@@ -117,7 +117,7 @@ function WeeklyRankPage({
         {/* Rank hero card */}
         <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl overflow-hidden">
           <div className="px-5 py-8 flex flex-col items-center gap-1 border-b border-dashed border-pmp-gray-800">
-            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Current Rank</p>
+            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Week {scoreData.current_week} Rank</p>
             <p className="text-pmp-white font-black text-7xl leading-none mt-2">
               #{rank.toLocaleString()}
             </p>
@@ -172,7 +172,7 @@ function WeeklyRankPage({
           href="/challenge/leaderboard"
           className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:border-pmp-gray-500 transition-colors"
         >
-          View Final Standings →
+          View Leaderboard →
         </Link>
 
         <Link

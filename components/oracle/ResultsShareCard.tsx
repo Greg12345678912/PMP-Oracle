@@ -17,6 +17,26 @@ export function ResultsShareCard({ overallScore, percentile, rank, totalParticip
     if (!cardRef.current) return
     const html2canvas = (await import('html2canvas')).default
     const canvas = await html2canvas(cardRef.current, { scale: 2 })
+
+    // iOS Safari doesn't support <a download> on programmatic clicks.
+    // Use the Web Share API (share sheet) when available — lets users save to Photos/Files.
+    if (typeof navigator.share === 'function') {
+      try {
+        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
+        if (blob) {
+          const file = new File([blob], 'oracle-results.png', { type: 'image/png' })
+          if (navigator.canShare?.({ files: [file] })) {
+            await navigator.share({ files: [file], title: 'My Oracle Challenge Results' })
+            return
+          }
+        }
+      } catch (e) {
+        if ((e as Error).name === 'AbortError') return // user dismissed share sheet
+        // fall through to link download
+      }
+    }
+
+    // Desktop fallback: trigger file download
     const link = document.createElement('a')
     link.download = 'oracle-results.png'
     link.href = canvas.toDataURL('image/png')

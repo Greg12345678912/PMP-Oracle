@@ -35,21 +35,28 @@ export default async function ChallengePage() {
   let hasWeeklyScores = false
   let currentWeek = 0
 
-  if (previewState && previewState !== 'locked') {
-    // Inject mock data for scoring/scored preview states
-    displayName = 'Greg Spunt'
-    hasWeeklyScores = true
-    currentWeek = mockAccuracyScore(previewState)?.current_week ?? 0
+  if (previewState) {
+    // Mock season state — scores/ranks are always mock
     isSubmitted = true
     totalEntries = 247
-    entryNumber = 42
     rankingCounts = { QB: 10, RB: 10, WR: 10, TE: 10 }
-  } else if (previewState === 'locked') {
-    displayName = 'Greg Spunt'
-    isSubmitted = true
-    totalEntries = 247
-    entryNumber = 42
-    rankingCounts = { QB: 10, RB: 10, WR: 10, TE: 10 }
+    if (previewState !== 'locked') {
+      hasWeeklyScores = true
+      currentWeek = mockAccuracyScore(previewState)?.current_week ?? 0
+    }
+    // Personal data: use real values when signed in, mock otherwise
+    if (session && rawSeason) {
+      const db = getServiceClient()
+      const [profileRow, entryRow] = await Promise.all([
+        db.from('user_profiles').select('display_name').eq('user_id', session.user.id).maybeSingle(),
+        db.from('oracle_entries').select('entry_number').eq('user_id', session.user.id).eq('season_id', rawSeason.id).maybeSingle(),
+      ])
+      displayName = (profileRow.data?.display_name as string | null) ?? null
+      entryNumber = (entryRow.data?.entry_number as number | null) ?? null
+    } else {
+      displayName = 'Greg Spunt'
+      entryNumber = 42
+    }
   } else if (session && season) {
     const db = getServiceClient()
     const [profileResult, submittedResult, entryCountResult, entryNumberResult, weeklyScoresResult, ...rankingResults] =
