@@ -7,7 +7,8 @@ import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import type { RankingRow } from '@/lib/oracle/rankings'
 import type { Player } from '@/lib/data/types'
-import { getPreviewState } from '@/lib/oracle/dev-preview'
+import { getServiceClient } from '@/lib/league/db'
+import { getPreviewState, PREVIEW_USERNAME } from '@/lib/oracle/dev-preview'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,13 +30,21 @@ export default async function RankingsPage() {
     ORACLE_POSITIONS.map((pos, i) => [pos, poolsArr[i]]),
   ) as Record<OraclePosition, Player[]>
 
-  // Fetch saved rankings for signed-in users (use real season ID so preview shows real submissions)
+  // Fetch saved rankings — prefer real session, fall back to preview username lookup
   let initialRankings: Partial<Record<OraclePosition, RankingRow[]>> = {}
-  if (session && season) {
+  const userId = session?.user.id ?? (previewState ? await (async () => {
+    const db = getServiceClient()
+    const { data } = await db
+      .from('user_profiles')
+      .select('user_id')
+      .eq('username', PREVIEW_USERNAME)
+      .maybeSingle()
+    return (data as { user_id: string } | null)?.user_id ?? null
+  })() : null)
+
+  if (userId && season) {
     const savedArr = await Promise.all(
-      ORACLE_POSITIONS.map(pos =>
-        getRankings(session.user.id, season.id, pos),
-      ),
+      ORACLE_POSITIONS.map(pos => getRankings(userId, season.id, pos)),
     )
     initialRankings = Object.fromEntries(
       ORACLE_POSITIONS.map((pos, i) => [pos, savedArr[i]]),

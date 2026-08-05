@@ -13,11 +13,12 @@ export function SignOutButton() {
   }
 
   return (
-    <button
-      onClick={handleSignOut}
-      className="text-pmp-gray-700 text-xs hover:text-pmp-gray-500 transition-colors"
+    <a
+      href="#"
+      onClick={e => { e.preventDefault(); void handleSignOut() }}
+      className="text-pmp-gray-700 text-xs hover:text-pmp-gray-500 transition-colors py-2 px-4"
     >
       Sign out
-    </button>
+    </a>
   )
 }

@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { OracleSplashCTA } from './OracleSplashCTA'
 
 interface ProfileGateProps {
@@ -7,10 +8,16 @@ interface ProfileGateProps {
 }
 
 export function ProfileGate({ onDismiss }: ProfileGateProps) {
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 350)
+    return () => clearTimeout(t)
+  }, [])
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm px-4 pb-6 sm:pb-0"
-      onClick={e => { if (e.target === e.currentTarget) onDismiss() }}
+      onClick={e => { if (ready && e.target === e.currentTarget) onDismiss() }}
     >
       <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl w-full max-w-sm p-6 flex flex-col gap-5">
         <div className="flex flex-col gap-1">

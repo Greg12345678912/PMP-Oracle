@@ -10,10 +10,12 @@ import type { Season } from './season'
 
 export type PreviewState = 'locked' | 'week1' | 'midseason' | 'scored'
 
+/** Username whose real rankings are shown on pages that need auth in preview mode */
+export const PREVIEW_USERNAME = 'gregoryspunt'
+
 const VALID_STATES: PreviewState[] = ['locked', 'week1', 'midseason', 'scored']
 
 export async function getPreviewState(): Promise<PreviewState | null> {
-  if (process.env.NODE_ENV !== 'development') return null
   try {
     const cookieStore = await cookies()
     const value = cookieStore.get('__oracle_preview')?.value ?? ''

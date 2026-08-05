@@ -30,6 +30,13 @@ export default async function ChallengeLayout({
     username = (data?.username as string | null) ?? null
   }
 
+  // In dev preview mode without a real session, use a mock username so the
+  // Profile tab renders as a Link (navigates to the profile page) rather than
+  // a dead button. Only applies when NODE_ENV=development.
+  if (previewState && !username) {
+    username = 'gregoryspunt'
+  }
+
   const locked = season ? isLocked(season) : false
   const daysLeft = season && !locked ? daysUntilLock(season.lock_at) : 0
 

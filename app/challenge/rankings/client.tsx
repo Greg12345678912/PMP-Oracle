@@ -132,13 +132,14 @@ export function RankingsClient({
           const isActive = activePosition === pos
           const size = POSITION_LIST_SIZE[pos]
           return (
-            <button
+            <a
               key={pos}
+              href="#"
               role="tab"
               aria-selected={isActive}
-              onClick={() => setActivePosition(pos)}
+              onClick={e => { e.preventDefault(); setActivePosition(pos) }}
               className={[
-                'flex-1 py-3 text-sm font-semibold transition-colors min-h-[44px]',
+                'flex-1 py-3 text-sm font-semibold transition-colors min-h-[44px] flex flex-col items-center justify-center no-underline',
                 isActive
                   ? 'text-pmp-white border-b-2 border-pmp-red'
                   : savedPositions.has(pos)
@@ -150,7 +151,7 @@ export function RankingsClient({
               <span className="block text-[10px] font-normal opacity-60">
                 Top {size}
               </span>
-            </button>
+            </a>
           )
         })}
       </div>
