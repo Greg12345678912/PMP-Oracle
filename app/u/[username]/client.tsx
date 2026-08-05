@@ -175,7 +175,7 @@ export function ProfileClient({
 
         {/* ── 5. Share card (if scored and percentile known) ── */}
         {isScored && overallScore !== null && percentile !== null && (
-          <ResultsShareCard overallScore={overallScore} percentile={percentile} />
+          <ResultsShareCard overallScore={overallScore} percentile={percentile} username={profile.username} />
         )}
 
         {/* ── 6. Rankings preview ── */}

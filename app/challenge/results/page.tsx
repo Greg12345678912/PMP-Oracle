@@ -206,6 +206,7 @@ interface FinalResultsViewProps {
   summary: string
   season: { lock_at: string; scored_at: string | null } | null
   scoredAt: string | null
+  username?: string
 }
 
 function distanceLabel(distance: number | null): string {
@@ -225,6 +226,7 @@ function FinalResultsView({
   summary,
   season,
   scoredAt,
+  username,
 }: FinalResultsViewProps) {
   return (
     <div className="min-h-[100dvh] bg-pmp-black px-4 py-12">
@@ -288,7 +290,7 @@ function FinalResultsView({
 
         <div className="flex flex-col gap-4 items-center">
           <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest self-start">Share Your Results</p>
-          <ResultsShareCard overallScore={overallScore} percentile={percentile} />
+          <ResultsShareCard overallScore={overallScore} percentile={percentile} username={username} />
         </div>
 
         <div className="flex flex-col gap-4">
@@ -308,12 +310,19 @@ function FinalResultsView({
                 <span>📊</span>
                 <span className="text-pmp-gray-600">Scored:</span>
                 <span className="text-pmp-white">
-                  {new Date(season?.scored_at ?? scoredAt!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  {new Date(season?.scored_at ?? scoredAt!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })}
                 </span>
               </div>
             )}
           </div>
         </div>
+
+        <Link
+          href="/challenge/leaderboard"
+          className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:border-pmp-gray-500 transition-colors"
+        >
+          See Full Leaderboard →
+        </Link>
 
         <div className="text-center pb-4">
           <Link href="/challenge" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-500 transition-colors">
@@ -375,7 +384,17 @@ export default async function ResultsPage() {
 
       const allPlayers = positionResults.flatMap(pr => pr.players)
       const bestCall = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 999) <= (b.distance ?? 999) ? a : b) : null
-      const biggestMiss = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 0) >= (b.distance ?? 0) ? a : b) : null
+      const biggestMiss = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 100) >= (b.distance ?? 100) ? a : b) : null
+
+      let previewUsername: string | undefined
+      if (session) {
+        const { data: profileRow } = await db
+          .from('user_profiles')
+          .select('username')
+          .eq('user_id', session.user.id)
+          .maybeSingle()
+        previewUsername = (profileRow as { username: string | null } | null)?.username ?? undefined
+      }
 
       return (
         <FinalResultsView
@@ -389,6 +408,7 @@ export default async function ResultsPage() {
           summary={summary}
           season={season}
           scoredAt={scoreData.computed_at}
+          username={previewUsername}
         />
       )
     }
@@ -415,7 +435,7 @@ export default async function ResultsPage() {
 
   // Final results view
   if (season?.status === 'scored') {
-    const [detailResult, totalCountResult] = await Promise.all([
+    const [detailResult, totalCountResult, profileResult] = await Promise.all([
       db
         .from('ranking_score_detail')
         .select('position, player_id, player_name, user_rank, actual_rank, distance, final_score')
@@ -426,10 +446,17 @@ export default async function ResultsPage() {
         .from('accuracy_scores')
         .select('*', { count: 'exact', head: true })
         .eq('season_id', seasonId),
+
+      db
+        .from('user_profiles')
+        .select('username')
+        .eq('user_id', userId)
+        .maybeSingle(),
     ])
 
     const allDetail = (detailResult.data ?? []) as RankingScoreDetailRow[]
     const totalParticipants = totalCountResult.count ?? 0
+    const username = (profileResult.data as { username: string | null } | null)?.username ?? undefined
 
     const positionResults: PositionResult[] = ORACLE_POSITIONS.map(pos => {
       const rows = allDetail.filter(r => r.position === pos)
@@ -459,7 +486,7 @@ export default async function ResultsPage() {
 
     const allPlayers = positionResults.flatMap(pr => pr.players)
     const bestCall = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 999) <= (b.distance ?? 999) ? a : b) : null
-    const biggestMiss = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 0) >= (b.distance ?? 0) ? a : b) : null
+    const biggestMiss = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 100) >= (b.distance ?? 100) ? a : b) : null
 
     return (
       <FinalResultsView
@@ -473,6 +500,7 @@ export default async function ResultsPage() {
         summary={summary}
         season={season}
         scoredAt={scoredAt}
+        username={username}
       />
     )
   }

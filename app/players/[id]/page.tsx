@@ -270,7 +270,9 @@ export default async function PlayerPage({
         )}
 
         <p className="text-pmp-gray-500 text-xs text-center">
-          Rankings locked · {total} oracle{total === 1 ? '' : 's'} weighed in
+          {season.status === 'scored'
+            ? `Season complete · ${total} oracle${total === 1 ? '' : 's'} weighed in`
+            : `Rankings locked · ${total} oracle${total === 1 ? '' : 's'} weighed in`}
         </p>
       </div>
     </div>

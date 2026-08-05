@@ -4,7 +4,8 @@ import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import type { Player } from '@/lib/data/types'
 import { PlayersClient } from './client'
-import { getPreviewState, mockSeason } from '@/lib/oracle/dev-preview'
+import { getPreviewState, mockSeason, mockAccuracyScore } from '@/lib/oracle/dev-preview'
+import { getServiceClient } from '@/lib/league/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,9 +21,24 @@ export default async function PlayersPage() {
 
   const season = previewState ? mockSeason(previewState) : rawSeason
   const isPostLock = season ? isLocked(season) : false
+  const isScored = season?.status === 'scored'
   const hasWeeklyScores = season
     ? season.status === 'scoring' || season.status === 'scored'
     : false
+
+  let currentWeek = 0
+  if (previewState) {
+    currentWeek = mockAccuracyScore(previewState)?.current_week ?? 0
+  } else if (hasWeeklyScores && rawSeason) {
+    const db = getServiceClient()
+    const { data } = await db
+      .from('accuracy_scores')
+      .select('current_week')
+      .eq('season_id', rawSeason.id)
+      .gt('current_week', 0)
+      .limit(1)
+    currentWeek = (data as Array<{ current_week: number }> | null)?.[0]?.current_week ?? 0
+  }
 
   return (
     <div className="max-w-md mx-auto">
@@ -30,7 +46,7 @@ export default async function PlayersPage() {
         <h1 className="text-pmp-white font-bold text-xl">Players</h1>
         <p className="text-pmp-gray-600 text-xs mt-0.5">2026 Oracle · PPR</p>
       </div>
-      <PlayersClient playersByPosition={playersByPosition} isPostLock={isPostLock} hasWeeklyScores={hasWeeklyScores} />
+      <PlayersClient playersByPosition={playersByPosition} isPostLock={isPostLock} hasWeeklyScores={hasWeeklyScores} isScored={isScored} currentWeek={currentWeek} />
     </div>
   )
 }

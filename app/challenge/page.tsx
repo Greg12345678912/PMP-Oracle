@@ -246,7 +246,9 @@ export default async function ChallengePage() {
           <div>
             <p className="text-pmp-white font-bold text-base">Community</p>
             <p className="text-pmp-gray-600 text-xs mt-0.5">
-              {totalEntries === 1 ? '1 entry so far' : `${totalEntries.toLocaleString()} entries so far`}
+              {season?.status === 'scored'
+                ? `${totalEntries.toLocaleString()} total entries`
+                : totalEntries === 1 ? '1 entry so far' : `${totalEntries.toLocaleString()} entries so far`}
             </p>
           </div>
           <Link
@@ -256,16 +258,6 @@ export default async function ChallengePage() {
             View →
           </Link>
         </div>
-
-        {/* Results teaser */}
-        {season?.status === 'scored' && (
-          <Link
-            href="/challenge/results"
-            className="bg-pmp-red text-pmp-white font-bold py-4 rounded-2xl text-sm text-center hover:opacity-90 transition-opacity"
-          >
-            View My Results →
-          </Link>
-        )}
 
         {/* Sign out */}
         <div className="flex justify-center pt-2 pb-4">
