@@ -8,7 +8,9 @@ import {
   mockSeason,
   MOCK_TOTAL_PARTICIPANTS,
   generatePreviewLeaderboardScores,
+  generateMockLeaderboardProfiles,
   mockAccuracyScore,
+  PREVIEW_USERNAME,
   type PreviewState,
 } from '@/lib/oracle/dev-preview'
 
@@ -80,22 +82,21 @@ export default async function LeaderboardPage() {
 
         // Session user's own profile (pinned at their rank slot)
         let sessionProfile: DisplayProfile | null = null
-        if (session) {
+        const lookupId = session?.user.id ?? await (async () => {
+          const { data } = await db.from('user_profiles').select('user_id').eq('username', PREVIEW_USERNAME).maybeSingle()
+          return (data as { user_id: string } | null)?.user_id ?? null
+        })()
+        if (lookupId) {
           const { data: sp } = await db
             .from('user_profiles')
             .select('user_id, display_name, username, avatar_url')
-            .eq('user_id', session.user.id)
+            .eq('user_id', lookupId)
             .maybeSingle()
           if (sp) sessionProfile = sp as DisplayProfile
         }
 
-        // Other public profiles to fill the remaining 49 slots
-        const { data: otherRows } = await db
-          .from('user_profiles')
-          .select('user_id, display_name, username, avatar_url')
-          .neq('user_id', session?.user.id ?? '')
-          .limit(60)
-        const otherProfiles = (otherRows ?? []) as DisplayProfile[]
+        // Fill remaining 49 slots with generated mock profiles (avoids anonymous rows)
+        const otherProfiles = generateMockLeaderboardProfiles(60) as unknown as DisplayProfile[]
 
         profileMap = new Map<string, DisplayProfile>()
         displayScores = genEntries.map(entry => {

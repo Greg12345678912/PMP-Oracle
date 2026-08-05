@@ -306,6 +306,34 @@ export function generatePreviewLeaderboardScores(
   return entries
 }
 
+// ── Generated mock leaderboard profiles ───────────────────────────────────────
+//
+// Used in the preview fallback leaderboard (no real accuracy_scores yet).
+// Rows have display_name but no username so they are non-clickable in preview.
+
+const MOCK_FIRST_NAMES = ['Jordan', 'Alex', 'Sam', 'Casey', 'Morgan', 'Riley', 'Drew', 'Jamie', 'Taylor', 'Dana', 'Blake', 'Cameron', 'Avery', 'Quinn', 'Parker', 'Reese', 'Logan', 'Mason', 'Ryan', 'Chris']
+const MOCK_LAST_NAMES  = ['Williams', 'Chen', 'Rodriguez', 'Davis', 'Lee', 'Brown', 'Kim', 'Park', 'Singh', 'Wilson', 'Johnson', 'Garcia', 'Martinez', 'Anderson', 'Taylor', 'Thomas', 'Moore', 'Jackson', 'White', 'Harris']
+
+export interface MockLeaderboardProfileGenerated {
+  user_id: string
+  display_name: string
+  username: null
+  avatar_url: null
+}
+
+export function generateMockLeaderboardProfiles(count: number): MockLeaderboardProfileGenerated[] {
+  return Array.from({ length: count }, (_, i) => {
+    const first = MOCK_FIRST_NAMES[i % MOCK_FIRST_NAMES.length]
+    const last  = MOCK_LAST_NAMES[Math.floor(i / MOCK_FIRST_NAMES.length) % MOCK_LAST_NAMES.length]
+    return {
+      user_id: `preview-anon-${i}`,
+      display_name: `${first} ${last}`,
+      username: null,
+      avatar_url: null,
+    }
+  })
+}
+
 // ── Mock recent entrants (pre-scoring leaderboard) ────────────────────────────
 
 export interface MockRecentEntrant {
