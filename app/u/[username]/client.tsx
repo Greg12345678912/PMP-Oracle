@@ -143,7 +143,7 @@ export function ProfileClient({
             <p className="text-pmp-gray-500 text-sm">Overall Accuracy</p>
             {rank != null && totalParticipants > 0 && (
               <div className="flex flex-col items-center gap-0.5 mt-1">
-                <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Final Rank</p>
+                <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">{isSeasonComplete ? 'Final Rank' : 'Current Rank'}</p>
                 <p className="text-pmp-white font-bold text-2xl">#{rank.toLocaleString()} of {totalParticipants.toLocaleString()}</p>
               </div>
             )}
