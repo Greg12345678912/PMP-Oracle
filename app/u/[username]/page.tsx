@@ -7,6 +7,14 @@ import { isLocked } from '@/lib/oracle/season'
 import { generateSummary } from '@/lib/oracle/scoring'
 import type { OracleResult, PositionResult, PlayerScore } from '@/lib/oracle/scoring'
 import { ProfileClient } from './client'
+import {
+  getPreviewState,
+  mockSeason,
+  mockAccuracyScore,
+  mockDetailRows,
+  mockRawRankings,
+  MOCK_TOTAL_PARTICIPANTS,
+} from '@/lib/oracle/dev-preview'
 
 export const dynamic = 'force-dynamic'
 
@@ -93,11 +101,103 @@ export default async function UserProfilePage({ params }: PageProps) {
     notFound()
   }
 
-  const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
+  const previewState = await getPreviewState()
+  const [session, rawSeason] = await Promise.all([getSession(), getCurrentSeason()])
+  const season = previewState ? mockSeason(previewState) : rawSeason
   const isOwn = session?.user.id === profile.user_id
 
   const isAfterLock = season ? isLocked(season) : false
   const isScored = season?.status === 'scored'
+
+  // ── Preview mode: substitute mock score data ──────────────────────────────
+  if (previewState) {
+    const previewScore = mockAccuracyScore(previewState)
+    const hasInSeasonScores = (previewScore?.current_week ?? 0) > 0
+    const showScores = (previewState === 'scored') || hasInSeasonScores
+    const totalParticipants = MOCK_TOTAL_PARTICIPANTS
+
+    const allDetail = showScores ? mockDetailRows() : []
+
+    // Query real submitted rankings from DB (rawSeason.id = real season ID).
+    // This ensures the profile shows the user's actual submitted rankings, not mock data.
+    const rawRankingRows: ChallengeRankingRow[] = []
+    if (isAfterLock && rawSeason) {
+      const { data: realRankingData } = await db
+        .from('challenge_rankings')
+        .select('position, rankings')
+        .eq('user_id', profile.user_id)
+        .eq('season_id', rawSeason.id)
+      if (realRankingData) rawRankingRows.push(...(realRankingData as ChallengeRankingRow[]))
+    }
+
+    const positionResults: PositionResult[] = ORACLE_POSITIONS.map(pos => {
+      const rows = allDetail.filter(r => r.position === pos)
+      const players: PlayerScore[] = rows.map(r => ({
+        playerId: r.player_id,
+        playerName: r.player_name,
+        userRank: r.user_rank,
+        actualRank: r.actual_rank,
+        distance: r.distance,
+      }))
+      const normalizedScore =
+        pos === 'QB' ? (previewScore?.score_qb ?? 0)
+        : pos === 'RB' ? (previewScore?.score_rb ?? 0)
+        : pos === 'WR' ? (previewScore?.score_wr ?? 0)
+        : (previewScore?.score_te ?? 0)
+      return { position: pos, normalizedScore, players }
+    })
+
+    const rankingPreview: Record<string, Array<{ playerRank: number; playerName: string }>> = {}
+    for (const pos of ORACLE_POSITIONS) {
+      const row = rawRankingRows.find(r => r.position === pos)
+      if (row) {
+        const parsed: unknown = typeof row.rankings === 'string' ? JSON.parse(row.rankings) : row.rankings
+        const arr = isRankingRowArray(parsed) ? parsed : []
+        rankingPreview[pos] = arr.sort((a, b) => a.playerRank - b.playerRank).slice(0, 10)
+          .map(r => ({ playerRank: r.playerRank, playerName: r.playerName }))
+      } else {
+        rankingPreview[pos] = []
+      }
+    }
+
+    const overallScore = previewScore?.overall_score ?? null
+    const rank = previewScore?.global_rank ?? null
+    const percentile = overallScore !== null && rank !== null
+      ? Math.max(1, Math.round(((totalParticipants - rank + 1) / totalParticipants) * 100))
+      : null
+
+    const oracleResult: OracleResult | null =
+      showScores && previewScore
+        ? { overallScore: previewScore.overall_score, positionResults }
+        : null
+
+    const summary = oracleResult ? generateSummary(oracleResult) : null
+    // Use the real season's lock_at so the date always reflects the actual lock date (e.g. Sept. 9),
+    // not the rolling mock date. Fall back to mock season if no real season exists.
+    const lockDateLabel = new Date((rawSeason ?? season!).lock_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/New_York' })
+
+    return (
+      <ProfileClient
+        profile={{
+          username: profile.username,
+          displayName: profile.display_name,
+          avatarUrl: profile.avatar_url,
+          isVerified: profile.is_verified,
+          isCreator: profile.is_creator,
+        }}
+        isOwn={isOwn}
+        isAfterLock={isAfterLock}
+        isScored={showScores}
+        overallScore={overallScore}
+        percentile={percentile}
+        positionResults={showScores ? positionResults : []}
+        summary={summary}
+        rankingPreview={rankingPreview}
+        lockDateLabel={lockDateLabel}
+      />
+    )
+  }
+  // ── End preview mode ─────────────────────────────────────────────────────
 
   // Fetch all data in parallel
   const [accResult, detailResult, rankingRowsResult, totalCountResult] =
@@ -175,7 +275,7 @@ export default async function UserProfilePage({ params }: PageProps) {
       const arr = isRankingRowArray(parsed) ? parsed : []
       rankingPreview[pos] = arr
         .sort((a, b) => a.playerRank - b.playerRank)
-        .slice(0, 3)
+        .slice(0, 10)
         .map(r => ({ playerRank: r.playerRank, playerName: r.playerName }))
     } else {
       rankingPreview[pos] = []

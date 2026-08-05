@@ -108,13 +108,21 @@ export function PlayersClient({ playersByPosition, isPostLock }: PlayersClientPr
         </div>
       ) : (
         <>
-          {/* Community insight banner - pre-lock */}
-          {!isPostLock && (
+          {/* Community insight banner */}
+          {!isPostLock ? (
             <div className="mx-4 mt-4 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 flex items-center gap-3">
               <span className="text-lg">🔒</span>
               <div>
                 <p className="text-pmp-white text-sm font-semibold">Community opinions unlock Sep 9</p>
                 <p className="text-pmp-gray-600 text-xs">Trending, divisive picks, and consensus rankings reveal after lock</p>
+              </div>
+            </div>
+          ) : (
+            <div className="mx-4 mt-4 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 flex items-center gap-3">
+              <span className="text-lg">⏳</span>
+              <div>
+                <p className="text-pmp-white text-sm font-semibold">Rankings are locked</p>
+                <p className="text-pmp-gray-600 text-xs">Community consensus and trending picks unlock after Week 1 scoring</p>
               </div>
             </div>
           )}

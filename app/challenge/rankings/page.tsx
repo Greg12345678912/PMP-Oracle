@@ -7,17 +7,19 @@ import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import type { RankingRow } from '@/lib/oracle/rankings'
 import type { Player } from '@/lib/data/types'
+import { getPreviewState } from '@/lib/oracle/dev-preview'
 
 export const dynamic = 'force-dynamic'
 
 export default async function RankingsPage() {
+  const previewState = await getPreviewState()
   const [session, season] = await Promise.all([
     getSession(),
     getCurrentSeason(),
   ])
 
-  // Locked when no season exists OR season status !== 'open' OR past lock date
-  const locked = season ? isLocked(season) : true
+  // Locked when preview is active, no season exists, OR past lock date
+  const locked = previewState !== null || (season ? isLocked(season) : true)
 
   // Fetch all 4 position pools in parallel
   const poolsArr = await Promise.all(
@@ -27,7 +29,7 @@ export default async function RankingsPage() {
     ORACLE_POSITIONS.map((pos, i) => [pos, poolsArr[i]]),
   ) as Record<OraclePosition, Player[]>
 
-  // Fetch saved rankings for signed-in users
+  // Fetch saved rankings for signed-in users (use real season ID so preview shows real submissions)
   let initialRankings: Partial<Record<OraclePosition, RankingRow[]>> = {}
   if (session && season) {
     const savedArr = await Promise.all(

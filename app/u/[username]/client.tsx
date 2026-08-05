@@ -110,7 +110,7 @@ export function ProfileClient({
             </div>
           )}
 
-          {isOwn && (
+          {isOwn && !isAfterLock && (
             <Link
               href="/challenge/rankings"
               className="text-pmp-red text-xs font-semibold hover:opacity-80"
@@ -180,16 +180,23 @@ export function ProfileClient({
 
         {/* ── 6. Rankings preview ── */}
         <div className="flex flex-col gap-4">
-          <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
-            Rankings
-          </p>
+          <div className="flex flex-col gap-0.5">
+            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
+              {isAfterLock ? 'Locked Rankings' : 'Rankings'}
+            </p>
+            {isAfterLock && (
+              <p className="text-pmp-gray-700 text-xs">Locked {lockDateLabel}</p>
+            )}
+          </div>
 
           {!isAfterLock ? (
-            <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-5 text-center">
-              <p className="text-pmp-gray-500 text-sm">
-                Rankings hidden until {lockDateLabel}
-              </p>
-            </div>
+            !isOwn ? (
+              <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-5 text-center">
+                <p className="text-pmp-gray-500 text-sm">
+                  Rankings hidden until {lockDateLabel}
+                </p>
+              </div>
+            ) : null
           ) : (
             <>
               {/* Position tab strip */}
@@ -229,12 +236,6 @@ export function ProfileClient({
                   ))
                 )}
 
-                {/* Scored breakdown for active position */}
-                {isScored && activePositionResult && activePositionResult.players.length > 3 && (
-                  <p className="text-pmp-gray-600 text-xs text-center pt-1">
-                    Showing top 3 of {activePositionResult.players.length} picks
-                  </p>
-                )}
               </div>
             </>
           )}

@@ -35,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="dark">
       <body
         className={`${inter.variable} ${GeistSans.variable} bg-pmp-black text-pmp-white antialiased`}
+        suppressHydrationWarning
       >
         <PostHogProvider>
           {children}

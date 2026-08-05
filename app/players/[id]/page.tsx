@@ -4,8 +4,13 @@ import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import { getPlayerStats } from '@/lib/oracle/playerStats'
 import { getPlayerPool } from '@/lib/oracle/players'
+import { getServiceClient } from '@/lib/league/db'
+import { getPreviewState, mockSeason } from '@/lib/oracle/dev-preview'
 
 export const dynamic = 'force-dynamic'
+
+// Mock player ranks for preview locked state (one per position)
+const PREVIEW_MOCK_RANKS: Record<string, number> = { QB: 3, RB: 5, WR: 2, TE: 4 }
 
 export default async function PlayerPage({
   params,
@@ -13,19 +18,20 @@ export default async function PlayerPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
 
+  const previewState = await getPreviewState()
+  const [session, rawSeason] = await Promise.all([getSession(), getCurrentSeason()])
+  const season = previewState ? mockSeason(previewState) : rawSeason
+
+  // ── Pre-lock state ──────────────────────────────────────────────────────────
   if (!season || !isLocked(season)) {
     const lockLabel = season
       ? new Date(season.lock_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
       : 'the deadline'
 
-    // Find player info from the pool
     const pools = await Promise.all(ORACLE_POSITIONS.map(pos => getPlayerPool(pos)))
     const allPlayers = pools.flat()
     const player = allPlayers.find(p => p.id === id)
-
-    // Position rank = index in position-filtered pool + 1
     const posPool = pools[ORACLE_POSITIONS.indexOf((player?.position as typeof ORACLE_POSITIONS[number]) ?? 'QB')] ?? []
     const posRank = posPool.findIndex(p => p.id === id) + 1
 
@@ -39,7 +45,7 @@ export default async function PlayerPage({
           <h1 className="text-pmp-white font-bold text-3xl">{player?.name ?? id}</h1>
           {posRank > 0 && (
             <p className="text-pmp-red text-sm font-semibold">
-              #{posRank} {player?.position} · Current ADP
+              #{posRank} {player?.position} · 2026 Oracle Pool
             </p>
           )}
         </div>
@@ -80,6 +86,94 @@ export default async function PlayerPage({
     )
   }
 
+  // ── Determine if weekly scoring has started ─────────────────────────────────
+  const hasWeeklyScores = season.status === 'scoring' || season.status === 'scored'
+
+  // ── Locked, pre-Week-1 state ────────────────────────────────────────────────
+  if (!hasWeeklyScores) {
+    const pools = await Promise.all(ORACLE_POSITIONS.map(pos => getPlayerPool(pos)))
+    const allPlayers = pools.flat()
+    const player = allPlayers.find(p => p.id === id)
+    const pos = (player?.position ?? 'QB') as typeof ORACLE_POSITIONS[number]
+
+    // Resolve user's locked ranking for this player
+    // Always query the real DB (using rawSeason.id) so preview shows actual submitted rankings.
+    // Fall back to mock values only if no real data exists.
+    let userRankLabel: string | null = null
+    if (session && rawSeason) {
+      const db = getServiceClient()
+      const { data } = await db
+        .from('challenge_rankings')
+        .select('rankings')
+        .eq('user_id', session.user.id)
+        .eq('season_id', rawSeason.id)
+        .eq('position', pos)
+        .maybeSingle()
+      if (data?.rankings) {
+        const parsed: unknown = typeof data.rankings === 'string'
+          ? JSON.parse(data.rankings)
+          : data.rankings
+        if (Array.isArray(parsed)) {
+          const entry = (parsed as Array<{ playerRank: number; playerId: string }>).find(r => r.playerId === id)
+          if (entry) userRankLabel = `#${entry.playerRank} ${pos}`
+        }
+      }
+    }
+    // Fall back to mock only if in preview and no real submission found
+    if (!userRankLabel && previewState) {
+      const mockRank = PREVIEW_MOCK_RANKS[pos]
+      if (mockRank) userRankLabel = `#${mockRank} ${pos}`
+    }
+
+    return (
+      <div className="px-4 py-8 max-w-md mx-auto flex flex-col gap-6">
+        {/* Player identity */}
+        <div className="flex flex-col gap-1.5">
+          <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
+            {player?.position ?? 'Player'} · {player?.team ?? ''}
+          </p>
+          <h1 className="text-pmp-white font-bold text-3xl">{player?.name ?? id}</h1>
+        </div>
+
+        {/* User's locked ranking */}
+        {session && (
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex flex-col gap-1">
+            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Your Oracle Ranking</p>
+            {userRankLabel ? (
+              <p className="text-pmp-white font-bold text-2xl">{userRankLabel}</p>
+            ) : (
+              <p className="text-pmp-gray-500 text-sm">Not in your Oracle entry</p>
+            )}
+          </div>
+        )}
+
+        {/* Community rankings teaser */}
+        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-6 flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <p className="text-pmp-white font-bold text-base">Community Rankings</p>
+            <p className="text-pmp-gray-500 text-sm">Unlocking after Week 1 scoring</p>
+          </div>
+          <div className="h-px bg-pmp-gray-800" />
+          <div className="flex flex-col gap-2">
+            <p className="text-pmp-gray-600 text-xs font-bold uppercase tracking-widest">Coming after kickoff</p>
+            {[
+              'Average community rank',
+              'Biggest believers & biggest fades',
+              'Rank distribution',
+              'Community consensus',
+            ].map(item => (
+              <div key={item} className="flex items-center gap-2">
+                <span className="text-pmp-gray-700 text-sm">·</span>
+                <span className="text-pmp-gray-500 text-sm">{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Post-Week-1 / scored state ──────────────────────────────────────────────
   const stats = await getPlayerStats(id, season.id, session?.user.id ?? null)
   if (!stats) notFound()
 

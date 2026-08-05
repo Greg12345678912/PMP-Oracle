@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/server'
 import { getServiceClient } from '@/lib/league/db'
 import { OracleNav } from '@/components/oracle/OracleNav'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
+import { getPreviewState, mockSeason } from '@/lib/oracle/dev-preview'
 
 function daysUntilLock(lockAt: string): number {
   return Math.max(0, Math.floor((new Date(lockAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
@@ -14,7 +15,9 @@ export default async function ChallengeLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
+  const previewState = await getPreviewState()
+  const [session, rawSeason] = await Promise.all([getSession(), getCurrentSeason()])
+  const season = previewState ? mockSeason(previewState) : rawSeason
   let username: string | null = null
 
   if (session) {
@@ -46,7 +49,9 @@ export default async function ChallengeLayout({
           <p className="text-pmp-gray-500 text-[11px]">
             {locked
               ? '2026 Oracle Challenge · Locked'
-              : `2026 Oracle Challenge · Open · ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining`}
+              : daysLeft === 0
+                ? '2026 Oracle Challenge · Open · Closes today'
+                : `2026 Oracle Challenge · Open · ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining`}
           </p>
         </div>
       </header>

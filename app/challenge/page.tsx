@@ -8,6 +8,7 @@ import type { OraclePosition } from '@/lib/oracle/constants'
 import { OracleSplashCTA } from '@/components/oracle/OracleSplashCTA'
 import { SignOutButton } from '@/components/oracle/SignOutButton'
 import { Countdown } from '@/components/oracle/Countdown'
+import { getPreviewState, mockSeason } from '@/lib/oracle/dev-preview'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,9 @@ function formatLockLabel(lockAt: string) {
 }
 
 export default async function ChallengePage() {
-  const [session, season] = await Promise.all([getSession(), getCurrentSeason()])
+  const previewState = await getPreviewState()
+  const [session, rawSeason] = await Promise.all([getSession(), getCurrentSeason()])
+  const season = previewState ? mockSeason(previewState) : rawSeason
   const locked = season ? isLocked(season) : true
   const lockLabel = season ? formatLockLabel(season.lock_at) : ''
 
@@ -29,10 +32,23 @@ export default async function ChallengePage() {
   let isSubmitted = false
   let totalEntries = 0
   let entryNumber: number | null = null
+  let hasWeeklyScores = false
 
-  if (session && season) {
+  if (previewState && previewState !== 'locked') {
+    // Inject mock data for scoring/scored preview states
+    hasWeeklyScores = true
+    isSubmitted = true
+    totalEntries = 247
+    entryNumber = 42
+    rankingCounts = { QB: 10, RB: 10, WR: 10, TE: 10 }
+  } else if (previewState === 'locked') {
+    isSubmitted = true
+    totalEntries = 247
+    entryNumber = 42
+    rankingCounts = { QB: 10, RB: 10, WR: 10, TE: 10 }
+  } else if (session && season) {
     const db = getServiceClient()
-    const [profileResult, submittedResult, entryCountResult, entryNumberResult, ...rankingResults] =
+    const [profileResult, submittedResult, entryCountResult, entryNumberResult, weeklyScoresResult, ...rankingResults] =
       await Promise.all([
         db
           .from('user_profiles')
@@ -57,6 +73,12 @@ export default async function ChallengePage() {
           .eq('user_id', session.user.id)
           .eq('season_id', season.id)
           .maybeSingle(),
+        db
+          .from('accuracy_scores')
+          .select('current_week')
+          .eq('season_id', season.id)
+          .gt('current_week', 0)
+          .limit(1),
         ...ORACLE_POSITIONS.map(pos => getRankings(session.user.id, season.id, pos)),
       ])
 
@@ -64,6 +86,7 @@ export default async function ChallengePage() {
     isSubmitted = submittedResult.data?.is_submitted === true
     totalEntries = new Set((entryCountResult.data ?? []).map((r: { user_id: string }) => r.user_id)).size + 1
     entryNumber = (entryNumberResult.data?.entry_number as number | null) ?? null
+    hasWeeklyScores = ((weeklyScoresResult.data ?? []) as unknown[]).length > 0
     ORACLE_POSITIONS.forEach((pos, i) => {
       rankingCounts[pos] = rankingResults[i]?.length ?? 0
     })
@@ -167,7 +190,12 @@ export default async function ChallengePage() {
               {isSubmitted ? 'Edit Rankings' : allComplete ? 'Review & Enter' : 'Continue Rankings'}
             </Link>
           )}
-          {locked && isSubmitted && (
+          {locked && isSubmitted && hasWeeklyScores && (
+            <Link href="/challenge/results" className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm text-center hover:opacity-90 transition-opacity">
+              See My Results →
+            </Link>
+          )}
+          {locked && isSubmitted && !hasWeeklyScores && (
             <Link href="/challenge/rankings" className="w-full bg-pmp-gray-800 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:bg-pmp-gray-700 transition-colors">
               View My Rankings
             </Link>
@@ -195,9 +223,11 @@ export default async function ChallengePage() {
             <p className="text-pmp-gray-600 text-xs mt-1">
               {season?.status === 'scored'
                 ? 'Results are available'
-                : isSubmitted
-                  ? 'Your picks are locked. First scoring update arrives September 15.'
-                  : 'The entry window has closed for the 2026 season.'}
+                : isSubmitted && hasWeeklyScores
+                  ? 'Scoring is underway. Check your results to see how you rank.'
+                  : isSubmitted
+                    ? 'Your picks are locked in. First score update arrives after Week 1.'
+                    : 'The entry window has closed for the 2026 season.'}
             </p>
           </div>
         )}
