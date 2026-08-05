@@ -24,9 +24,11 @@ function getTimeLeft(lockDate: string): TimeLeft | null {
 }
 
 export function Countdown({ lockDate }: CountdownProps) {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(() => getTimeLeft(lockDate))
+  // Start with null to avoid server/client timestamp mismatch during hydration
+  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null)
 
   useEffect(() => {
+    setTimeLeft(getTimeLeft(lockDate))
     const interval = setInterval(() => setTimeLeft(getTimeLeft(lockDate)), 1_000)
     return () => clearInterval(interval)
   }, [lockDate])

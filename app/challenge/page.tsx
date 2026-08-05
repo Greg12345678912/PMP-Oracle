@@ -37,6 +37,7 @@ export default async function ChallengePage() {
 
   if (previewState && previewState !== 'locked') {
     // Inject mock data for scoring/scored preview states
+    displayName = 'Greg Spunt'
     hasWeeklyScores = true
     currentWeek = mockAccuracyScore(previewState)?.current_week ?? 0
     isSubmitted = true
@@ -44,6 +45,7 @@ export default async function ChallengePage() {
     entryNumber = 42
     rankingCounts = { QB: 10, RB: 10, WR: 10, TE: 10 }
   } else if (previewState === 'locked') {
+    displayName = 'Greg Spunt'
     isSubmitted = true
     totalEntries = 247
     entryNumber = 42
@@ -109,7 +111,7 @@ export default async function ChallengePage() {
   const allComplete = completedPositions.length === 4
 
   /* ─── Signed-in dashboard ─────────────────────────────────────────── */
-  if (session) {
+  if (session || previewState) {
     const firstName = displayName?.split(' ')[0] ?? 'there'
 
     return (

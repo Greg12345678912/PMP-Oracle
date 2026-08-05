@@ -82,28 +82,36 @@ export function RankingList({
 }: RankingListProps) {
   const maxSize = POSITION_LIST_SIZE[position]
 
-  /** Seed rows from DB (signed-in) or localStorage draft (anonymous).
-   *  Signed-in users always use DB rows — localStorage is anonymous-only. */
-  const [rows, setRows] = useState<RankingRow[]>(() => {
-    if (typeof window === 'undefined' || isSignedIn) return initialRows.slice(0, maxSize)
-    const draft = readDraft(position)
-    const source = draft && draft.length > 0 ? draft : initialRows
-    return source.slice(0, maxSize)
-  })
-
+  /** Seed rows from server data — same on server and client to avoid hydration mismatches.
+   *  Anonymous localStorage drafts are loaded after mount via useEffect. */
+  const [rows, setRows] = useState<RankingRow[]>(() => initialRows.slice(0, maxSize))
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
-  // dirty = rows have changed since last save (or since mount if never saved)
   const [dirty, setDirty] = useState(false)
 
   const rankedIds = new Set(rows.map(r => r.playerId))
 
-  /* Auto-save draft (anonymous) and mark dirty whenever rows change */
   const isFirstRender = useRef(true)
+  const isLocalStorageHydration = useRef(false)
+
+  // After mount, hydrate anonymous users from their localStorage draft.
+  // Flags isLocalStorageHydration so the dirty-tracking effect skips this update.
+  useEffect(() => {
+    if (isSignedIn) return
+    const draft = readDraft(position)
+    if (draft && draft.length > 0) {
+      isLocalStorageHydration.current = true
+      setRows(draft.slice(0, maxSize))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /* Auto-save draft (anonymous) and mark dirty whenever rows change */
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return }
+    if (isLocalStorageHydration.current) { isLocalStorageHydration.current = false; return }
     if (!isSignedIn) persistDraft(position, rows)
     setDirty(true)
   }, [isSignedIn, position, rows])
