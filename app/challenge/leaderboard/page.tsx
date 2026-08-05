@@ -8,7 +8,6 @@ import {
   mockSeason,
   MOCK_TOTAL_PARTICIPANTS,
   generatePreviewLeaderboardScores,
-  generateMockLeaderboardProfiles,
   mockAccuracyScore,
   PREVIEW_USERNAME,
   type PreviewState,
@@ -95,8 +94,24 @@ export default async function LeaderboardPage() {
           if (sp) sessionProfile = sp as DisplayProfile
         }
 
-        // Fill remaining 49 slots with generated mock profiles (avoids anonymous rows)
-        const otherProfiles = generateMockLeaderboardProfiles(60) as unknown as DisplayProfile[]
+        // Fill remaining 49 slots with real submitted users who have profiles
+        const { data: submittedUserRows } = rawSeason
+          ? await db
+              .from('challenge_rankings')
+              .select('user_id')
+              .eq('season_id', rawSeason.id)
+              .eq('is_submitted', true)
+              .neq('user_id', lookupId ?? '')
+              .limit(60)
+          : { data: [] }
+        const submittedIds = [...new Set((submittedUserRows ?? []).map(r => r.user_id as string))]
+        const { data: otherRows } = submittedIds.length > 0
+          ? await db
+              .from('user_profiles')
+              .select('user_id, display_name, username, avatar_url')
+              .in('user_id', submittedIds)
+          : { data: [] }
+        const otherProfiles = (otherRows ?? []) as DisplayProfile[]
 
         profileMap = new Map<string, DisplayProfile>()
         displayScores = genEntries.map(entry => {
