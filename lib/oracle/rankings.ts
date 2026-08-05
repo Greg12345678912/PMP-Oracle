@@ -58,7 +58,11 @@ export async function getRankings(
   const parsed: unknown = typeof data.rankings === 'string'
     ? JSON.parse(data.rankings)
     : data.rankings
-  return isRankingRowArray(parsed) ? parsed : []
+  if (!isRankingRowArray(parsed)) return []
+  // Defensive cap: sort by playerRank and take only the allowed maximum.
+  // Protects against legacy data written before the 10-pick limit was enforced.
+  const max = POSITION_LIST_SIZE[position]
+  return parsed.sort((a, b) => a.playerRank - b.playerRank).slice(0, max)
 }
 
 export async function upsertRankings(
