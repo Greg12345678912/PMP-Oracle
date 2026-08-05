@@ -27,8 +27,11 @@ interface ProfileClientProps {
   isOwn: boolean
   isAfterLock: boolean
   isScored: boolean
+  isSeasonComplete: boolean
   overallScore: number | null
   percentile: number | null
+  rank: number | null
+  totalParticipants: number
   positionResults: PositionResult[]
   summary: string | null
   rankingPreview: Record<string, RankingPickPreview[]>
@@ -70,8 +73,11 @@ export function ProfileClient({
   isOwn,
   isAfterLock,
   isScored,
+  isSeasonComplete,
   overallScore,
   percentile,
+  rank,
+  totalParticipants,
   positionResults,
   summary,
   rankingPreview,
@@ -123,8 +129,13 @@ export function ProfileClient({
         {/* ── 2. Oracle score hero (if scored) ── */}
         {isScored && overallScore !== null && (
           <div className="text-center flex flex-col items-center gap-2">
-            <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">
-              2026 Oracle Challenge
+            {isSeasonComplete && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pmp-gray-800 border border-pmp-gray-700 text-pmp-white text-xs font-semibold">
+                🏆 Season Complete
+              </span>
+            )}
+            <p className="text-pmp-red text-xs font-bold uppercase tracking-widest mt-1">
+              {isSeasonComplete ? 'Official Final 2026 Oracle Challenge Results' : '2026 Oracle Challenge'}
             </p>
             <p className="text-pmp-white text-[72px] font-black leading-none">
               {overallScore.toFixed(1)}
@@ -132,6 +143,9 @@ export function ProfileClient({
             <p className="text-pmp-gray-500 text-sm">Overall Accuracy</p>
             {percentile !== null && (
               <span className="text-pmp-white font-bold text-sm">Top {percentile}%</span>
+            )}
+            {rank != null && totalParticipants > 0 && (
+              <span className="text-pmp-gray-600 text-sm">#{rank.toLocaleString()} of {totalParticipants.toLocaleString()}</span>
             )}
           </div>
         )}

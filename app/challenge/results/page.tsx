@@ -210,7 +210,7 @@ interface FinalResultsViewProps {
 }
 
 function distanceLabel(distance: number | null): string {
-  if (distance === null) return '—'
+  if (distance === null) return 'Missed the top 10'
   if (distance === 0) return 'Perfect pick!'
   return `Off by ${distance} spot${distance === 1 ? '' : 's'}`
 }
@@ -265,7 +265,7 @@ function FinalResultsView({
                 <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
                   <p className="text-xs text-pmp-gray-600">🏆 Best Call</p>
                   <p className="text-pmp-white font-bold text-sm">{bestCall.playerName}</p>
-                  <p className="text-pmp-gray-500 text-xs">You #{bestCall.userRank} · Finished #{bestCall.actualRank ?? '—'}</p>
+                  <p className="text-pmp-gray-500 text-xs">You #{bestCall.userRank} · {bestCall.actualRank != null ? `Finished #${bestCall.actualRank}` : 'Outside top 10'}</p>
                   <p className={['text-xs font-bold', bestCall.distance === 0 ? 'text-green-400' : 'text-pmp-red'].join(' ')}>
                     {distanceLabel(bestCall.distance)}
                   </p>
@@ -275,7 +275,7 @@ function FinalResultsView({
                 <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
                   <p className="text-xs text-pmp-gray-600">😬 Biggest Miss</p>
                   <p className="text-pmp-white font-bold text-sm">{biggestMiss.playerName}</p>
-                  <p className="text-pmp-gray-500 text-xs">You #{biggestMiss.userRank} · Finished #{biggestMiss.actualRank ?? '—'}</p>
+                  <p className="text-pmp-gray-500 text-xs">You #{biggestMiss.userRank} · {biggestMiss.actualRank != null ? `Finished #${biggestMiss.actualRank}` : 'Outside top 10'}</p>
                   <p className="text-pmp-gray-500 text-xs font-bold">{distanceLabel(biggestMiss.distance)}</p>
                 </div>
               )}
@@ -354,8 +354,22 @@ export default async function ResultsPage() {
   // ── Preview mode: inject mock score data ─────────────────────────────────
   if (previewState) {
     const scoreData = mockAccuracyScore(previewState)
-    const allDetail = previewState === 'scored' ? mockDetailRows() : (scoreData ? mockDetailRows() : [])
     const totalParticipants = MOCK_TOTAL_PARTICIPANTS
+
+    // For scored preview, prefer real ranking_score_detail rows (present once the
+    // pipeline has run against the real season). Fall back to mock picks only when
+    // no real rows exist, so the preview can show the user's actual submissions.
+    let allDetail = previewState === 'scored' ? mockDetailRows() : (scoreData ? mockDetailRows() : [])
+    if (previewState === 'scored' && session && rawSeason) {
+      const { data: realDetail } = await db
+        .from('ranking_score_detail')
+        .select('position, player_id, player_name, user_rank, actual_rank, distance, final_score')
+        .eq('user_id', session.user.id)
+        .eq('season_id', rawSeason.id)
+      if ((realDetail ?? []).length > 0) {
+        allDetail = realDetail as typeof allDetail
+      }
+    }
 
     if (previewState === 'scored' && scoreData) {
       // Render final results view with mock data

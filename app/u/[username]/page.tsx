@@ -224,8 +224,11 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
         isOwn={isOwn}
         isAfterLock={isAfterLock}
         isScored={showScores}
+        isSeasonComplete={previewState === 'scored'}
         overallScore={overallScore}
         percentile={percentile}
+        rank={rank}
+        totalParticipants={totalParticipants}
         positionResults={showScores ? positionResults : []}
         summary={summary}
         rankingPreview={rankingPreview}
@@ -352,8 +355,11 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
       isOwn={isOwn}
       isAfterLock={isAfterLock}
       isScored={showScores}
+      isSeasonComplete={isScored}
       overallScore={overallScore}
       percentile={percentile}
+      rank={rank}
+      totalParticipants={totalParticipants}
       positionResults={showScores ? positionResults : []}
       summary={summary}
       rankingPreview={rankingPreview}
