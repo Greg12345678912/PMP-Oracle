@@ -231,6 +231,24 @@ export async function runWeeklyPipeline(opts?: {
 
   const completedAt = new Date().toISOString()
 
+  // ── Stage 6: Finalize season after a clean Week 18 run ──────────────────────
+  // Automatically sets status = 'scored' so no manual DB intervention is needed.
+  // Guard: only triggers when the full regular season (week 18+) has completed
+  // successfully — no pipeline errors and every submitted entry scored. Idempotent.
+  const FINAL_WEEK = 18
+  if (
+    !dryRun &&
+    currentWeek >= FINAL_WEEK &&
+    errors.length === 0 &&
+    usersFailed === 0 &&
+    season.status !== 'scored'
+  ) {
+    await db
+      .from('seasons')
+      .update({ status: 'scored', scored_at: completedAt })
+      .eq('id', season.id)
+  }
+
   // Finish sync_jobs record
   if (!dryRun && jobId) {
     await db.from('sync_jobs').update({
