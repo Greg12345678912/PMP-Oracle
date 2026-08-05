@@ -5,10 +5,12 @@ import { useRef } from 'react'
 interface ResultsShareCardProps {
   overallScore: number
   percentile: number
+  rank?: number | null
+  totalParticipants?: number
   username?: string
 }
 
-export function ResultsShareCard({ overallScore, percentile, username }: ResultsShareCardProps) {
+export function ResultsShareCard({ overallScore, percentile, rank, totalParticipants, username }: ResultsShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
 
   async function handleDownload() {
@@ -34,7 +36,7 @@ export function ResultsShareCard({ overallScore, percentile, username }: Results
             Pretty Much Picks
           </p>
           <p className="text-[#888] text-[10px] font-bold uppercase tracking-widest">
-            Oracle Challenge 2026
+            2026 Oracle Challenge · Final Results
           </p>
         </div>
 
@@ -46,7 +48,13 @@ export function ResultsShareCard({ overallScore, percentile, username }: Results
 
         {/* Rank */}
         <div className="flex flex-col items-center gap-1 mt-1">
-          <p className="text-white text-2xl font-black">Top {percentile}%</p>
+          {rank != null && totalParticipants != null && totalParticipants > 0 && (
+            <div className="flex flex-col items-center gap-0.5">
+              <p className="text-[#555] text-[10px] font-bold uppercase tracking-widest">Final Rank</p>
+              <p className="text-white text-2xl font-black">#{rank.toLocaleString()} of {totalParticipants.toLocaleString()}</p>
+            </div>
+          )}
+          <p className="text-[#888] text-sm">Top {percentile}%</p>
           {username && (
             <p className="text-[#555] text-xs">@{username}</p>
           )}

@@ -135,17 +135,20 @@ export function ProfileClient({
               </span>
             )}
             <p className="text-pmp-red text-xs font-bold uppercase tracking-widest mt-1">
-              {isSeasonComplete ? 'Official Final 2026 Oracle Challenge Results' : '2026 Oracle Challenge'}
+              {isSeasonComplete ? '2026 Oracle Challenge · Final Results' : '2026 Oracle Challenge'}
             </p>
             <p className="text-pmp-white text-[72px] font-black leading-none">
               {overallScore.toFixed(1)}
             </p>
             <p className="text-pmp-gray-500 text-sm">Overall Accuracy</p>
-            {percentile !== null && (
-              <span className="text-pmp-white font-bold text-sm">Top {percentile}%</span>
-            )}
             {rank != null && totalParticipants > 0 && (
-              <span className="text-pmp-gray-600 text-sm">#{rank.toLocaleString()} of {totalParticipants.toLocaleString()}</span>
+              <div className="flex flex-col items-center gap-0.5 mt-1">
+                <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Final Rank</p>
+                <p className="text-pmp-white font-bold text-2xl">#{rank.toLocaleString()} of {totalParticipants.toLocaleString()}</p>
+              </div>
+            )}
+            {percentile !== null && (
+              <span className="text-pmp-gray-500 text-sm">Top {percentile}%</span>
             )}
           </div>
         )}
@@ -189,7 +192,7 @@ export function ProfileClient({
 
         {/* ── 5. Share card (if scored and percentile known) ── */}
         {isScored && overallScore !== null && percentile !== null && (
-          <ResultsShareCard overallScore={overallScore} percentile={percentile} username={profile.username} />
+          <ResultsShareCard overallScore={overallScore} percentile={percentile} rank={rank} totalParticipants={totalParticipants} username={profile.username} />
         )}
 
         {/* ── 6. Rankings preview ── */}

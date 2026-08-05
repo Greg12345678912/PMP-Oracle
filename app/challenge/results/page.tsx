@@ -233,7 +233,7 @@ function FinalResultsView({
       <div className="max-w-md mx-auto flex flex-col gap-10">
 
         <div className="text-center flex flex-col items-center gap-2">
-          <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge Results</p>
+          <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge · Final Results</p>
           <p className="text-pmp-white text-[72px] font-black leading-none">{overallScore.toFixed(1)}</p>
           <p className="text-pmp-gray-500 text-sm">Overall Accuracy</p>
           <div className="flex gap-4 mt-1">
@@ -290,7 +290,7 @@ function FinalResultsView({
 
         <div className="flex flex-col gap-4 items-center">
           <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest self-start">Share Your Results</p>
-          <ResultsShareCard overallScore={overallScore} percentile={percentile} username={username} />
+          <ResultsShareCard overallScore={overallScore} percentile={percentile} rank={rank} totalParticipants={totalParticipants} username={username} />
         </div>
 
         <div className="flex flex-col gap-4">
