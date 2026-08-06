@@ -398,7 +398,8 @@ export default async function ResultsPage() {
       const summary = generateSummary(oracleResult)
 
       const allPlayers = positionResults.flatMap(pr => pr.players)
-      const bestCall = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 999) <= (b.distance ?? 999) ? a : b) : null
+      const bestCallCandidate = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 999) <= (b.distance ?? 999) ? a : b) : null
+      const bestCall = bestCallCandidate?.distance !== null ? bestCallCandidate : null
       const biggestMiss = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 100) >= (b.distance ?? 100) ? a : b) : null
 
       let previewUsername: string | undefined
@@ -500,7 +501,8 @@ export default async function ResultsPage() {
     const summary = generateSummary(oracleResult)
 
     const allPlayers = positionResults.flatMap(pr => pr.players)
-    const bestCall = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 999) <= (b.distance ?? 999) ? a : b) : null
+    const bestCallCandidate = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 999) <= (b.distance ?? 999) ? a : b) : null
+    const bestCall = bestCallCandidate?.distance !== null ? bestCallCandidate : null
     const biggestMiss = allPlayers.length ? allPlayers.reduce((a, b) => (a.distance ?? 100) >= (b.distance ?? 100) ? a : b) : null
 
     return (

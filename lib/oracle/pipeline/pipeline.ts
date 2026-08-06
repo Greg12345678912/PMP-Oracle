@@ -12,12 +12,31 @@
  * week override: skip Sleeper state sync, use provided week number.
  */
 import { getServiceClient } from '@/lib/league/db'
-import { getCurrentSeason } from '@/lib/oracle/season'
+import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
+import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import { syncWeeklyStats } from './stats-sync'
 import { buildGroundTruth } from './ground-truth'
 import { runScoringForSeason } from './scoring-runner'
 import { rankSeason } from './ranker'
 import { randomUUID } from 'crypto'
+
+/**
+ * Fire-and-forget webhook alert for situations that require manual intervention.
+ * Failures are swallowed so the pipeline result is never affected by alert delivery.
+ */
+async function sendOracleAlert(message: string): Promise<void> {
+  const url = process.env.ORACLE_ALERT_WEBHOOK_URL
+  if (!url) return
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: `[Oracle Pipeline] ${message}` }),
+    })
+  } catch {
+    // Alert failure must never surface as a pipeline error
+  }
+}
 
 const SLEEPER_STATE_URL = 'https://api.sleeper.app/v1/state/nfl'
 const RETRY_DELAYS = [500, 1000, 2000]
@@ -70,8 +89,30 @@ export async function runWeeklyPipeline(opts?: {
   const pipelineRunId = randomUUID()
   const errors: string[] = []
 
-  const season = await getCurrentSeason()
+  let season = await getCurrentSeason()
   if (!season) throw new Error('No active season found')
+
+  // ── Playoff guard ────────────────────────────────────────────────────────────
+  // Once a season is finalized (status = 'scored'), skip all data modifications.
+  // Without this, the cron job would continue syncing playoff stats and rewriting
+  // accuracy_scores / global_rank every Tuesday through the Super Bowl.
+  if (!dryRun && season.status === 'scored') {
+    return {
+      pipelineRunId,
+      seasonId: season.id,
+      seasonYear: season.year,
+      week: 0,
+      statsUpserted: 0,
+      statsSkipped: 0,
+      groundTruthPositions: 0,
+      usersScored: 0,
+      usersFailed: 0,
+      usersRanked: 0,
+      dryRun,
+      errors: ['Season is finalized — pipeline is a no-op to protect standings.'],
+      completedAt: new Date().toISOString(),
+    }
+  }
 
   // ── Concurrent-run lock ──────────────────────────────────────────────────────
   // Reject if another pipeline run started within the last 10 minutes and is
@@ -189,6 +230,15 @@ export async function runWeeklyPipeline(opts?: {
   let groundTruthFailed = false
   try {
     groundTruthResults = await buildGroundTruth(season.id, currentWeek, { dryRun })
+    // Partial ground truth is as dangerous as none — scoring a user against
+    // only 2 of 4 positions would zero out the missing positions' scores.
+    const missingPositions = ORACLE_POSITIONS.filter(
+      pos => !groundTruthResults.some(r => r.position === pos),
+    )
+    if (missingPositions.length > 0) {
+      errors.push(`ground-truth: missing positions [${missingPositions.join(', ')}] — scoring skipped to preserve existing scores`)
+      groundTruthFailed = true
+    }
   } catch (err) {
     errors.push(`ground-truth: ${err instanceof Error ? err.message : String(err)}`)
     groundTruthFailed = true
@@ -231,32 +281,77 @@ export async function runWeeklyPipeline(opts?: {
 
   const completedAt = new Date().toISOString()
 
-  // ── Stage 6: Finalize season after a clean Week 18 run ──────────────────────
+  // ── Stage 6 pre-check: Auto-transition 'open' → 'locked' ─────────────────────
+  // Nothing else writes 'locked' status — the pipeline is the right place to
+  // handle this. If lock_at has passed and we're still 'open', flip to 'locked'
+  // so Stage 6a can fire correctly and the status reflects reality.
+  if (!dryRun && season.status === 'open' && isLocked(season)) {
+    try {
+      await db.from('seasons').update({ status: 'locked' }).eq('id', season.id)
+      season = { ...season, status: 'locked' }
+    } catch {
+      // Non-fatal — Stage 6a will be skipped this run but the next run will retry
+    }
+  }
+
+  // ── Stage 6a: Transition to 'scoring' after first successful scoring run ─────
+  // Flips status from 'locked' → 'scoring' so the app shows live community stats.
+  // Only fires once — idempotent guard on season.status === 'locked'.
+  if (
+    !dryRun &&
+    usersScored > 0 &&
+    usersFailed === 0 &&
+    season.status === 'locked'
+  ) {
+    try {
+      await db
+        .from('seasons')
+        .update({ status: 'scoring' })
+        .eq('id', season.id)
+    } catch (err) {
+      errors.push(`stage-6a: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  // ── Stage 6b: Finalize season after a clean Week 18 run ─────────────────────
   // Automatically sets status = 'scored' so no manual DB intervention is needed.
   // Guard: only triggers when the full regular season (week 18+) has completed
   // successfully — no pipeline errors and every submitted entry scored. Idempotent.
   const FINAL_WEEK = 18
-  if (
-    !dryRun &&
-    currentWeek >= FINAL_WEEK &&
-    errors.length === 0 &&
-    usersFailed === 0 &&
-    season.status !== 'scored'
-  ) {
-    await db
-      .from('seasons')
-      .update({ status: 'scored', scored_at: completedAt })
-      .eq('id', season.id)
+  if (!dryRun && currentWeek >= FINAL_WEEK) {
+    if (errors.length === 0 && usersFailed === 0 && season.status !== 'scored') {
+      try {
+        await db
+          .from('seasons')
+          .update({ status: 'scored', scored_at: completedAt })
+          .eq('id', season.id)
+      } catch (err) {
+        errors.push(`stage-6b: ${err instanceof Error ? err.message : String(err)}`)
+        void sendOracleAlert(
+          `Week ${currentWeek} run completed but season finalization FAILED: ${err instanceof Error ? err.message : String(err)}. Manual intervention required — run UPDATE seasons SET status='scored', scored_at=now() WHERE id='${season.id}'.`,
+        )
+      }
+    } else if (season.status !== 'scored') {
+      // Week 18 run had errors or failed users — season was not finalized.
+      // Alert so we can manually trigger a clean re-run or force finalization.
+      void sendOracleAlert(
+        `Week ${currentWeek} run completed with ${errors.length} error(s) and ${usersFailed} failed user(s). Season NOT finalized. Review pipeline logs and re-run or manually set status='scored' for season ${season.id}.`,
+      )
+    }
   }
 
   // Finish sync_jobs record
   if (!dryRun && jobId) {
-    await db.from('sync_jobs').update({
-      status: errors.length > 0 ? 'failed' : 'success',
-      completed_at: completedAt,
-      records_processed: usersScored,
-      error: errors[0] ?? null,
-    }).eq('id', jobId)
+    try {
+      await db.from('sync_jobs').update({
+        status: errors.length > 0 ? 'failed' : 'success',
+        completed_at: completedAt,
+        records_processed: usersScored,
+        error: errors[0] ?? null,
+      }).eq('id', jobId)
+    } catch {
+      // sync_jobs failure is non-critical — the pipeline result is still valid
+    }
   }
 
   return {

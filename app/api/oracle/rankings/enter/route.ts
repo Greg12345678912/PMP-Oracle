@@ -1,11 +1,12 @@
 import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { getServiceClient } from '@/lib/league/db'
+import { ORACLE_POSITIONS, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
+import type { RankingRow } from '@/lib/oracle/rankings'
 
 // POST /api/oracle/rankings/enter
-// Sets is_submitted = true for all challenge_rankings rows for user + current season.
-// Inserts into oracle_entries (DO NOTHING on conflict — entry_number never changes).
-// Returns entry_number from oracle_entries for social proof display.
+// Validates all 4 positions have required picks, then atomically marks the
+// entry as submitted and assigns a monotonic entry_number via an RPC.
 export async function POST() {
   const session = await getSession()
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -18,36 +19,40 @@ export async function POST() {
   const userId = session.user.id
   const seasonId = season.id
 
-  // Mark all position rankings as submitted
-  await supabase
+  // Server-side completeness check — prevents partial entries from being submitted
+  // if the client somehow bypasses the UI guard.
+  const { data: rankingRows } = await supabase
     .from('challenge_rankings')
-    .update({ is_submitted: true, updated_at: new Date().toISOString() })
+    .select('position, rankings')
     .eq('user_id', userId)
     .eq('season_id', seasonId)
 
-  // Insert into oracle_entries — DO NOTHING if already exists.
-  // entry_number is a monotonic identity column; it never changes after first insert.
-  await supabase
-    .from('oracle_entries')
-    .upsert(
-      {
-        user_id: userId,
-        season_id: seasonId,
-        entered_at: new Date().toISOString(),
-        submission_metadata: {},
-      },
-      { onConflict: 'user_id,season_id', ignoreDuplicates: true },
+  const countByPos: Partial<Record<string, number>> = {}
+  for (const row of rankingRows ?? []) {
+    const rankings = row.rankings as RankingRow[] | null
+    countByPos[row.position as string] = Array.isArray(rankings) ? rankings.length : 0
+  }
+
+  const incompletePositions = ORACLE_POSITIONS.filter(
+    pos => (countByPos[pos] ?? 0) < POSITION_LIST_SIZE[pos],
+  )
+  if (incompletePositions.length > 0) {
+    return Response.json(
+      { error: `Incomplete rankings for: ${incompletePositions.join(', ')}` },
+      { status: 422 },
     )
+  }
 
-  // Read back the immutable entry_number
-  const { data: entryRow } = await supabase
-    .from('oracle_entries')
-    .select('entry_number')
-    .eq('user_id', userId)
-    .eq('season_id', seasonId)
-    .single()
+  // Atomic submission — both writes happen inside a single DB transaction.
+  const { data: entryNumber, error: rpcError } = await supabase.rpc('submit_oracle_entry', {
+    p_user_id: userId,
+    p_season_id: seasonId,
+  })
 
-  const entryNumber = (entryRow as { entry_number: number } | null)?.entry_number ?? 0
+  if (rpcError) {
+    console.error('[oracle/enter] RPC error:', rpcError.message)
+    return Response.json({ error: 'Submission failed' }, { status: 500 })
+  }
 
-  return Response.json({ ok: true, entryNumber })
+  return Response.json({ ok: true, entryNumber: entryNumber ?? 0 })
 }

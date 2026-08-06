@@ -22,6 +22,8 @@ interface AccuracyRow {
   top10_hits: number | null
   total_rank_error: number | null
   global_rank: number | null
+  prev_rank: number | null
+  current_week: number | null
 }
 
 interface EntryRow {
@@ -40,7 +42,7 @@ export async function rankSeason(
   const [scoresResult, entriesResult] = await Promise.all([
     db
       .from('accuracy_scores')
-      .select('user_id, overall_score, top10_hits, total_rank_error, global_rank')
+      .select('user_id, overall_score, top10_hits, total_rank_error, global_rank, prev_rank, current_week')
       .eq('season_id', seasonId),
     db
       .from('oracle_entries')
@@ -85,7 +87,13 @@ export async function rankSeason(
   for (let i = 0; i < sorted.length; i++) {
     const row = sorted[i]
     const newRank = i + 1
-    const prevRank = row.global_rank
+    // On a re-run of the same week, global_rank already holds this week's rank
+    // (written by the first run). Using it as prevRank would produce rank_change=0
+    // for everyone. Instead, use the stored prev_rank (which the first run set
+    // correctly from last week's global_rank) whenever current_week matches.
+    const prevRank = row.current_week === currentWeek
+      ? (row.prev_rank ?? row.global_rank)
+      : row.global_rank
     const rankChange = prevRank != null ? prevRank - newRank : null
 
     const { error } = await db

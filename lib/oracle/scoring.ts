@@ -153,6 +153,16 @@ export async function scoreUser(
   )
   const picks = Object.fromEntries(picksEntries) as Record<OraclePosition, RankingRow[]>
 
+  // Defensive guard: duplicate playerIds in stored rankings would distort
+  // scores silently. This should never happen if validateRankings ran at
+  // submission, but we check again here to prevent bad data from propagating.
+  for (const pos of ORACLE_POSITIONS) {
+    const ids = picks[pos].map(r => r.playerId)
+    if (new Set(ids).size !== ids.length) {
+      throw new Error(`Duplicate player IDs in ${pos} rankings for user ${userId} — scoring aborted`)
+    }
+  }
+
   const entry = scoreEntry(picks, groundTruth)
 
   if (!dryRun) {
@@ -177,26 +187,24 @@ export async function scoreUser(
       { onConflict: 'user_id,season_id' },
     )
 
-    for (const pos of ORACLE_POSITIONS) {
-      for (const d of entry.positions[pos].details) {
-        await db.from('ranking_score_detail').upsert(
-          {
-            user_id: userId,
-            season_id: seasonId,
-            position: pos,
-            player_id: d.playerId,
-            player_name: d.playerName,
-            user_rank: d.userRank,
-            actual_rank: d.actualRank,
-            distance: d.actualRank != null ? Math.abs(d.userRank - d.actualRank) : null,
-            raw_score: d.points,
-            confidence: 'medium',
-            final_score: d.points,
-          },
-          { onConflict: 'user_id,season_id,position,player_id' },
-        )
-      }
-    }
+    const detailRows = ORACLE_POSITIONS.flatMap(pos =>
+      entry.positions[pos].details.map(d => ({
+        user_id: userId,
+        season_id: seasonId,
+        position: pos,
+        player_id: d.playerId,
+        player_name: d.playerName,
+        user_rank: d.userRank,
+        actual_rank: d.actualRank,
+        distance: d.actualRank != null ? Math.abs(d.userRank - d.actualRank) : null,
+        raw_score: d.points,
+        confidence: 'medium',
+        final_score: d.points,
+      })),
+    )
+    await db
+      .from('ranking_score_detail')
+      .upsert(detailRows, { onConflict: 'user_id,season_id,position,player_id' })
   }
 
   // Build backward-compatible OracleResult (used by profile page + generateSummary)

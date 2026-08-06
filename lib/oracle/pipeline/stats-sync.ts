@@ -7,6 +7,9 @@ import { getServiceClient } from '@/lib/league/db'
 const SLEEPER_STATS_BASE = 'https://api.sleeper.app/v1/stats/nfl/regular'
 const SYNC_POSITIONS = new Set(['QB', 'RB', 'WR', 'TE'])
 const RETRY_DELAYS = [500, 1000, 2000]
+// Sleeper returns {} on empty weeks (pre-season, bye-week anomalies, API hiccups).
+// Fewer than 50 qualifying skill-position players in a real NFL week is impossible.
+const MIN_QUALIFYING_PLAYERS = 50
 
 export interface StatsSyncResult {
   upserted: number
@@ -99,6 +102,19 @@ export async function syncWeeklyStats(
 
   if (dryRun) {
     return { upserted: rows.length, skipped, errors: [] }
+  }
+
+  // Guard: if Sleeper returned HTTP 200 with an empty or near-empty payload
+  // (common for pre-season weeks and occasional API hiccups), abort rather
+  // than scoring all users against a week with zero stats.
+  if (rows.length < MIN_QUALIFYING_PLAYERS) {
+    return {
+      upserted: 0,
+      skipped,
+      errors: [
+        `Sleeper returned only ${rows.length} qualifying players for week ${week} (minimum ${MIN_QUALIFYING_PLAYERS}). Aborting to protect existing scores.`,
+      ],
+    }
   }
 
   const BATCH = 100

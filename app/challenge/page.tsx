@@ -101,7 +101,7 @@ export default async function ChallengePage() {
 
     displayName = (profileResult.data?.display_name as string | null) ?? null
     isSubmitted = submittedResult.data?.is_submitted === true
-    totalEntries = new Set((entryCountResult.data ?? []).map((r: { user_id: string }) => r.user_id)).size + 1
+    totalEntries = new Set((entryCountResult.data ?? []).map((r: { user_id: string }) => r.user_id)).size
     entryNumber = (entryNumberResult.data?.entry_number as number | null) ?? null
     hasWeeklyScores = ((weeklyScoresResult.data ?? []) as unknown[]).length > 0
     currentWeek = (weeklyScoresResult.data as Array<{ current_week: number }> | null)?.[0]?.current_week ?? 0
@@ -115,7 +115,7 @@ export default async function ChallengePage() {
       .select('user_id')
       .eq('season_id', season.id)
       .eq('is_submitted', true)
-    totalEntries = new Set((submittedRows ?? []).map((r: { user_id: string }) => r.user_id)).size + 1
+    totalEntries = new Set((submittedRows ?? []).map((r: { user_id: string }) => r.user_id)).size
   }
 
   const completedPositions = ORACLE_POSITIONS.filter(
@@ -301,7 +301,7 @@ export default async function ChallengePage() {
         <div className="flex flex-col gap-3">
           {[
             { n: '1', text: 'Rank every player before Week 1.' },
-            { n: '2', text: 'Rankings lock September 9 at 5:00 PM ET.' },
+            { n: '2', text: `Rankings lock ${lockLabel || 'September 9'}.` },
             { n: '3', text: 'We score every pick after the season ends.' },
             { n: '4', text: 'Finish #1 at the end of the season. Win $500. Free entry.' },
           ].map(({ n, text }) => (

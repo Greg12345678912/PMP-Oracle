@@ -326,7 +326,7 @@ export default async function LeaderboardPage() {
     .eq('is_submitted', true)
     .eq('season_id', season?.id ?? '')
 
-  const totalEntries = new Set((submittedRows ?? []).map(r => r.user_id as string)).size + 1
+  const totalEntries = new Set((submittedRows ?? []).map(r => r.user_id as string)).size
 
   // Check if the current user has entered
   let userIsEntered = false

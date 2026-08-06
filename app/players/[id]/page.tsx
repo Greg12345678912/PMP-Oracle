@@ -89,7 +89,24 @@ export default async function PlayerPage({
   }
 
   // ── Determine if weekly scoring has started ─────────────────────────────────
-  const hasWeeklyScores = season.status === 'scoring' || season.status === 'scored'
+  // Use the same accuracy_scores check as the dashboard and leaderboard rather
+  // than season.status, so community stats appear even if the season status
+  // transition was blocked by a partial pipeline failure.
+  let hasWeeklyScores: boolean
+  if (previewState) {
+    hasWeeklyScores = season.status === 'scoring' || season.status === 'scored'
+  } else {
+    const db = getServiceClient()
+    const { data: weekCheck } = rawSeason
+      ? await db
+          .from('accuracy_scores')
+          .select('current_week')
+          .eq('season_id', rawSeason.id)
+          .gt('current_week', 0)
+          .limit(1)
+      : { data: [] }
+    hasWeeklyScores = (weekCheck ?? []).length > 0
+  }
 
   // ── Locked, pre-Week-1 state ────────────────────────────────────────────────
   if (!hasWeeklyScores) {
@@ -204,10 +221,11 @@ export default async function PlayerPage({
     )
   }
 
-  const { playerName, total, communityAvgRank, mostCommonRank, userRank } = stats
+  const { playerName, position, total, totalSubmissions, communityAvgRank, mostCommonRank, rankDistribution, userRank } = stats
 
-  const rankDelta =
-    userRank !== null ? userRank - communityAvgRank : null
+  const rankDelta = userRank !== null ? userRank - communityAvgRank : null
+  const inclusionPct = totalSubmissions > 0 ? Math.round((total / totalSubmissions) * 100) : 0
+  const distMax = Math.max(...rankDistribution, 1)
 
   return (
     <div className="min-h-[100dvh] bg-pmp-black text-pmp-white">
@@ -215,11 +233,11 @@ export default async function PlayerPage({
       <div className="px-4 pt-8 pb-6 max-w-lg mx-auto">
         <Link href="/players" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-500 transition-colors">← Back to Players</Link>
         <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em] mt-4 mb-2">
-          The Oracle Challenge
+          {position ? `${position} · Oracle Challenge` : 'Oracle Challenge'}
         </p>
         <h1 className="text-2xl font-bold leading-tight">{playerName}</h1>
         <p className="text-pmp-gray-500 text-sm mt-1">
-          Community Rankings · {total} {total === 1 ? 'submission' : 'submissions'}
+          {season.status === 'scored' ? 'Season complete' : 'Rankings locked'} · {total} of {totalSubmissions} oracle{totalSubmissions === 1 ? '' : 's'} ranked this player ({inclusionPct}%)
         </p>
       </div>
 
@@ -262,18 +280,38 @@ export default async function PlayerPage({
                         : 'text-pmp-gray-500 text-lg font-semibold'
                   }
                 >
-                  {rankDelta === 0 ? 'Exact match' : rankDelta < 0 ? `${Math.abs(rankDelta)} higher` : `${rankDelta} lower`}
+                  {rankDelta === 0 ? 'Exact match' : rankDelta < 0 ? `${Math.abs(rankDelta)} spots higher` : `${rankDelta} spots lower`}
                 </p>
               </div>
             )}
           </div>
         )}
 
-        <p className="text-pmp-gray-500 text-xs text-center">
-          {season.status === 'scored'
-            ? `Season complete · ${total} oracle${total === 1 ? '' : 's'} weighed in`
-            : `Rankings locked · ${total} oracle${total === 1 ? '' : 's'} weighed in`}
-        </p>
+        {/* Rank distribution */}
+        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-3">
+          <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">Rank Distribution</p>
+          <div className="flex items-end gap-1.5 h-16">
+            {rankDistribution.map((count, i) => {
+              const rank = i + 1
+              const heightPct = distMax > 0 ? (count / distMax) * 100 : 0
+              const isHighlighted = rank === communityAvgRank
+              return (
+                <div key={rank} className="flex-1 flex flex-col items-center gap-1">
+                  <div className="w-full flex items-end justify-center" style={{ height: '48px' }}>
+                    <div
+                      className={`w-full rounded-sm ${isHighlighted ? 'bg-pmp-red' : 'bg-pmp-gray-700'}`}
+                      style={{ height: count === 0 ? '2px' : `${Math.max(4, heightPct * 0.48)}px` }}
+                    />
+                  </div>
+                  <span className={`text-[10px] font-bold ${isHighlighted ? 'text-pmp-red' : 'text-pmp-gray-600'}`}>
+                    {rank}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-pmp-gray-700 text-[10px] text-center">rank slot → number of oracles</p>
+        </div>
       </div>
     </div>
   )
