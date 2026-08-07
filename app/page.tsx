@@ -31,7 +31,7 @@ export default async function HomePage() {
       .select('user_id')
       .eq('season_id', season.id)
       .eq('is_submitted', true)
-    entryCount = new Set((data ?? []).map((r: { user_id: string }) => r.user_id)).size + 1
+    entryCount = new Set((data ?? []).map((r: { user_id: string }) => r.user_id)).size
   }
 
   return (
