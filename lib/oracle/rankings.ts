@@ -72,7 +72,7 @@ export async function upsertRankings(
   rows: RankingRow[],
 ): Promise<void> {
   const db = getServiceClient()
-  await db
+  const { error } = await db
     .from('challenge_rankings')
     .upsert(
       {
@@ -84,4 +84,5 @@ export async function upsertRankings(
       },
       { onConflict: 'user_id,season_id,position' },
     )
+  if (error) throw new Error(`Failed to save rankings: ${error.message}`)
 }
