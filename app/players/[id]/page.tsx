@@ -196,7 +196,11 @@ export default async function PlayerPage({
   // ── Post-Week-1 / scored state ──────────────────────────────────────────────
   // Always use the real season ID for data lookups — mock season IDs have no rows in challenge_rankings
   const realSeasonId = rawSeason?.id ?? season.id
-  const stats = await getPlayerStats(id, realSeasonId, session?.user.id ?? null)
+  const gtDb = getServiceClient()
+  const [stats, { data: groundTruthRow }] = await Promise.all([
+    getPlayerStats(id, realSeasonId, session?.user.id ?? null),
+    gtDb.from('ground_truth').select('rank, position').eq('season_id', realSeasonId).eq('player_id', id).maybeSingle(),
+  ])
 
   // If no community stats exist yet (e.g. preview with no real data, or obscure player),
   // render a graceful no-data view rather than a 404.
@@ -242,6 +246,14 @@ export default async function PlayerPage({
       </div>
 
       <div className="px-4 max-w-lg mx-auto flex flex-col gap-4 pb-16">
+        {/* Season rank — sourced directly from ground_truth, same value used by scoring engine */}
+        {groundTruthRow && (
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
+            <p className="text-pmp-gray-500 text-xs uppercase tracking-widest">Season Rank</p>
+            <p className="text-pmp-white text-3xl font-bold">{groundTruthRow.position}{groundTruthRow.rank} Overall</p>
+          </div>
+        )}
+
         {/* Rank cards */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
