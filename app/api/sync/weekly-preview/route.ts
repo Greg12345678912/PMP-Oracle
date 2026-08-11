@@ -44,12 +44,12 @@ export async function POST(request: Request) {
     const season = await getCurrentSeason()
     let expectedUsers = 0
     if (season) {
-      const { count } = await db
+      const { data: submittedUsers } = await db
         .from('challenge_rankings')
-        .select('*', { count: 'exact', head: true })
+        .select('user_id')
         .eq('season_id', season.id)
         .eq('is_submitted', true)
-      expectedUsers = count ?? 0
+      expectedUsers = new Set((submittedUsers ?? []).map(r => r.user_id)).size
     }
 
     const result = await runWeeklyPipeline({ dryRun: true })

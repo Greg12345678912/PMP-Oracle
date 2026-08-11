@@ -46,7 +46,7 @@ export default async function HomePage() {
 
           <div className="flex flex-col gap-3">
             <h1 className="font-display font-black text-4xl sm:text-5xl text-pmp-white leading-[1.1]">
-              Rank every<br />NFL player.<br />
+              Top 10 QBs.<br />Top 10 RBs.<br />Top 10 WRs.<br />Top 10 TEs.<br />
               <span className="text-pmp-red">Win $500.</span>
             </h1>
             <p className="text-pmp-gray-400 text-base leading-snug max-w-sm">
