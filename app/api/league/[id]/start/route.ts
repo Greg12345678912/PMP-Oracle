@@ -1,5 +1,7 @@
 // app/api/league/[id]/start/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+
+export const maxDuration = 60
 import { getServiceClient, broadcastEvent } from '@/lib/league/db'
 import { DraftService } from '@/lib/league/service'
 import { SleeperProvider } from '@/lib/data/sleeper'

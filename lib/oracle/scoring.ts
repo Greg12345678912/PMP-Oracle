@@ -168,7 +168,7 @@ export async function scoreUser(
   if (!dryRun) {
     const now = new Date().toISOString()
 
-    await db.from('accuracy_scores').upsert(
+    const { error: scoreErr } = await db.from('accuracy_scores').upsert(
       {
         user_id: userId,
         season_id: seasonId,
@@ -186,6 +186,7 @@ export async function scoreUser(
       },
       { onConflict: 'user_id,season_id' },
     )
+    if (scoreErr) throw new Error(`accuracy_scores write failed for user ${userId}: ${scoreErr.message}`)
 
     const detailRows = ORACLE_POSITIONS.flatMap(pos =>
       entry.positions[pos].details.map(d => ({
@@ -202,9 +203,10 @@ export async function scoreUser(
         final_score: d.points,
       })),
     )
-    await db
+    const { error: detailErr } = await db
       .from('ranking_score_detail')
       .upsert(detailRows, { onConflict: 'user_id,season_id,position,player_id' })
+    if (detailErr) throw new Error(`ranking_score_detail write failed for user ${userId}: ${detailErr.message}`)
   }
 
   // Build backward-compatible OracleResult (used by profile page + generateSummary)

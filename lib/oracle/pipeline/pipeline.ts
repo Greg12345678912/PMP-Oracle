@@ -281,6 +281,19 @@ export async function runWeeklyPipeline(opts?: {
 
   const completedAt = new Date().toISOString()
 
+  // ── Pipeline completion alerts ───────────────────────────────────────────────
+  if (!dryRun) {
+    if (errors.length === 0 && usersFailed === 0) {
+      void sendOracleAlert(
+        `✅ Week ${currentWeek} pipeline complete — ${usersScored} users scored, 0 failed`,
+      )
+    } else {
+      void sendOracleAlert(
+        `❌ Week ${currentWeek} pipeline finished with issues — ${usersScored} scored, ${usersFailed} failed, ${errors.length} error(s): ${errors[0] ?? 'unknown'}`,
+      )
+    }
+  }
+
   // ── Stage 6 pre-check: Auto-transition 'open' → 'locked' ─────────────────────
   // Nothing else writes 'locked' status — the pipeline is the right place to
   // handle this. If lock_at has passed and we're still 'open', flip to 'locked'
