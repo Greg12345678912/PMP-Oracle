@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getServiceClient } from '@/lib/league/db'
 import { getSession } from '@/lib/auth/server'
@@ -19,6 +20,11 @@ import {
 } from '@/lib/oracle/dev-preview'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params
+  return { title: `@${username}` }
+}
 
 interface PageProps {
   params: Promise<{ username: string }>

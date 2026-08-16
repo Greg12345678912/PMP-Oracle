@@ -1,6 +1,8 @@
 import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { getRankings } from '@/lib/oracle/rankings'
+
+export const metadata = { title: 'Rankings' }
 import { getPlayerPool } from '@/lib/oracle/players'
 import { RankingsClient } from './client'
 import { ORACLE_POSITIONS } from '@/lib/oracle/constants'

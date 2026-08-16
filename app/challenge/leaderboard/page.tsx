@@ -1,6 +1,8 @@
 import { getServiceClient } from '@/lib/league/db'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { getSession } from '@/lib/auth/server'
+
+export const metadata = { title: 'Leaderboard' }
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import {

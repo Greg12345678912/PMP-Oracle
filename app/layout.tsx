@@ -12,7 +12,10 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Pretty Much Picks — Oracle Challenge',
+  title: {
+    default: 'Pretty Much Picks',
+    template: '%s | Pretty Much Picks',
+  },
   description: 'Rank every NFL player before Week 1. Prove your fantasy knowledge against the field. Finish #1. Win $500. Free entry.',
   metadataBase: new URL('https://prettymuchpicks.com'),
   openGraph: {
@@ -26,11 +29,6 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Pretty Much Picks — Oracle Challenge',
     description: 'Rank every NFL player before Week 1. Prove your fantasy knowledge. Win $500. Free.',
-  },
-  icons: {
-    icon: '/logo.png',
-    shortcut: '/logo.png',
-    apple: '/logo.png',
   },
 }
 

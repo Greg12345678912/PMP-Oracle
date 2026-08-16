@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/server'
+
+export const metadata = { title: 'Results' }
 import { getCurrentSeason } from '@/lib/oracle/season'
 import { getServiceClient } from '@/lib/league/db'
 import { ORACLE_POSITIONS } from '@/lib/oracle/constants'

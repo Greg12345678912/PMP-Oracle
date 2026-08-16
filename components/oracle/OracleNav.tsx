@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 
 interface OracleNavProps {
   username: string | null
+  variant?: 'bottom' | 'top'
 }
 
 const TABS = [
@@ -30,51 +31,61 @@ function isTabActive(key: string, pathname: string): boolean {
   return false
 }
 
-export function OracleNav({ username }: OracleNavProps) {
+export function OracleNav({ username, variant = 'bottom' }: OracleNavProps) {
   const pathname = usePathname()
 
+  const getHref = (tab: typeof TABS[number]) =>
+    tab.key === 'profile' ? (username ? `/u/${username}` : '/challenge') : tab.href!
+
+  /* ── Desktop top nav ───────────────────────────────────────────────────── */
+  if (variant === 'top') {
+    return (
+      <nav className="hidden md:flex items-center gap-1 ml-auto">
+        {TABS.map(tab => {
+          const active = isTabActive(tab.key, pathname)
+          return (
+            <Link
+              key={tab.key}
+              href={getHref(tab)}
+              className={[
+                'px-3 py-1.5 rounded text-sm font-medium transition-colors',
+                active
+                  ? 'text-pmp-white bg-pmp-gray-800'
+                  : 'text-pmp-gray-500 hover:text-pmp-gray-300 hover:bg-pmp-gray-900',
+              ].join(' ')}
+            >
+              {tab.label}
+            </Link>
+          )
+        })}
+      </nav>
+    )
+  }
+
+  /* ── Mobile bottom nav ─────────────────────────────────────────────────── */
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 bg-pmp-black border-t border-pmp-gray-800"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-pmp-black border-t border-pmp-gray-800 md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="flex">
         {TABS.map(tab => {
           const active = isTabActive(tab.key, pathname)
-
-          /* Profile tab — links to profile page when signed in, challenge when not */
-          if (tab.key === 'profile') {
-            const href = username ? `/u/${username}` : '/challenge'
-            return (
-              <Link
-                key={tab.key}
-                href={href}
-                className={[
-                  'flex-1 flex flex-col items-center pt-2.5 pb-2 gap-0.5 min-h-[52px]',
-                  active ? 'text-pmp-red' : 'text-pmp-gray-600 hover:text-pmp-gray-400',
-                ].join(' ')}
-              >
-                <span className="text-lg leading-none">{tab.icon}</span>
-                <span className="text-[10px] font-medium">{tab.label}</span>
-              </Link>
-            )
-          }
-
-            return (
-              <Link
-                key={tab.key}
-                href={tab.href!}
-                className={[
-                  'flex-1 flex flex-col items-center pt-2.5 pb-2 gap-0.5 min-h-[52px]',
-                  active ? 'text-pmp-red' : 'text-pmp-gray-600 hover:text-pmp-gray-400',
-                ].join(' ')}
-              >
-                <span className="text-lg leading-none">{tab.icon}</span>
-                <span className="text-[10px] font-medium">{tab.label}</span>
-              </Link>
-            )
-          })}
-        </div>
-      </nav>
+          return (
+            <Link
+              key={tab.key}
+              href={getHref(tab)}
+              className={[
+                'flex-1 flex flex-col items-center pt-2.5 pb-2 gap-0.5 min-h-[52px]',
+                active ? 'text-pmp-red' : 'text-pmp-gray-600 hover:text-pmp-gray-400',
+              ].join(' ')}
+            >
+              <span className="text-lg leading-none">{tab.icon}</span>
+              <span className="text-[10px] font-medium">{tab.label}</span>
+            </Link>
+          )
+        })}
+      </div>
+    </nav>
   )
 }

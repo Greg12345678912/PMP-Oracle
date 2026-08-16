@@ -1,6 +1,8 @@
 import { getPlayerPool } from '@/lib/oracle/players'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
+
+export const metadata = { title: 'Players' }
 import type { OraclePosition } from '@/lib/oracle/constants'
 import type { Player } from '@/lib/data/types'
 import { PlayersClient } from './client'

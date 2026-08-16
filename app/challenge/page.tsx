@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { getSession } from '@/lib/auth/server'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
+
+export const metadata = { title: 'Dashboard' }
 import { getServiceClient } from '@/lib/league/db'
 import { getRankings } from '@/lib/oracle/rankings'
 import { ORACLE_POSITIONS, POSITION_LIST_SIZE } from '@/lib/oracle/constants'

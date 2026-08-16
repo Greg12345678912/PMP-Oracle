@@ -44,11 +44,12 @@ export default async function ChallengeLayout({
     <div className="flex flex-col min-h-[100dvh] bg-pmp-black">
       {/* Persistent top bar — logo goes home, exits Oracle */}
       <header className="sticky top-0 z-30 bg-pmp-black border-b border-pmp-gray-800 shrink-0">
-        <div className="px-4 h-12 flex items-center">
-        <Link href="/" className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
-          <Image src="/logo.png" alt="Pretty Much Picks" width={22} height={22} className="rounded" />
-          <span className="text-pmp-white text-sm font-bold tracking-tight">Pretty Much Picks</span>
-        </Link>
+        <div className="px-4 h-12 flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
+            <Image src="/logo.png" alt="Pretty Much Picks" width={22} height={22} className="rounded" />
+            <span className="text-pmp-white text-sm font-bold tracking-tight">Pretty Much Picks</span>
+          </Link>
+          <OracleNav username={username} variant="top" />
         </div>
         {/* Status strip */}
         <div className="px-4 py-1.5 bg-pmp-gray-900 border-t border-pmp-gray-800 flex items-center gap-2">
@@ -64,7 +65,7 @@ export default async function ChallengeLayout({
       </header>
 
       {/* Page content — padded bottom so content clears the nav */}
-      <div className="flex-1 pb-[calc(56px+env(safe-area-inset-bottom,0px))]">
+      <div className="flex-1 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0">
         {children}
       </div>
 
