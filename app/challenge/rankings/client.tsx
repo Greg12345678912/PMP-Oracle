@@ -199,7 +199,7 @@ export function RankingsClient({
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl p-6 w-full max-w-sm">
             <h3 className="text-pmp-white font-bold text-lg mb-1">All rankings saved!</h3>
             <p className="text-pmp-gray-500 text-sm mb-6">
-              You\u2019ve ranked all four positions. Review your picks and submit before the deadline.
+              You&rsquo;ve ranked all four positions. Review your picks and submit before the deadline.
             </p>
             <div className="flex flex-col gap-3">
               <Link
