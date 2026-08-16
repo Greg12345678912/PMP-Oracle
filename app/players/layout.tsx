@@ -24,14 +24,17 @@ export default async function PlayersLayout({
 
   return (
     <div className="flex flex-col min-h-[100dvh] bg-pmp-black">
-      <header className="sticky top-0 z-30 bg-pmp-black border-b border-pmp-gray-800 px-4 h-12 flex items-center shrink-0">
-        <Link href="/" className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
-          <Image src="/logo.png" alt="Pretty Much Picks" width={22} height={22} className="rounded" />
-          <span className="text-pmp-white text-sm font-bold tracking-tight">Pretty Much Picks</span>
-        </Link>
+      <header className="sticky top-0 z-30 bg-pmp-black border-b border-pmp-gray-800 shrink-0">
+        <div className="px-4 h-12 flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
+            <Image src="/logo.png" alt="Pretty Much Picks" width={22} height={22} className="rounded" />
+            <span className="text-pmp-white text-sm font-bold tracking-tight">Pretty Much Picks</span>
+          </Link>
+          <OracleNav username={username} variant="top" />
+        </div>
       </header>
 
-      <div className="flex-1 pb-[calc(56px+env(safe-area-inset-bottom,0px))]">
+      <div className="flex-1 pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0">
         {children}
       </div>
 
