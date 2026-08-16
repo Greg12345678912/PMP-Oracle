@@ -99,13 +99,35 @@ export function RankingList({
     return () => window.removeEventListener('beforeunload', handler)
   }, [dirty])
 
-  // Auto-focus search input when opened and scroll it into view
+  // Auto-focus and scroll the input to the top quarter of the visible viewport
+  // so the dropdown has room above the keyboard on iOS
   useEffect(() => {
     if (!searchOpen) return
     searchInputRef.current?.focus()
-    setTimeout(() => {
-      searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 100)
+
+    const scrollInputIntoView = () => {
+      const el = searchInputRef.current
+      if (!el) return
+      const vv = window.visualViewport
+      const visibleHeight = vv ? vv.height : window.innerHeight
+      const rect = el.getBoundingClientRect()
+      const desiredTop = visibleHeight * 0.25
+      const delta = rect.top - desiredTop
+      if (Math.abs(delta) > 10) {
+        window.scrollBy({ top: delta, behavior: 'smooth' })
+      }
+    }
+
+    // Wait for iOS keyboard to finish animating (~350ms)
+    const t = setTimeout(scrollInputIntoView, 350)
+
+    const vv = window.visualViewport
+    vv?.addEventListener('resize', scrollInputIntoView)
+
+    return () => {
+      clearTimeout(t)
+      vv?.removeEventListener('resize', scrollInputIntoView)
+    }
   }, [searchOpen])
 
   const rankedIds = new Set(rows.map(r => r.playerId))
