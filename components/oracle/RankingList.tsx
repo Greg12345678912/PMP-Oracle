@@ -99,9 +99,13 @@ export function RankingList({
     return () => window.removeEventListener('beforeunload', handler)
   }, [dirty])
 
-  // Auto-focus search input when opened
+  // Auto-focus search input when opened and scroll it into view
   useEffect(() => {
-    if (searchOpen) searchInputRef.current?.focus()
+    if (!searchOpen) return
+    searchInputRef.current?.focus()
+    setTimeout(() => {
+      searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 100)
   }, [searchOpen])
 
   const rankedIds = new Set(rows.map(r => r.playerId))
@@ -223,7 +227,7 @@ export function RankingList({
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder={`Search ${position} players\u2026`}
-                        className="flex-1 bg-transparent text-pmp-white text-sm placeholder:text-pmp-gray-600 focus:outline-none"
+                        className="flex-1 bg-transparent text-pmp-white text-base placeholder:text-pmp-gray-600 focus:outline-none"
                       />
                       <button
                         type="button"
