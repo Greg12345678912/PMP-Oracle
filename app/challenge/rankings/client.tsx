@@ -1,6 +1,7 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { RankingList } from '@/components/oracle/RankingList'
 import { ProfileGate } from '@/components/oracle/ProfileGate'
 import type { RankingRow } from '@/lib/oracle/rankings'
@@ -8,7 +9,6 @@ import type { Player } from '@/lib/data/types'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import { ORACLE_POSITIONS, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
 
-/** localStorage draft key matching RankingList's convention */
 function draftKey(pos: OraclePosition) {
   return `oracle_rankings_draft_${pos}`
 }
@@ -31,10 +31,21 @@ export function RankingsClient({
   const router = useRouter()
   const [activePosition, setActivePosition] = useState<OraclePosition>('QB')
   const [savedPositions, setSavedPositions] = useState<Set<OraclePosition>>(
-    () => new Set(ORACLE_POSITIONS.filter(p => (initialRankings[p]?.length ?? 0) > 0))
+    () => new Set(ORACLE_POSITIONS.filter(p => (initialRankings[p]?.length ?? 0) > 0)),
   )
-  const [nudge, setNudge] = useState<string | null>(null)
   const [showProfileGate, setShowProfileGate] = useState(false)
+
+  // Position-complete modal state
+  const [pendingCompletion, setPendingCompletion] = useState<{
+    position: OraclePosition
+    rows: RankingRow[]
+  } | null>(null)
+  const [showPositionModal, setShowPositionModal] = useState(false)
+  const [modalSaving, setModalSaving] = useState(false)
+  const [modalError, setModalError] = useState<string | null>(null)
+
+  // All-done modal state
+  const [showAllDoneModal, setShowAllDoneModal] = useState(false)
 
   /**
    * On sign-in return: upload any localStorage drafts to the DB.
@@ -51,18 +62,13 @@ export function RankingsClient({
           if (!raw) continue
           const rows: RankingRow[] = JSON.parse(raw)
           if (!rows.length) continue
-          // Truncate to current maxSize before syncing — prevents validation errors
-          // when list size constants have changed since draft was saved
           const truncated = rows.slice(0, POSITION_LIST_SIZE[pos])
           const res = await fetch('/api/oracle/rankings', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ position: pos, rankings: truncated }),
           })
-          // Only clear localStorage if the save actually succeeded
-          if (res.ok) {
-            localStorage.removeItem(draftKey(pos))
-          }
+          if (res.ok) localStorage.removeItem(draftKey(pos))
         } catch {
           // best-effort
         }
@@ -76,8 +82,6 @@ export function RankingsClient({
   const handleSave = useCallback(
     async (position: OraclePosition, rows: RankingRow[]) => {
       if (!isSignedIn) {
-        // RankingList already wrote to localStorage — show profile gate instead of
-        // immediately redirecting. User clicks "Enter with Google" from there.
         setShowProfileGate(true)
         return
       }
@@ -90,20 +94,55 @@ export function RankingsClient({
         const { error } = await res.json().catch(() => ({ error: 'Unknown error' }))
         throw new Error(error ?? 'Failed to save rankings')
       }
-
       setSavedPositions(prev => {
         const next = new Set([...prev, position])
-        const nextPos = ORACLE_POSITIONS.find(p => !next.has(p))
-        if (nextPos) {
-          setNudge(`\u2713 ${position} saved \u2014 now rank ${nextPos}`)
-          setTimeout(() => setNudge(null), 4000)
+        if (next.size === ORACLE_POSITIONS.length) {
+          setShowAllDoneModal(true)
         }
         return next
       })
       router.refresh()
     },
-    [isSignedIn],
+    [isSignedIn, router],
   )
+
+  /** Called by RankingList when all slots are filled */
+  const handleComplete = useCallback(
+    (rows: RankingRow[]) => {
+      setPendingCompletion({ position: activePosition, rows })
+      setShowPositionModal(true)
+      setModalError(null)
+    },
+    [activePosition],
+  )
+
+  const handleContinueFromModal = async () => {
+    if (!pendingCompletion) return
+    const { position, rows } = pendingCompletion
+    // Compute next unsaved position optimistically (before state update)
+    const alreadySaved = new Set([...savedPositions, position])
+    const nextPos = ORACLE_POSITIONS.find(p => !alreadySaved.has(p))
+
+    setModalSaving(true)
+    setModalError(null)
+    try {
+      await handleSave(position, rows)
+      setShowPositionModal(false)
+      setPendingCompletion(null)
+      if (nextPos) setActivePosition(nextPos)
+    } catch (e) {
+      setModalError(e instanceof Error ? e.message : 'Save failed — try again')
+    } finally {
+      setModalSaving(false)
+    }
+  }
+
+  // Compute what the "Continue" button label should say
+  const nextAfterCurrent = (() => {
+    if (!pendingCompletion) return null
+    const alreadySaved = new Set([...savedPositions, pendingCompletion.position])
+    return ORACLE_POSITIONS.find(p => !alreadySaved.has(p)) ?? null
+  })()
 
   return (
     <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
@@ -114,12 +153,79 @@ export function RankingsClient({
         />
       )}
 
+      {/* Position-complete modal */}
+      {showPositionModal && pendingCompletion && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4">
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl p-6 w-full max-w-sm">
+            <h3 className="text-pmp-white font-bold text-lg mb-1">
+              {pendingCompletion.position} complete!
+            </h3>
+            <p className="text-pmp-gray-500 text-sm mb-6">
+              {nextAfterCurrent
+                ? `You\u2019ve ranked all 10 ${pendingCompletion.position}s. Ready to move on to ${nextAfterCurrent}?`
+                : `You\u2019ve ranked all 10 ${pendingCompletion.position}s. That\u2019s all four positions\u2014ready to submit?`}
+            </p>
+            {modalError && (
+              <p className="text-pmp-red text-xs text-center mb-4">{modalError}</p>
+            )}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleContinueFromModal}
+                disabled={modalSaving}
+                className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {modalSaving
+                  ? 'Saving\u2026'
+                  : nextAfterCurrent
+                    ? `Continue to ${nextAfterCurrent}`
+                    : 'Review & Submit'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowPositionModal(false); setModalError(null) }}
+                disabled={modalSaving}
+                className="w-full text-pmp-gray-500 text-sm py-2 hover:text-pmp-gray-300 transition-colors disabled:opacity-50"
+              >
+                Keep editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* All-done modal */}
+      {showAllDoneModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4">
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl p-6 w-full max-w-sm">
+            <h3 className="text-pmp-white font-bold text-lg mb-1">All rankings saved!</h3>
+            <p className="text-pmp-gray-500 text-sm mb-6">
+              You\u2019ve ranked all four positions. Review your picks and submit before the deadline.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link
+                href="/challenge/rankings/review"
+                className="block w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
+              >
+                Review &amp; Submit &rarr;
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowAllDoneModal(false)}
+                className="w-full text-pmp-gray-500 text-sm py-2 hover:text-pmp-gray-300 transition-colors"
+              >
+                Keep editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Page header */}
       <div className="px-4 pt-5 pb-4 border-b border-pmp-gray-800 shrink-0">
         <h1 className="text-pmp-white font-bold text-lg">
           {locked ? 'Your Official Locked Rankings' : 'My Rankings'}
         </h1>
-        <p className="text-pmp-gray-600 text-xs mt-0.5">PPR · 2026 Oracle Challenge</p>
+        <p className="text-pmp-gray-600 text-xs mt-0.5">PPR &middot; 2026 Oracle Challenge</p>
       </div>
 
       {/* Position tabs */}
@@ -147,7 +253,7 @@ export function RankingsClient({
                     : 'text-pmp-gray-600 hover:text-pmp-gray-500',
               ].join(' ')}
             >
-              {savedPositions.has(pos) ? `✓ ${pos}` : pos}
+              {savedPositions.has(pos) ? `\u2713 ${pos}` : pos}
               <span className="block text-[10px] font-normal opacity-60">
                 Top {size}
               </span>
@@ -160,23 +266,29 @@ export function RankingsClient({
       <div className="px-4 py-3 border-b border-pmp-gray-800 flex items-center justify-between shrink-0">
         <div className="flex gap-3">
           {ORACLE_POSITIONS.map(pos => (
-            <span key={pos} className={[
-              'text-xs font-semibold',
-              savedPositions.has(pos) ? 'text-pmp-red' : 'text-pmp-gray-600',
-            ].join(' ')}>
+            <span
+              key={pos}
+              className={[
+                'text-xs font-semibold',
+                savedPositions.has(pos) ? 'text-pmp-red' : 'text-pmp-gray-600',
+              ].join(' ')}
+            >
               {savedPositions.has(pos) ? '\u2705' : '\u2610'} {pos}
             </span>
           ))}
         </div>
-        <span className="text-pmp-gray-600 text-xs">
-          {savedPositions.size} of 4
-        </span>
+        <span className="text-pmp-gray-600 text-xs">{savedPositions.size} of 4</span>
       </div>
 
-      {/* Nudge banner */}
-      {nudge && (
-        <div className="px-4 py-2 bg-pmp-gray-900 border-b border-pmp-gray-800 text-xs text-pmp-gray-500 text-center shrink-0">
-          {nudge}
+      {/* Submit button — shown once all 4 saved */}
+      {savedPositions.size === ORACLE_POSITIONS.length && (
+        <div className="px-4 py-3 border-b border-pmp-gray-800 shrink-0">
+          <Link
+            href="/challenge/rankings/review"
+            className="block w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
+          >
+            Review &amp; Submit &rarr;
+          </Link>
         </div>
       )}
 
@@ -189,12 +301,11 @@ export function RankingsClient({
           players={players[activePosition] ?? []}
           locked={locked}
           isSignedIn={isSignedIn}
-          allSaved={savedPositions.size === 4}
           lockAt={lockAt}
           onSave={handleSave}
+          onComplete={handleComplete}
         />
       </div>
-
     </div>
   )
 }
