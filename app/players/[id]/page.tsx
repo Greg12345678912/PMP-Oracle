@@ -227,6 +227,10 @@ export default async function PlayerPage({
 
   const { playerName, position, total, totalSubmissions, communityAvgRank, mostCommonRank, rankDistribution, userRank } = stats
 
+  // In preview mode the ground_truth table has no real rows — fall back to communityAvgRank
+  // so the "Season Rank" card renders during week1/midseason/scored preview states.
+  const displayGroundTruth = groundTruthRow ?? (previewState ? { rank: communityAvgRank, position: position ?? '' } : null)
+
   const rankDelta = userRank !== null ? userRank - communityAvgRank : null
   const inclusionPct = totalSubmissions > 0 ? Math.round((total / totalSubmissions) * 100) : 0
   const distMax = Math.max(...rankDistribution, 1)
@@ -247,10 +251,10 @@ export default async function PlayerPage({
 
       <div className="px-4 max-w-lg mx-auto flex flex-col gap-4 pb-16">
         {/* Season rank — sourced directly from ground_truth, same value used by scoring engine */}
-        {groundTruthRow && (
+        {displayGroundTruth && (
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
             <p className="text-pmp-gray-500 text-xs uppercase tracking-widest">Season Rank</p>
-            <p className="text-pmp-white text-3xl font-bold">{groundTruthRow.position}{groundTruthRow.rank} Overall</p>
+            <p className="text-pmp-white text-3xl font-bold">{displayGroundTruth.position}{displayGroundTruth.rank} Overall</p>
           </div>
         )}
 
