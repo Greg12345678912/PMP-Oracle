@@ -115,7 +115,7 @@ export const TierImage = forwardRef<HTMLDivElement, TierImageProps>(
         {/* Footer */}
         <div style={{ marginTop: 40, borderTop: '2px solid #1A1A1A', paddingTop: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: '#E10600', fontWeight: 700, fontSize: 18 }}>Pretty Much Picks</span>
-          <span style={{ color: '#555555', fontSize: 14 }}>prettymuchpicks.com</span>
+          <span style={{ color: '#555555', fontSize: 14 }}>prettymuchpicks.ca</span>
         </div>
       </div>
     )

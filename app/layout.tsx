@@ -17,11 +17,11 @@ export const metadata: Metadata = {
     template: '%s | Pretty Much Picks',
   },
   description: 'Rank every NFL player before Week 1. Prove your fantasy knowledge against the field. Finish #1. Win $500. Free entry.',
-  metadataBase: new URL('https://prettymuchpicks.com'),
+  metadataBase: new URL('https://prettymuchpicks.ca'),
   openGraph: {
     title: 'Pretty Much Picks — Oracle Challenge',
     description: 'Rank every NFL player before Week 1. Prove your fantasy knowledge. Finish #1. Win $500. Free entry.',
-    url: 'https://prettymuchpicks.com/challenge',
+    url: 'https://prettymuchpicks.ca/challenge',
     siteName: 'Pretty Much Picks',
     type: 'website',
   },

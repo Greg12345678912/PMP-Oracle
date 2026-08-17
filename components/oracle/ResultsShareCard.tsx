@@ -81,7 +81,7 @@ export function ResultsShareCard({ overallScore, percentile, rank, totalParticip
         </div>
 
         {/* Footer */}
-        <p className="text-[#333] text-[10px] mt-3 tracking-wide">prettymuchpicks.com</p>
+        <p className="text-[#333] text-[10px] mt-3 tracking-wide">prettymuchpicks.ca</p>
       </div>
 
       <button

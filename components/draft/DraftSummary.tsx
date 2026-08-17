@@ -114,7 +114,7 @@ export function DraftSummary({ analytics, settings, onPlayAgain, playAgainLabel 
           </div>
         )}
 
-        <p className="text-pmp-gray-800 text-[10px] text-center">prettymuchpicks.com</p>
+        <p className="text-pmp-gray-800 text-[10px] text-center">prettymuchpicks.ca</p>
       </div>
 
       {/* Action buttons */}

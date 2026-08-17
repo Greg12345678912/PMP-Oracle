@@ -35,7 +35,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${label} PMP Fantasy Platform | Pretty Much Picks`,
       description: `Build your ${label} rankings and share a premium graphic.`,
-      url: `https://prettymuchpicks.com/${slug}`,
+      url: `https://prettymuchpicks.ca/${slug}`,
     },
   }
 }
