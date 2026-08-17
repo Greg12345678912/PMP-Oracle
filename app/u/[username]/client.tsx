@@ -90,17 +90,10 @@ function AvatarWithEdit({
         className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-pmp-gray-700 border-2 border-pmp-black flex items-center justify-center hover:bg-pmp-gray-600 transition-colors disabled:opacity-50"
       >
         {uploading ? (
-          <span className="w-3 h-3 border border-pmp-gray-400 border-t-transparent rounded-full animate-spin" />
+          <span className="w-3 h-3 border border-pmp-gray-500 border-t-transparent rounded-full animate-spin" />
         ) : (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path
-              d="M8.5 1.5a1.414 1.414 0 0 1 2 2L3.5 10.5l-2.5.5.5-2.5L8.5 1.5Z"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-pmp-gray-300"
-            />
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M8.5 1.5a1.414 1.414 0 0 1 2 2L3.5 10.5l-2.5.5.5-2.5L8.5 1.5Z" />
           </svg>
         )}
       </button>
