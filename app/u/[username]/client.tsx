@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import type { PositionResult } from '@/lib/oracle/scoring'
 import { ResultsShareCard } from '@/components/oracle/ResultsShareCard'
+import { getBrowserClient } from '@/lib/auth/client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ interface RankingPickPreview {
 
 interface ProfileClientProps {
   profile: ProfileData
+  profileUserId: string
   isOwn: boolean
   isAfterLock: boolean
   isScored: boolean
@@ -105,6 +107,7 @@ function AvatarWithEdit({
 
 export function ProfileClient({
   profile,
+  profileUserId,
   isOwn,
   isAfterLock,
   isScored,
@@ -123,6 +126,16 @@ export function ProfileClient({
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Determine avatar edit eligibility client-side — server-side getSession()
+  // can return null even when the user is logged in (SSR cookie limitation),
+  // so we check auth via the browser client after mount instead.
+  const [clientIsOwn, setClientIsOwn] = useState(false)
+  useEffect(() => {
+    getBrowserClient().auth.getUser().then(({ data }) => {
+      setClientIsOwn(data.user?.id === profileUserId)
+    })
+  }, [profileUserId])
 
   const handleAvatarEdit = () => {
     fileInputRef.current?.click()
@@ -158,8 +171,8 @@ export function ProfileClient({
 
         {/* ── 1. Profile header ── */}
         <div className="flex flex-col items-center gap-4 text-center">
-          {/* Hidden file input */}
-          {isOwn && (
+          {/* Hidden file input — only for profile owner, determined client-side */}
+          {clientIsOwn && (
             <input
               ref={fileInputRef}
               type="file"
@@ -168,7 +181,7 @@ export function ProfileClient({
               onChange={handleFileChange}
             />
           )}
-          {isOwn ? (
+          {clientIsOwn ? (
             <AvatarWithEdit
               avatarUrl={avatarUrl}
               displayName={profile.displayName}

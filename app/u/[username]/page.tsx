@@ -227,6 +227,7 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
           isVerified: profile.is_verified,
           isCreator: profile.is_creator,
         }}
+        profileUserId={profile.user_id}
         isOwn={isOwn}
         isAfterLock={isAfterLock}
         isScored={showScores}
@@ -358,6 +359,7 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
         isVerified: profile.is_verified,
         isCreator: profile.is_creator,
       }}
+      profileUserId={profile.user_id}
       isOwn={isOwn}
       isAfterLock={isAfterLock}
       isScored={showScores}
