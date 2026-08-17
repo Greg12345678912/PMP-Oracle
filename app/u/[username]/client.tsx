@@ -178,8 +178,8 @@ export function ProfileClient({
           </div>
         )}
 
-        {/* ── 4. Season summary (if scored) ── */}
-        {isScored && summary && (
+        {/* ── 4. Season summary (end of season only) ── */}
+        {isSeasonComplete && summary && (
           <div className="flex flex-col gap-3">
             <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">
               Season Summary
@@ -190,8 +190,8 @@ export function ProfileClient({
           </div>
         )}
 
-        {/* ── 5. Share card (if scored and percentile known) ── */}
-        {isScored && overallScore !== null && percentile !== null && (
+        {/* ── 5. Share card (end of season only) ── */}
+        {isSeasonComplete && overallScore !== null && percentile !== null && (
           <ResultsShareCard overallScore={overallScore} percentile={percentile} rank={rank} totalParticipants={totalParticipants} username={profile.username} />
         )}
 
