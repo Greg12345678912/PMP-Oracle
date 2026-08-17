@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { ORACLE_POSITIONS } from '@/lib/oracle/constants'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import type { PositionResult } from '@/lib/oracle/scoring'
@@ -66,6 +66,48 @@ function Avatar({ avatarUrl, displayName }: { avatarUrl: string | null; displayN
   )
 }
 
+// ─── Avatar with edit overlay ─────────────────────────────────────────────────
+
+function AvatarWithEdit({
+  avatarUrl,
+  displayName,
+  onEdit,
+  uploading,
+}: {
+  avatarUrl: string | null
+  displayName: string
+  onEdit: () => void
+  uploading: boolean
+}) {
+  return (
+    <div className="relative inline-block">
+      <Avatar avatarUrl={avatarUrl} displayName={displayName} />
+      <button
+        type="button"
+        onClick={onEdit}
+        disabled={uploading}
+        aria-label="Change profile photo"
+        className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-pmp-gray-700 border-2 border-pmp-black flex items-center justify-center hover:bg-pmp-gray-600 transition-colors disabled:opacity-50"
+      >
+        {uploading ? (
+          <span className="w-3 h-3 border border-pmp-gray-400 border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path
+              d="M8.5 1.5a1.414 1.414 0 0 1 2 2L3.5 10.5l-2.5.5.5-2.5L8.5 1.5Z"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-pmp-gray-300"
+            />
+          </svg>
+        )}
+      </button>
+    </div>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function ProfileClient({
@@ -84,6 +126,36 @@ export function ProfileClient({
   lockDateLabel,
 }: ProfileClientProps) {
   const [activeTab, setActiveTab] = useState<OraclePosition>('QB')
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarEdit = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Reset input so the same file can be re-selected after an error
+    e.target.value = ''
+
+    setUploading(true)
+    setUploadError(null)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch('/api/auth/avatar', { method: 'POST', body: form })
+      const json = await res.json() as { avatarUrl?: string; error?: string }
+      if (!res.ok) throw new Error(json.error ?? 'Upload failed')
+      if (json.avatarUrl) setAvatarUrl(json.avatarUrl)
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const activePositionResult = positionResults.find(pr => pr.position === activeTab) ?? null
 
@@ -93,7 +165,26 @@ export function ProfileClient({
 
         {/* ── 1. Profile header ── */}
         <div className="flex flex-col items-center gap-4 text-center">
-          <Avatar avatarUrl={profile.avatarUrl} displayName={profile.displayName} />
+          {/* Hidden file input */}
+          {isOwn && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          )}
+          {isOwn ? (
+            <AvatarWithEdit
+              avatarUrl={avatarUrl}
+              displayName={profile.displayName}
+              onEdit={handleAvatarEdit}
+              uploading={uploading}
+            />
+          ) : (
+            <Avatar avatarUrl={avatarUrl} displayName={profile.displayName} />
+          )}
 
           <div className="flex flex-col gap-1">
             <h1 className="text-pmp-white text-2xl font-bold">{profile.displayName}</h1>
@@ -114,6 +205,10 @@ export function ProfileClient({
                 </span>
               )}
             </div>
+          )}
+
+          {uploadError && (
+            <p className="text-pmp-red text-xs">{uploadError}</p>
           )}
 
           {isOwn && !isAfterLock && (
