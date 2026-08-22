@@ -115,17 +115,22 @@ export function RankingsClient({
 
   const handleSave = useCallback(
     async (position: OraclePosition, rows: RankingRow[]) => {
+      console.log('[handleSave] BEGIN', position, 'rows:', rows.length, 'payload:', JSON.stringify({ position, rankings: rows }))
       const res = await fetch('/api/oracle/rankings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ position, rankings: rows }),
       })
+      const responseText = await res.text()
+      console.log('[handleSave] PUT status:', res.status, 'body:', responseText)
       if (!res.ok) {
-        const json = await res.json().catch(() => ({ error: 'Unknown error' }))
+        let json: { error?: string }
+        try { json = JSON.parse(responseText) } catch { json = { error: 'Unknown error' } }
         if (res.status === 401) {
           setShowProfileGate(true)
         }
-        throw new Error((json as { error?: string }).error ?? 'Failed to save rankings')
+        console.log('[handleSave] END — error thrown')
+        throw new Error(json.error ?? 'Failed to save rankings')
       }
       setClientRankings(prev => ({ ...(prev ?? {}), [position]: rows }))
       setSavedPositions(prev => {
@@ -135,6 +140,7 @@ export function RankingsClient({
         }
         return next
       })
+      console.log('[handleSave] END — success, calling router.refresh()')
       router.refresh()
     },
     [router],
