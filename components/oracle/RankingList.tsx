@@ -412,15 +412,15 @@ export function RankingList({
         })}
       </div>
 
-      {/* Save Progress — shown for partial drafts */}
-      {!locked && rows.length > 0 && rows.length < maxSize && (
+      {/* Save button — shown whenever there are unsaved changes */}
+      {!locked && dirty && rows.length > 0 && (
         <div className="pt-1">
           <button
             onClick={handleSave}
-            disabled={saving || !dirty}
+            disabled={saving}
             className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-gray-400 font-semibold py-3 rounded-xl text-sm hover:border-pmp-gray-600 hover:text-pmp-gray-300 transition-colors disabled:opacity-40"
           >
-            {saving ? 'Saving\u2026' : 'Save Progress'}
+            {saving ? 'Saving\u2026' : rows.length < maxSize ? 'Save Progress' : 'Save Changes'}
           </button>
           {saveError && (
             <p className="text-pmp-red text-xs text-center mt-2">{saveError}</p>
