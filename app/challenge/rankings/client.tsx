@@ -8,6 +8,7 @@ import type { RankingRow } from '@/lib/oracle/rankings'
 import type { Player } from '@/lib/data/types'
 import type { OraclePosition } from '@/lib/oracle/constants'
 import { ORACLE_POSITIONS, POSITION_LIST_SIZE } from '@/lib/oracle/constants'
+import { getBrowserClient } from '@/lib/auth/client'
 
 function draftKey(pos: OraclePosition) {
   return `oracle_rankings_draft_${pos}`
@@ -35,6 +36,39 @@ export function RankingsClient({
   )
   const [showProfileGate, setShowProfileGate] = useState(false)
 
+  // Resolve auth and rankings client-side — getSession() returns null in Server Components
+  // due to Supabase SSR token-refresh limitation, so we check here after mount.
+  const [clientIsSignedIn, setClientIsSignedIn] = useState(false)
+  const [authResolved, setAuthResolved] = useState(false)
+  const [clientRankings, setClientRankings] = useState<Partial<Record<OraclePosition, RankingRow[]>> | null>(null)
+
+  useEffect(() => {
+    void (async () => {
+      const { data } = await getBrowserClient().auth.getUser()
+      const signedIn = !!data.user
+      setClientIsSignedIn(signedIn)
+
+      if (signedIn) {
+        try {
+          const results = await Promise.all(
+            ORACLE_POSITIONS.map(pos =>
+              fetch(`/api/oracle/rankings?position=${pos}`)
+                .then(r => r.json() as Promise<{ rankings: RankingRow[] }>)
+                .then(({ rankings }) => [pos, rankings ?? []] as [OraclePosition, RankingRow[]])
+            )
+          )
+          const fetched = Object.fromEntries(results) as Partial<Record<OraclePosition, RankingRow[]>>
+          setClientRankings(fetched)
+          setSavedPositions(new Set(ORACLE_POSITIONS.filter(p => (fetched[p]?.length ?? 0) > 0)))
+        } catch {
+          // fallback to initialRankings
+        }
+      }
+
+      setAuthResolved(true)
+    })()
+  }, [])
+
   // Position-complete modal state
   const [pendingCompletion, setPendingCompletion] = useState<{
     position: OraclePosition
@@ -51,7 +85,7 @@ export function RankingsClient({
    * On sign-in return: upload any localStorage drafts to the DB.
    */
   useEffect(() => {
-    if (!isSignedIn || typeof window === 'undefined') return
+    if (!clientIsSignedIn || typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     if (params.get('synced') === '1') return
 
@@ -77,11 +111,11 @@ export function RankingsClient({
       url.searchParams.set('synced', '1')
       window.history.replaceState(null, '', url.toString())
     })()
-  }, [isSignedIn])
+  }, [clientIsSignedIn])
 
   const handleSave = useCallback(
     async (position: OraclePosition, rows: RankingRow[]) => {
-      if (!isSignedIn) {
+      if (!clientIsSignedIn) {
         setShowProfileGate(true)
         return
       }
@@ -103,7 +137,7 @@ export function RankingsClient({
       })
       router.refresh()
     },
-    [isSignedIn, router],
+    [clientIsSignedIn, router],
   )
 
   /** Called by RankingList when all slots are filled */
@@ -294,17 +328,23 @@ export function RankingsClient({
 
       {/* Scrollable ranking area */}
       <div className="flex-1 overflow-y-auto px-4 py-5">
-        <RankingList
-          key={activePosition}
-          position={activePosition}
-          initialRows={initialRankings[activePosition] ?? []}
-          players={players[activePosition] ?? []}
-          locked={locked}
-          isSignedIn={isSignedIn}
-          lockAt={lockAt}
-          onSave={handleSave}
-          onComplete={handleComplete}
-        />
+        {!authResolved ? (
+          <div className="flex items-center justify-center h-32">
+            <span className="text-pmp-gray-600 text-sm">Loading…</span>
+          </div>
+        ) : (
+          <RankingList
+            key={activePosition}
+            position={activePosition}
+            initialRows={(clientRankings ?? initialRankings)[activePosition] ?? []}
+            players={players[activePosition] ?? []}
+            locked={locked}
+            isSignedIn={clientIsSignedIn}
+            lockAt={lockAt}
+            onSave={handleSave}
+            onComplete={handleComplete}
+          />
+        )}
       </div>
     </div>
   )
