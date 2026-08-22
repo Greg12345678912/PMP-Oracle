@@ -78,9 +78,6 @@ export function RankingsClient({
   const [modalSaving, setModalSaving] = useState(false)
   const [modalError, setModalError] = useState<string | null>(null)
 
-  // All-done modal state
-  const [showAllDoneModal, setShowAllDoneModal] = useState(false)
-
   /**
    * On sign-in return: upload any localStorage drafts to the DB.
    */
@@ -133,13 +130,7 @@ export function RankingsClient({
         throw new Error(json.error ?? 'Failed to save rankings')
       }
       setClientRankings(prev => ({ ...(prev ?? {}), [position]: rows }))
-      setSavedPositions(prev => {
-        const next = new Set([...prev, position])
-        if (next.size === ORACLE_POSITIONS.length) {
-          setShowAllDoneModal(true)
-        }
-        return next
-      })
+      setSavedPositions(prev => new Set([...prev, position]))
       console.log('[handleSave] END — success, calling router.refresh()')
       router.refresh()
     },
@@ -225,33 +216,6 @@ export function RankingsClient({
                 onClick={() => { setShowPositionModal(false); setModalError(null) }}
                 disabled={modalSaving}
                 className="w-full text-pmp-gray-500 text-sm py-2 hover:text-pmp-gray-300 transition-colors disabled:opacity-50"
-              >
-                Keep editing
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* All-done modal */}
-      {showAllDoneModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4">
-          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl p-6 w-full max-w-sm">
-            <h3 className="text-pmp-white font-bold text-lg mb-1">All rankings saved!</h3>
-            <p className="text-pmp-gray-500 text-sm mb-6">
-              You&rsquo;ve ranked all four positions. Review your picks and submit before the deadline.
-            </p>
-            <div className="flex flex-col gap-3">
-              <Link
-                href="/challenge/rankings/review"
-                className="block w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
-              >
-                Review &amp; Submit &rarr;
-              </Link>
-              <button
-                type="button"
-                onClick={() => setShowAllDoneModal(false)}
-                className="w-full text-pmp-gray-500 text-sm py-2 hover:text-pmp-gray-300 transition-colors"
               >
                 Keep editing
               </button>
