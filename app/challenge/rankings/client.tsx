@@ -115,19 +115,19 @@ export function RankingsClient({
 
   const handleSave = useCallback(
     async (position: OraclePosition, rows: RankingRow[]) => {
-      if (!clientIsSignedIn) {
-        setShowProfileGate(true)
-        return
-      }
       const res = await fetch('/api/oracle/rankings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ position, rankings: rows }),
       })
       if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(error ?? 'Failed to save rankings')
+        const json = await res.json().catch(() => ({ error: 'Unknown error' }))
+        if (res.status === 401) {
+          setShowProfileGate(true)
+        }
+        throw new Error((json as { error?: string }).error ?? 'Failed to save rankings')
       }
+      setClientRankings(prev => ({ ...(prev ?? {}), [position]: rows }))
       setSavedPositions(prev => {
         const next = new Set([...prev, position])
         if (next.size === ORACLE_POSITIONS.length) {
@@ -137,7 +137,7 @@ export function RankingsClient({
       })
       router.refresh()
     },
-    [clientIsSignedIn, router],
+    [router],
   )
 
   /** Called by RankingList when all slots are filled */
