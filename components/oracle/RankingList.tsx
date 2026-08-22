@@ -251,11 +251,11 @@ export function RankingList({
     setSearch('')
   }
 
-  const handleSave = async () => {
+  const execSave = useCallback(async (pos: OraclePosition, r: RankingRow[]) => {
     setSaving(true)
     setSaveError(null)
     try {
-      await onSave(position, rows)
+      await onSave(pos, r)
       setLastSavedAt(new Date())
       setDirty(false)
     } catch (e) {
@@ -263,7 +263,16 @@ export function RankingList({
     } finally {
       setSaving(false)
     }
-  }
+  }, [onSave])
+
+  // Auto-save complete lists after reorder — no button needed
+  useEffect(() => {
+    if (!dirty || rows.length !== maxSize || locked) return
+    const timer = setTimeout(() => { void execSave(position, rows) }, 800)
+    return () => clearTimeout(timer)
+  }, [dirty, rows, locked, maxSize, position, execSave])
+
+  const handleSave = () => execSave(position, rows)
 
   return (
     <div className="flex flex-col gap-3">
@@ -412,15 +421,15 @@ export function RankingList({
         })}
       </div>
 
-      {/* Save button — shown whenever there are unsaved changes */}
-      {!locked && dirty && rows.length > 0 && (
+      {/* Save button — only shown for partial lists */}
+      {!locked && dirty && rows.length > 0 && rows.length < maxSize && (
         <div className="pt-1">
           <button
             onClick={handleSave}
             disabled={saving}
             className="w-full bg-pmp-gray-900 border border-pmp-gray-700 text-pmp-gray-400 font-semibold py-3 rounded-xl text-sm hover:border-pmp-gray-600 hover:text-pmp-gray-300 transition-colors disabled:opacity-40"
           >
-            {saving ? 'Saving\u2026' : rows.length < maxSize ? 'Save Progress' : 'Save Changes'}
+            {saving ? 'Saving\u2026' : 'Save Progress'}
           </button>
           {saveError && (
             <p className="text-pmp-red text-xs text-center mt-2">{saveError}</p>
