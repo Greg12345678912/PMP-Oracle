@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   const session = await getSession()
+  console.log('[rankings PUT] session user_id:', session?.user.id ?? 'NULL — 401')
   if (!session) return NextResponse.json({ error: 'Sign in to save rankings' }, { status: 401 })
 
   let body: { position: OraclePosition; rankings: RankingRow[] }
@@ -58,11 +59,14 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
+  console.log('[rankings PUT] position:', body.position, '| rankings count:', body.rankings?.length, '| first:', JSON.stringify(body.rankings?.[0]))
+
   if (!body.position || !ORACLE_POSITIONS.includes(body.position)) {
     return NextResponse.json({ error: 'Invalid position' }, { status: 400 })
   }
 
   const season = await getCurrentSeason()
+  console.log('[rankings PUT] season:', season?.id, '| status:', season?.status, '| lock_at:', season?.lock_at, '| isLocked:', season ? isLocked(season) : 'no season')
   if (!season) return NextResponse.json({ error: 'No active season' }, { status: 404 })
 
   // Single source of truth: DB season lock date
@@ -75,8 +79,21 @@ export async function PUT(request: NextRequest) {
   }
 
   const validation = validateRankings(body.position, body.rankings)
+  console.log('[rankings PUT] validation:', JSON.stringify(validation))
   if (!validation.ok) return NextResponse.json({ error: validation.error }, { status: 400 })
 
   await upsertRankings(session.user.id, season.id, body.position, body.rankings)
+
+  // DIAGNOSTIC: immediately re-read what was stored
+  const db = getServiceClient()
+  const { data: stored } = await db
+    .from('challenge_rankings')
+    .select('rankings, updated_at')
+    .eq('user_id', session.user.id)
+    .eq('season_id', season.id)
+    .eq('position', body.position)
+    .maybeSingle()
+  console.log('[rankings PUT] stored after upsert — updated_at:', stored?.updated_at, '| first entry:', JSON.stringify((stored?.rankings as RankingRow[] | null)?.[0]))
+
   return NextResponse.json({ ok: true })
 }
