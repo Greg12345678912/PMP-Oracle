@@ -33,8 +33,9 @@ async function sendOracleAlert(message: string): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: `[Oracle Pipeline] ${message}` }),
     })
-  } catch {
+  } catch (err) {
     // Alert failure must never surface as a pipeline error
+    console.error('[oracle/alert] Discord webhook failed:', err instanceof Error ? err.message : String(err))
   }
 }
 
@@ -141,6 +142,14 @@ export async function runWeeklyPipeline(opts?: {
   if (opts?.week == null) {
     const stateRes = await fetchWithRetry(SLEEPER_STATE_URL)
     const state: SleeperNFLState = await stateRes.json()
+
+    if (state.season_type !== 'regular') {
+      throw new Error(
+        `NFL is in ${state.season_type} (Sleeper week ${state.week}) — Oracle pipeline only runs during the regular season. ` +
+          `Use opts.week = 0 to trigger the Oracle Week 0 dry run manually (Sept 7).`,
+      )
+    }
+
     currentWeek = state.week
 
     if (!dryRun) {

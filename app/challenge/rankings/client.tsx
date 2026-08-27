@@ -69,15 +69,6 @@ export function RankingsClient({
     })()
   }, [])
 
-  // Position-complete modal state
-  const [pendingCompletion, setPendingCompletion] = useState<{
-    position: OraclePosition
-    rows: RankingRow[]
-  } | null>(null)
-  const [showPositionModal, setShowPositionModal] = useState(false)
-  const [modalSaving, setModalSaving] = useState(false)
-  const [modalError, setModalError] = useState<string | null>(null)
-
   /**
    * On sign-in return: upload any localStorage drafts to the DB.
    */
@@ -137,44 +128,6 @@ export function RankingsClient({
     [router],
   )
 
-  /** Called by RankingList when all slots are filled */
-  const handleComplete = useCallback(
-    (rows: RankingRow[]) => {
-      setPendingCompletion({ position: activePosition, rows })
-      setShowPositionModal(true)
-      setModalError(null)
-    },
-    [activePosition],
-  )
-
-  const handleContinueFromModal = async () => {
-    if (!pendingCompletion) return
-    const { position, rows } = pendingCompletion
-    // Compute next unsaved position optimistically (before state update)
-    const alreadySaved = new Set([...savedPositions, position])
-    const nextPos = ORACLE_POSITIONS.find(p => !alreadySaved.has(p))
-
-    setModalSaving(true)
-    setModalError(null)
-    try {
-      await handleSave(position, rows)
-      setShowPositionModal(false)
-      setPendingCompletion(null)
-      if (nextPos) setActivePosition(nextPos)
-    } catch (e) {
-      setModalError(e instanceof Error ? e.message : 'Save failed — try again')
-    } finally {
-      setModalSaving(false)
-    }
-  }
-
-  // Compute what the "Continue" button label should say
-  const nextAfterCurrent = (() => {
-    if (!pendingCompletion) return null
-    const alreadySaved = new Set([...savedPositions, pendingCompletion.position])
-    return ORACLE_POSITIONS.find(p => !alreadySaved.has(p)) ?? null
-  })()
-
   return (
     <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
       {showProfileGate && (
@@ -182,46 +135,6 @@ export function RankingsClient({
           redirectTo="/challenge/rankings"
           onDismiss={() => setShowProfileGate(false)}
         />
-      )}
-
-      {/* Position-complete modal */}
-      {showPositionModal && pendingCompletion && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-4">
-          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl p-6 w-full max-w-sm">
-            <h3 className="text-pmp-white font-bold text-lg mb-1">
-              {pendingCompletion.position} complete!
-            </h3>
-            <p className="text-pmp-gray-500 text-sm mb-6">
-              {nextAfterCurrent
-                ? `You\u2019ve ranked all 10 ${pendingCompletion.position}s. Ready to move on to ${nextAfterCurrent}?`
-                : `You\u2019ve ranked all 10 ${pendingCompletion.position}s. That\u2019s all four positions\u2014ready to submit?`}
-            </p>
-            {modalError && (
-              <p className="text-pmp-red text-xs text-center mb-4">{modalError}</p>
-            )}
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={handleContinueFromModal}
-                disabled={modalSaving}
-                className="w-full bg-pmp-red text-pmp-white font-bold py-4 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                {modalSaving
-                  ? 'Saving\u2026'
-                  : nextAfterCurrent
-                    ? `Continue to ${nextAfterCurrent}`
-                    : 'Review & Submit'}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowPositionModal(false); setModalError(null) }}
-                disabled={modalSaving}
-                className="w-full text-pmp-gray-500 text-sm py-2 hover:text-pmp-gray-300 transition-colors disabled:opacity-50"
-              >
-                Keep editing
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Page header */}
@@ -312,7 +225,6 @@ export function RankingsClient({
             isSignedIn={clientIsSignedIn}
             lockAt={lockAt}
             onSave={handleSave}
-            onComplete={handleComplete}
           />
         )}
       </div>

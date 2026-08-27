@@ -366,7 +366,6 @@ export default async function LeaderboardPage() {
       .select('user_id, overall_score, global_rank, rank_change, current_week, computed_at')
       .eq('season_id', season!.id)
       .order('global_rank', { ascending: true })
-      .limit(50)
 
     const currentWeek = (scores ?? []).reduce(
       (max, s) => Math.max(max, (s.current_week as number) ?? 0),

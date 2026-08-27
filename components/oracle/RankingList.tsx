@@ -121,7 +121,6 @@ interface RankingListProps {
   isSignedIn: boolean
   lockAt?: string
   onSave: (position: OraclePosition, rows: RankingRow[]) => Promise<void>
-  onComplete: (rows: RankingRow[]) => void
 }
 
 export function RankingList({
@@ -132,7 +131,6 @@ export function RankingList({
   isSignedIn,
   lockAt,
   onSave,
-  onComplete,
 }: RankingListProps) {
   const maxSize = POSITION_LIST_SIZE[position]
 
@@ -147,8 +145,6 @@ export function RankingList({
   const searchInputRef = useRef<HTMLInputElement>(null)
   const isFirstRender = useRef(true)
   const isLocalStorageHydration = useRef(false)
-  const completedFired = useRef(false)
-
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 8 } }),
@@ -236,14 +232,9 @@ export function RankingList({
     setRows(newRows)
     setSearch('')
     setSearchOpen(false)
-    if (newRows.length === maxSize && !completedFired.current) {
-      completedFired.current = true
-      setTimeout(() => onComplete(newRows), 50)
-    }
   }
 
   const removePlayer = (playerId: string) => {
-    completedFired.current = false
     setRows(prev =>
       prev.filter(r => r.playerId !== playerId).map((r, i) => ({ ...r, playerRank: i + 1 })),
     )

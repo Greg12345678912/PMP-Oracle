@@ -33,8 +33,9 @@ export async function POST(request: Request) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
       })
-    } catch {
-      // Non-fatal
+    } catch (err) {
+      // Non-fatal — but log so Vercel captures it
+      console.error('[oracle/alert] Discord webhook failed:', err instanceof Error ? err.message : String(err))
     }
   }
 
