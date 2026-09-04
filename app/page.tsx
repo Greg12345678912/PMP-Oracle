@@ -52,7 +52,7 @@ export default async function HomePage() {
                 alt="Oracle Challenge"
                 width={48}
                 height={48}
-                className="w-10 h-10 shrink-0 object-contain"
+                className="w-14 h-14 shrink-0 object-contain"
               />
               <span className="text-pmp-white font-bold text-sm tracking-wide">The Oracle Challenge</span>
             </div>
