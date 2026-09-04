@@ -48,7 +48,7 @@ export default async function HomePage() {
             <span className="text-pmp-gray-700">×</span>
             <div className="flex items-center gap-2">
               <Image
-                src="/oracle-logo.jpeg"
+                src="/oracle-logo.png"
                 alt="Oracle Challenge"
                 width={48}
                 height={48}
