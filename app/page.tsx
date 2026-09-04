@@ -35,21 +35,27 @@ export default async function HomePage() {
         <section className="pt-10 pb-8 sm:pt-16 sm:pb-12 flex flex-col gap-6">
           {/* Logo */}
           <div className="flex items-center gap-4">
-            <Image
-              src="/logo.png"
-              alt="Pretty Much Picks"
-              width={48}
-              height={48}
-              className="rounded-xl w-10 h-10 shrink-0"
-            />
-            <Image
-              src="/oracle-logo.jpeg"
-              alt="Oracle Challenge"
-              width={48}
-              height={48}
-              className="w-10 h-10 shrink-0 object-contain"
-            />
-            <span className="text-pmp-white font-bold text-sm tracking-wide">The Oracle Challenge</span>
+            <div className="flex items-center gap-2">
+              <Image
+                src="/logo.png"
+                alt="Pretty Much Picks"
+                width={48}
+                height={48}
+                className="rounded-xl w-10 h-10 shrink-0"
+              />
+              <span className="text-pmp-white font-bold text-sm tracking-wide">PrettyMuchPicks</span>
+            </div>
+            <span className="text-pmp-gray-700">×</span>
+            <div className="flex items-center gap-2">
+              <Image
+                src="/oracle-logo.jpeg"
+                alt="Oracle Challenge"
+                width={48}
+                height={48}
+                className="w-10 h-10 shrink-0 object-contain"
+              />
+              <span className="text-pmp-white font-bold text-sm tracking-wide">The Oracle Challenge</span>
+            </div>
           </div>
 
           <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em]">
