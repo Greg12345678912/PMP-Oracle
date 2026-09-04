@@ -12,13 +12,6 @@ export const metadata: Metadata = {
     'Pretty Much Picks is a fantasy football prediction platform. Sign in with Google to rank NFL players before Week 1 and compete in the Oracle Challenge. The best ranker wins $500.',
 }
 
-const POSITIONS = [
-  { label: 'QB', href: '/qb-tier-list', description: 'Quarterbacks' },
-  { label: 'RB', href: '/rb-tier-list', description: 'Running Backs' },
-  { label: 'WR', href: '/wr-tier-list', description: 'Wide Receivers' },
-  { label: 'TE', href: '/te-tier-list', description: 'Tight Ends' },
-  { label: 'FLEX', href: '/flex-tier-list', description: 'Flex' },
-]
 
 export default async function HomePage() {
   // Live entry count for social proof
@@ -40,6 +33,18 @@ export default async function HomePage() {
 
         {/* ── Oracle Hero ──────────────────────────────────────────────── */}
         <section className="pt-10 pb-8 sm:pt-16 sm:pb-12 flex flex-col gap-6">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="Pretty Much Picks"
+              width={48}
+              height={48}
+              className="rounded-xl w-10 h-10 shrink-0"
+            />
+            <span className="text-pmp-white font-bold text-sm tracking-wide">Pretty Much Picks</span>
+          </div>
+
           <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em]">
             2026 Oracle Challenge
           </p>
@@ -86,77 +91,6 @@ export default async function HomePage() {
             PPR · Top 10 QB · Top 10 RB · Top 10 WR · Top 10 TE · One entry per season
           </p>
         </section>
-
-        <div className="h-px bg-pmp-gray-800" />
-
-        {/* ── Brand ────────────────────────────────────────────────────── */}
-        <div className="py-8 sm:py-12">
-          <div className="flex items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
-            <Image
-              src="/logo.png"
-              alt="Pretty Much Picks"
-              width={64}
-              height={64}
-              className="rounded-xl w-12 h-12 sm:w-16 sm:h-16 shrink-0"
-            />
-            <div>
-              <div className="text-pmp-red text-[10px] font-bold uppercase tracking-widest mb-0.5">
-                Pretty Much Picks
-              </div>
-              <h2 className="font-display text-xl sm:text-2xl font-black text-pmp-white leading-tight">
-                PMP Fantasy Platform
-              </h2>
-            </div>
-          </div>
-
-          {/* Position selector */}
-          <section className="mb-8 sm:mb-12">
-            <h3 className="text-pmp-gray-500 text-xs uppercase tracking-widest mb-4">
-              Build a Tier List
-            </h3>
-            <div className="grid grid-cols-5 gap-2 sm:gap-3">
-              {POSITIONS.map((pos) => (
-                <Link key={pos.label} href={pos.href}>
-                  <div className="flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-4 rounded-xl bg-pmp-gray-900 border border-pmp-gray-800 hover:border-pmp-red hover:bg-pmp-gray-800 transition-all duration-200 cursor-pointer group">
-                    <span className="font-display font-bold text-sm sm:text-xl text-pmp-white group-hover:text-pmp-red transition-colors duration-200">
-                      {pos.label}
-                    </span>
-                    <span className="text-[10px] text-pmp-gray-600 text-center leading-tight hidden sm:block">
-                      {pos.description}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          {/* Official Rankings */}
-          <section className="mb-8 sm:mb-12">
-            <h3 className="text-pmp-gray-500 text-xs uppercase tracking-widest mb-4">
-              Official PMP Rankings (PPR)
-            </h3>
-            <div className="grid grid-cols-5 gap-2 sm:gap-3">
-              {POSITIONS.map((pos) => (
-                <Link key={pos.label} href={`${pos.href}?loadOfficial=true`}>
-                  <div className="flex items-center justify-center p-3 rounded-xl bg-pmp-gray-900 border border-pmp-gray-800 hover:border-pmp-gray-600 transition-all duration-200 cursor-pointer">
-                    <span className="font-display font-bold text-sm text-pmp-white">
-                      {pos.label}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          {/* Coming soon */}
-          <div className="flex gap-2 flex-wrap">
-            {['Mock Draft', 'Weekly Rankings', 'Trade Analyzer'].map(label => (
-              <span key={label} className="text-pmp-gray-700 text-xs px-3 py-1 rounded-full border border-pmp-gray-800">
-                {label} — coming soon
-              </span>
-            ))}
-          </div>
-        </div>
 
         {/* Footer */}
         <footer className="border-t border-pmp-gray-800 py-6 sm:py-8 flex justify-between items-center">
