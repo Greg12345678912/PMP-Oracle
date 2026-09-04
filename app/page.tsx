@@ -34,7 +34,7 @@ export default async function HomePage() {
         {/* ── Oracle Hero ──────────────────────────────────────────────── */}
         <section className="pt-10 pb-8 sm:pt-16 sm:pb-12 flex flex-col gap-6">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Image
               src="/logo.png"
               alt="Pretty Much Picks"
@@ -42,7 +42,14 @@ export default async function HomePage() {
               height={48}
               className="rounded-xl w-10 h-10 shrink-0"
             />
-            <span className="text-pmp-white font-bold text-sm tracking-wide">Pretty Much Picks</span>
+            <Image
+              src="/oracle-logo.jpeg"
+              alt="Oracle Challenge"
+              width={48}
+              height={48}
+              className="w-10 h-10 shrink-0 object-contain"
+            />
+            <span className="text-pmp-white font-bold text-sm tracking-wide">The Oracle Challenge</span>
           </div>
 
           <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em]">
