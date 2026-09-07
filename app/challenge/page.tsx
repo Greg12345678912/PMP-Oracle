@@ -11,6 +11,7 @@ import { OracleSplashCTA } from '@/components/oracle/OracleSplashCTA'
 import { SignOutButton } from '@/components/oracle/SignOutButton'
 import { Countdown } from '@/components/oracle/Countdown'
 import { getPreviewState, mockSeason, mockAccuracyScore, PREVIEW_USERNAME } from '@/lib/oracle/dev-preview'
+import { AutoEnroll2027 } from '@/components/oracle/AutoEnroll2027'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,6 +37,7 @@ export default async function ChallengePage() {
   let entryNumber: number | null = null
   let hasWeeklyScores = false
   let currentWeek = 0
+  let autoEnroll2027 = true
 
   if (previewState) {
     // Mock season state — scores/ranks are always mock
@@ -71,7 +73,7 @@ export default async function ChallengePage() {
       await Promise.all([
         db
           .from('user_profiles')
-          .select('display_name')
+          .select('display_name, auto_enroll_2027')
           .eq('user_id', session.user.id)
           .maybeSingle(),
         db
@@ -102,6 +104,7 @@ export default async function ChallengePage() {
       ])
 
     displayName = (profileResult.data?.display_name as string | null) ?? null
+    autoEnroll2027 = (profileResult.data as { auto_enroll_2027?: boolean } | null)?.auto_enroll_2027 ?? true
     isSubmitted = submittedResult.data?.is_submitted === true
     totalEntries = new Set((entryCountResult.data ?? []).map((r: { user_id: string }) => r.user_id)).size
     entryNumber = (entryNumberResult.data?.entry_number as number | null) ?? null
@@ -200,6 +203,11 @@ export default async function ChallengePage() {
               )}
             </div>
           </div>
+
+          {/* 2027 auto-enroll */}
+          {isSubmitted && (
+            <AutoEnroll2027 initialValue={autoEnroll2027} />
+          )}
 
           {/* CTA */}
           {!locked && (
