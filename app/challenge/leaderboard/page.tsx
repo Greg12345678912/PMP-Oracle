@@ -178,7 +178,7 @@ export default async function LeaderboardPage() {
                     ? `/u/${profile.username}?preview_rank=${score.previewRank}`
                     : `/u/${profile.username}`
                   : null
-                const isCurrentUser = !!sessionProfile && score.user_id === sessionProfile.user_id
+                const isCurrentUser = !!session && score.user_id === session.user.id
                 const rowClass = [
                   'flex items-center gap-3 rounded-xl px-4 py-3 transition-colors',
                   isCurrentUser
