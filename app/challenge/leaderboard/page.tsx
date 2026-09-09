@@ -178,7 +178,13 @@ export default async function LeaderboardPage() {
                     ? `/u/${profile.username}?preview_rank=${score.previewRank}`
                     : `/u/${profile.username}`
                   : null
-                const rowClass = 'flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 transition-colors'
+                const isCurrentUser = !!sessionProfile && score.user_id === sessionProfile.user_id
+                const rowClass = [
+                  'flex items-center gap-3 rounded-xl px-4 py-3 transition-colors',
+                  isCurrentUser
+                    ? 'bg-pmp-gray-800 border border-pmp-red/50'
+                    : 'bg-pmp-gray-900 border border-pmp-gray-800',
+                ].join(' ')
                 const inner = (
                   <>
                     <span className={[
@@ -409,7 +415,13 @@ export default async function LeaderboardPage() {
               const rank = (score.global_rank as number) ?? i + 1
               const rankChange = score.rank_change as number | null
               const profileHref = profile?.username ? `/u/${profile.username}` : null
-              const rowClass = 'flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 transition-colors'
+              const isCurrentUser = !!session && (score.user_id as string) === session.user.id
+              const rowClass = [
+                'flex items-center gap-3 rounded-xl px-4 py-3 transition-colors',
+                isCurrentUser
+                  ? 'bg-pmp-gray-800 border border-pmp-red/50'
+                  : 'bg-pmp-gray-900 border border-pmp-gray-800',
+              ].join(' ')
               const inner = (
                 <>
                   <span className={[
