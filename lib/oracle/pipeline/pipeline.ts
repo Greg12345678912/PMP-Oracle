@@ -19,6 +19,7 @@ import { buildGroundTruth } from './ground-truth'
 import { runScoringForSeason } from './scoring-runner'
 import { rankSeason } from './ranker'
 import { randomUUID } from 'crypto'
+import { sendWeeklyScoreEmails } from '@/lib/oracle/emails'
 
 /**
  * Fire-and-forget webhook alert for situations that require manual intervention.
@@ -289,6 +290,16 @@ export async function runWeeklyPipeline(opts?: {
   }
 
   const completedAt = new Date().toISOString()
+
+  // ── Stage 5b: Weekly score emails ────────────────────────────────────────────
+  // Fire-and-forget: only sends when scoring + ranking completed with zero errors.
+  // Reads from finalized accuracy_scores — never calculates anything independently.
+  // Failures are swallowed so the pipeline result is never affected.
+  if (!dryRun && !groundTruthFailed && usersScored > 0 && usersFailed === 0) {
+    void sendWeeklyScoreEmails(season.id, currentWeek).catch(err => {
+      console.error('[oracle/emails] Uncaught error in sendWeeklyScoreEmails:', err instanceof Error ? err.message : String(err))
+    })
+  }
 
   // ── Pipeline completion alerts ───────────────────────────────────────────────
   if (!dryRun) {
