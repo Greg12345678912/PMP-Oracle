@@ -167,6 +167,12 @@ export default async function PlayerPage({
           </div>
         )}
 
+        {/* Season Rank placeholder — visible before Week 1 pipeline runs */}
+        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
+          <p className="text-pmp-gray-600 text-xs uppercase tracking-widest">Season Rank</p>
+          <p className="text-pmp-gray-600 text-2xl font-bold">Updates after Week 1</p>
+        </div>
+
         {/* Community rankings teaser */}
         <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-6 flex flex-col gap-4">
           <div className="flex flex-col gap-1">
