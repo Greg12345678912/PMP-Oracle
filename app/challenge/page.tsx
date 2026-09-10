@@ -343,7 +343,8 @@ export default async function ChallengePage() {
         )}
         <p className="text-pmp-gray-700 text-xs text-center pb-6">
           PPR · Top 10 QB · Top 10 RB · Top 10 WR · Top 10 TE<br />
-          Only one entry per season
+          Only one entry per season<br />
+          <a href="/privacy" className="hover:text-pmp-gray-500 transition-colors">Privacy Policy</a>
         </p>
       </div>
     </div>
