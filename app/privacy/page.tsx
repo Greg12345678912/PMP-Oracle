@@ -31,7 +31,6 @@ export default function PrivacyPage() {
               <li>Your name and email address (via Google sign-in)</li>
               <li>Fantasy rankings you submit through the Oracle Challenge</li>
               <li>Usage data such as pages visited, time spent, and browser/device information</li>
-              <li>IP address and device identifiers</li>
             </ul>
           </section>
 
