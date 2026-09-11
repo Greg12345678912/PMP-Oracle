@@ -47,7 +47,9 @@ function buildHtml(params: {
   <meta name="viewport" content="width=device-width,initial-scale=1">
 </head>
 <body style="margin:0;padding:0;background:#000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <div style="max-width:480px;margin:0 auto;padding:40px 24px;">
+  <table width="100%" bgcolor="#000000" cellpadding="0" cellspacing="0" border="0">
+    <tr><td>
+  <div style="max-width:480px;margin:0 auto;padding:40px 24px;background:#000;">
 
     <p style="color:#555;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin:0 0 32px;">2026 Oracle Challenge</p>
 
@@ -62,10 +64,12 @@ function buildHtml(params: {
     </div>
 
     <div style="background:#111;border:1px solid #222;border-radius:16px;padding:20px;margin-bottom:32px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="color:#666;font-size:14px;">Overall accuracy</span>
-        <span style="color:#fff;font-size:14px;font-weight:700;">${overallScore.toFixed(1)}</span>
-      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="color:#666;font-size:14px;">Overall accuracy</td>
+          <td style="color:#fff;font-size:14px;font-weight:700;text-align:right;">${overallScore.toFixed(1)}</td>
+        </tr>
+      </table>
     </div>
 
     <a href="${RESULTS_URL}" style="display:block;background:#e53935;color:#fff;text-align:center;padding:16px;border-radius:12px;font-size:15px;font-weight:700;text-decoration:none;margin-bottom:40px;">View My Results &#8594;</a>
@@ -76,6 +80,8 @@ function buildHtml(params: {
     </p>
 
   </div>
+    </td></tr>
+  </table>
 </body>
 </html>`
 }
