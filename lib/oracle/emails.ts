@@ -89,23 +89,42 @@ function buildHtml(params: {
 export async function sendWeeklyScoreEmails(seasonId: string, week: number): Promise<void> {
   const resend = new Resend(process.env.RESEND_API_KEY)
   const db = getServiceClient()
+  const startedAt = new Date().toISOString()
 
-  // Idempotency guard: refuse to re-send if a successful batch already exists for this season+week
-  const { data: existingJob } = await db
+  // ── Atomic claim ──────────────────────────────────────────────────────────
+  // A unique partial index on sync_jobs[(metadata->>'seasonId'), (metadata->>'week')]
+  // WHERE resource='oracle_emails' AND status IN ('running','success') makes
+  // this INSERT the only safe way to claim a send slot.
+  //
+  // Two concurrent callers race here: one gets 1 row inserted and proceeds;
+  // the other gets a unique-violation (23505) and returns immediately.
+  // Failed rows are excluded from the index so retries can reclaim the slot.
+  const { data: claimed, error: claimError } = await db
     .from('sync_jobs')
-    .select('id, completed_at')
-    .eq('resource', 'oracle_emails')
-    .eq('status', 'success')
-    .contains('metadata', { seasonId, week })
-    .limit(1)
-    .maybeSingle()
+    .insert({
+      resource: 'oracle_emails',
+      provider: 'resend',
+      status: 'running',
+      started_at: startedAt,
+      metadata: { seasonId, week },
+    })
+    .select('id')
+    .single()
 
-  if (existingJob) {
-    console.log(`[oracle/emails] Week ${week} emails already sent (job ${existingJob.id}, ${existingJob.completed_at}) — skipping`)
+  if (claimError) {
+    if (claimError.code === '23505') {
+      // Another request already claimed or completed this week's send
+      console.log(`[oracle/emails] Week ${week} — already claimed or sent, skipping (unique violation)`)
+      return
+    }
+    // Unexpected DB error — fail closed so we never send without a claim record
+    console.error('[oracle/emails] Failed to claim send slot:', claimError.message)
     return
   }
 
-  // Read the finalized accuracy_scores — exact same records powering leaderboard + results page
+  const jobId = (claimed as { id: string }).id
+
+  // ── Fetch finalized scores ────────────────────────────────────────────────
   const { data: scores, error: scoresError } = await db
     .from('accuracy_scores')
     .select('user_id, overall_score, global_rank, rank_change')
@@ -114,13 +133,18 @@ export async function sendWeeklyScoreEmails(seasonId: string, week: number): Pro
 
   if (scoresError || !scores || scores.length === 0) {
     console.error('[oracle/emails] No scores found:', scoresError?.message ?? 'empty result')
+    await db.from('sync_jobs').update({
+      status: 'failed',
+      completed_at: new Date().toISOString(),
+      error: scoresError?.message ?? 'no scores found',
+    }).eq('id', jobId)
     return
   }
 
   const totalParticipants = scores.length
   const userIds = scores.map(s => s.user_id as string)
 
-  // Fetch display names
+  // ── Fetch display names ───────────────────────────────────────────────────
   const { data: profiles } = await db
     .from('user_profiles')
     .select('user_id, display_name')
@@ -130,21 +154,25 @@ export async function sendWeeklyScoreEmails(seasonId: string, week: number): Pro
     (profiles ?? []).map(p => [p.user_id as string, p.display_name as string | null]),
   )
 
-  // Fetch emails via admin API (requires service role key)
+  // ── Fetch email addresses via admin API ───────────────────────────────────
   const { data: usersData, error: usersError } = await db.auth.admin.listUsers({ perPage: 1000 })
   if (usersError) {
     console.error('[oracle/emails] Failed to fetch auth users:', usersError.message)
+    await db.from('sync_jobs').update({
+      status: 'failed',
+      completed_at: new Date().toISOString(),
+      error: usersError.message,
+    }).eq('id', jobId)
     return
   }
 
   const emailMap = new Map(usersData.users.map(u => [u.id, u.email ?? null]))
 
-  // Build individual emails from finalized DB records only — no derived calculations
+  // ── Build batch ───────────────────────────────────────────────────────────
   const batch = scores.flatMap(score => {
     const userId = score.user_id as string
     const email = emailMap.get(userId)
     if (!email) return []
-
     return [{
       from: FROM,
       to: email,
@@ -162,10 +190,15 @@ export async function sendWeeklyScoreEmails(seasonId: string, week: number): Pro
 
   if (batch.length === 0) {
     console.warn('[oracle/emails] No emails to send — users missing email addresses')
+    await db.from('sync_jobs').update({
+      status: 'failed',
+      completed_at: new Date().toISOString(),
+      error: 'no email addresses found for any user',
+    }).eq('id', jobId)
     return
   }
 
-  // Send in chunks (Resend batch limit: 100 per call)
+  // ── Send in chunks (Resend batch limit: 100 per call) ────────────────────
   let anyError = false
   for (let i = 0; i < batch.length; i += BATCH_SIZE) {
     const chunk = batch.slice(i, i + BATCH_SIZE)
@@ -176,19 +209,24 @@ export async function sendWeeklyScoreEmails(seasonId: string, week: number): Pro
     }
   }
 
-  console.log(`[oracle/emails] Week ${week} — ${batch.length} score emails dispatched`)
+  const completedAt = new Date().toISOString()
 
-  // Record successful send so idempotency guard blocks any future re-sends this week
-  if (!anyError) {
-    const now = new Date().toISOString()
-    await db.from('sync_jobs').insert({
-      resource: 'oracle_emails',
-      provider: 'resend',
-      status: 'success',
-      started_at: now,
-      completed_at: now,
-      records_processed: batch.length,
-      metadata: { seasonId, week },
-    }).throwOnError()
+  if (anyError) {
+    // Mark failed — drops row from the partial index so a legitimate retry can reclaim
+    await db.from('sync_jobs').update({
+      status: 'failed',
+      completed_at: completedAt,
+      error: 'one or more Resend batch chunks failed — retry is safe',
+    }).eq('id', jobId)
+    return
   }
+
+  // ── Mark success — blocks all future attempts for this season+week ────────
+  await db.from('sync_jobs').update({
+    status: 'success',
+    completed_at: completedAt,
+    records_processed: batch.length,
+  }).eq('id', jobId)
+
+  console.log(`[oracle/emails] Week ${week} — ${batch.length} score emails dispatched`)
 }
