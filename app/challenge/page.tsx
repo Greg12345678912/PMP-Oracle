@@ -22,6 +22,18 @@ function formatLockLabel(lockAt: string) {
   return `${date} · ${time}`
 }
 
+// Rank-based message for the 2026 Oracle Challenge (fixed at 116 contestants).
+// Tone: casual, funny, slightly disrespectful — like a friend talking shit.
+function getRankMessage(rank: number): string {
+  if (rank === 1)   return "Holy shit. You're #1."
+  if (rank <= 3)    return "Okayyy, top 3. I see you."
+  if (rank <= 10)   return "Top 10. Not bad, asshole."
+  if (rank <= 58)   return "Above average. We'll take it."
+  if (rank <= 106)  return "Womp womp. You're below average."
+  if (rank <= 115)  return "Bottom 10. Jesus Christ."
+  return "Last place. Tough fucking week."
+}
+
 export default async function ChallengePage() {
   const previewState = await getPreviewState()
   const [session, rawSeason] = await Promise.all([getSession(), getCurrentSeason()])
@@ -38,6 +50,8 @@ export default async function ChallengePage() {
   let hasWeeklyScores = false
   let currentWeek = 0
   let autoEnroll2027 = true
+  let userRank: number | null = null
+  let userScore: number | null = null
 
   if (previewState) {
     // Mock season state — scores/ranks are always mock
@@ -46,7 +60,10 @@ export default async function ChallengePage() {
     rankingCounts = { QB: 10, RB: 10, WR: 10, TE: 10 }
     if (previewState !== 'locked') {
       hasWeeklyScores = true
-      currentWeek = mockAccuracyScore(previewState)?.current_week ?? 0
+      const mockScore = mockAccuracyScore(previewState)
+      currentWeek = mockScore?.current_week ?? 0
+      userRank = (mockScore?.global_rank as number | null) ?? null
+      userScore = typeof mockScore?.overall_score === 'number' ? mockScore.overall_score : null
     }
     // Personal data: prefer real session user, fall back to PREVIEW_USERNAME lookup
     {
@@ -69,7 +86,7 @@ export default async function ChallengePage() {
     }
   } else if (session && season) {
     const db = getServiceClient()
-    const [profileResult, submittedResult, entryCountResult, entryNumberResult, weeklyScoresResult, ...rankingResults] =
+    const [profileResult, submittedResult, entryCountResult, entryNumberResult, weeklyScoresResult, userScoreResult, ...rankingResults] =
       await Promise.all([
         db
           .from('user_profiles')
@@ -100,6 +117,12 @@ export default async function ChallengePage() {
           .eq('season_id', season.id)
           .gt('current_week', 0)
           .limit(1),
+        db
+          .from('accuracy_scores')
+          .select('global_rank, overall_score')
+          .eq('season_id', season.id)
+          .eq('user_id', session.user.id)
+          .maybeSingle(),
         ...ORACLE_POSITIONS.map(pos => getRankings(session.user.id, season.id, pos)),
       ])
 
@@ -110,6 +133,8 @@ export default async function ChallengePage() {
     entryNumber = (entryNumberResult.data?.entry_number as number | null) ?? null
     hasWeeklyScores = ((weeklyScoresResult.data ?? []) as unknown[]).length > 0
     currentWeek = (weeklyScoresResult.data as Array<{ current_week: number }> | null)?.[0]?.current_week ?? 0
+    userRank = (userScoreResult.data?.global_rank as number | null) ?? null
+    userScore = (userScoreResult.data?.overall_score as number | null) ?? null
     ORACLE_POSITIONS.forEach((pos, i) => {
       rankingCounts[pos] = rankingResults[i]?.length ?? 0
     })
@@ -134,106 +159,104 @@ export default async function ChallengePage() {
 
     return (
       <div className="px-4 py-6 max-w-md mx-auto flex flex-col gap-4">
-        {/* Greeting */}
+
+        {/* Header */}
         <div className="pt-1">
-          <h1 className="text-pmp-white font-bold text-2xl">
-            Welcome back, {firstName}.
-          </h1>
-          {isSubmitted ? (
-            <p className="text-pmp-red text-sm font-semibold mt-0.5">Officially entered</p>
-          ) : allComplete ? (
-            <p className="text-pmp-gray-400 text-sm mt-0.5">All rankings saved — ready to submit</p>
-          ) : completedPositions.length > 0 ? (
-            <p className="text-pmp-gray-400 text-sm mt-0.5">
-              {ORACLE_POSITIONS.map(pos => (
-                <span key={pos} className={rankingCounts[pos] >= POSITION_LIST_SIZE[pos] ? 'text-pmp-white' : 'text-pmp-gray-600'}>
-                  {rankingCounts[pos] >= POSITION_LIST_SIZE[pos] ? '✓' : '·'} {pos}{' '}
-                </span>
-              ))}
-            </p>
-          ) : (
+          <h1 className="text-pmp-white font-bold text-2xl">Welcome back, {firstName}.</h1>
+          {isSubmitted && entryNumber !== null ? (
+            <p className="text-pmp-gray-600 text-sm mt-0.5">Entry #{entryNumber}</p>
+          ) : !isSubmitted && !locked ? (
             <p className="text-pmp-gray-600 text-sm mt-0.5">Start ranking to enter</p>
-          )}
+          ) : null}
         </div>
 
-        {/* Entry checklist */}
-        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex flex-col gap-4">
-          <p className="text-pmp-white font-bold text-base">Your Entry</p>
-
-          <div className="flex flex-col gap-2">
-            {/* Rankings */}
-            <Link href="/challenge/rankings" className="flex items-center gap-3 py-2 group">
-              <span className="text-lg w-6 text-center shrink-0">
-                {allComplete ? '✅' : completedPositions.length > 0 ? '🔵' : '⬜'}
-              </span>
-              <div className="flex-1">
-                <p className={['text-sm font-semibold', allComplete ? 'text-pmp-white' : 'text-pmp-gray-400'].join(' ')}>
-                  Rankings
-                </p>
-                <p className="text-pmp-gray-600 text-xs">
-                  {allComplete
-                    ? 'QB · RB · WR · TE ✓'
-                    : completedPositions.length > 0
-                      ? `${completedPositions.join(' · ')} done · ${ORACLE_POSITIONS.filter(p => !completedPositions.includes(p)).join(' · ')} remaining`
-                      : 'QB · RB · WR · TE'}
-                </p>
-              </div>
-              {!locked && <span className="text-pmp-red text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Edit →</span>}
+        {/* ── Live rank card (scoring has started) ── */}
+        {isSubmitted && hasWeeklyScores && userRank !== null && userScore !== null && (
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-6 flex flex-col gap-2">
+            <p className="text-pmp-gray-600 text-[11px] font-bold uppercase tracking-[0.15em]">Your Rank</p>
+            <p className="text-pmp-white font-black text-7xl leading-none">#{userRank}</p>
+            <p className="text-pmp-gray-500 text-sm">out of 116 · Week {currentWeek} · {userScore.toFixed(1)} pts</p>
+            <p className="text-pmp-gray-400 text-sm mt-1">{getRankMessage(userRank)}</p>
+            <Link
+              href="/challenge/results"
+              className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm text-center hover:opacity-90 transition-opacity mt-3"
+            >
+              View My Results →
             </Link>
-
-            <div className="h-px bg-pmp-gray-800" />
-
-            {/* Entered */}
-            <div className="flex items-center gap-3 py-2">
-              <span className="text-lg w-6 text-center shrink-0">
-                {isSubmitted ? '✅' : '⬜'}
-              </span>
-              <div className="flex-1">
-                <p className={['text-sm font-semibold', isSubmitted ? 'text-pmp-white' : 'text-pmp-gray-400'].join(' ')}>
-                  Entered
-                </p>
-                <p className="text-pmp-gray-600 text-xs">
-                  {isSubmitted ? 'Officially in the 2026 Oracle Challenge' : 'Submit to officially enter'}
-                </p>
-              </div>
-              {isSubmitted && entryNumber !== null && (
-                <span className="text-pmp-red font-black text-base shrink-0">
-                  #{entryNumber.toLocaleString()}
-                </span>
-              )}
-            </div>
+            <Link href="/challenge/scoring" className="text-pmp-gray-600 text-xs text-center hover:text-pmp-gray-500 transition-colors mt-0.5">
+              How scoring works →
+            </Link>
           </div>
+        )}
 
-          {/* 2027 auto-enroll */}
-          {isSubmitted && (
-            <AutoEnroll2027 initialValue={autoEnroll2027} />
-          )}
-
-          {/* CTA */}
-          {!locked && (
+        {/* ── Pre-lock: entry checklist (still open) ── */}
+        {!locked && (
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex flex-col gap-4">
+            <p className="text-pmp-white font-bold text-base">Your Entry</p>
+            <div className="flex flex-col gap-2">
+              <Link href="/challenge/rankings" className="flex items-center gap-3 py-2 group">
+                <span className="text-lg w-6 text-center shrink-0">
+                  {allComplete ? '✅' : completedPositions.length > 0 ? '🔵' : '⬜'}
+                </span>
+                <div className="flex-1">
+                  <p className={['text-sm font-semibold', allComplete ? 'text-pmp-white' : 'text-pmp-gray-400'].join(' ')}>Rankings</p>
+                  <p className="text-pmp-gray-600 text-xs">
+                    {allComplete
+                      ? 'QB · RB · WR · TE ✓'
+                      : completedPositions.length > 0
+                        ? `${completedPositions.join(' · ')} done · ${ORACLE_POSITIONS.filter(p => !completedPositions.includes(p)).join(' · ')} remaining`
+                        : 'QB · RB · WR · TE'}
+                  </p>
+                </div>
+                <span className="text-pmp-red text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Edit →</span>
+              </Link>
+              <div className="h-px bg-pmp-gray-800" />
+              <div className="flex items-center gap-3 py-2">
+                <span className="text-lg w-6 text-center shrink-0">{isSubmitted ? '✅' : '⬜'}</span>
+                <div className="flex-1">
+                  <p className={['text-sm font-semibold', isSubmitted ? 'text-pmp-white' : 'text-pmp-gray-400'].join(' ')}>Entered</p>
+                  <p className="text-pmp-gray-600 text-xs">
+                    {isSubmitted ? 'Officially in the 2026 Oracle Challenge' : 'Submit to officially enter'}
+                  </p>
+                </div>
+                {isSubmitted && entryNumber !== null && (
+                  <span className="text-pmp-red font-black text-base shrink-0">#{entryNumber.toLocaleString()}</span>
+                )}
+              </div>
+            </div>
+            {isSubmitted && <AutoEnroll2027 initialValue={autoEnroll2027} />}
             <Link
               href={isSubmitted ? '/challenge/rankings' : allComplete ? '/challenge/rankings/review' : '/challenge/rankings'}
               className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
             >
               {isSubmitted ? 'Edit Rankings' : allComplete ? 'Review & Enter' : 'Continue Rankings'}
             </Link>
-          )}
-          {locked && isSubmitted && hasWeeklyScores && (
-            <Link href="/challenge/results" className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm text-center hover:opacity-90 transition-opacity">
-              View My Results →
+            <Link href="/challenge/scoring" className="text-pmp-gray-600 text-xs text-center hover:text-pmp-gray-500 transition-colors">
+              How scoring works →
             </Link>
-          )}
-          {locked && isSubmitted && !hasWeeklyScores && (
+          </div>
+        )}
+
+        {/* ── Locked, no scores yet ── */}
+        {locked && isSubmitted && !hasWeeklyScores && (
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex flex-col gap-3">
+            <p className="text-pmp-white font-bold text-base">You&apos;re locked in.</p>
+            <p className="text-pmp-gray-600 text-xs">First scores arrive after Week 1 games complete.</p>
             <Link href="/challenge/rankings" className="w-full bg-pmp-gray-800 text-pmp-white font-semibold py-3 rounded-xl text-sm text-center hover:bg-pmp-gray-700 transition-colors">
               View My Rankings
             </Link>
-          )}
-          <Link href="/challenge/scoring" className="text-pmp-gray-600 text-xs text-center hover:text-pmp-gray-500 transition-colors">
-            How scoring works →
-          </Link>
-        </div>
+            <Link href="/challenge/scoring" className="text-pmp-gray-600 text-xs text-center hover:text-pmp-gray-500 transition-colors">
+              How scoring works →
+            </Link>
+          </div>
+        )}
 
-        {/* Countdown card */}
+        {/* ── 2027 auto-enroll (secondary, post-lock only) ── */}
+        {locked && isSubmitted && (
+          <AutoEnroll2027 initialValue={autoEnroll2027} />
+        )}
+
+        {/* ── Countdown (pre-lock) ── */}
         {!locked && season && (
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex flex-col gap-3">
             <div>
@@ -243,6 +266,8 @@ export default async function ChallengePage() {
             <Countdown lockDate={season.lock_at} />
           </div>
         )}
+
+        {/* ── Week N Results Live / status card (post-lock) ── */}
         {locked && (
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 text-center">
             <p className="text-pmp-white font-bold text-base">
@@ -256,7 +281,7 @@ export default async function ChallengePage() {
             </p>
             <p className="text-pmp-gray-600 text-xs mt-1">
               {season?.status === 'scored'
-                ? 'Results are available'
+                ? 'Final results are available.'
                 : isSubmitted && hasWeeklyScores
                   ? `Week ${currentWeek} results are live. See how your rankings performed.`
                   : isSubmitted
@@ -266,7 +291,7 @@ export default async function ChallengePage() {
           </div>
         )}
 
-        {/* Community card */}
+        {/* ── Community ── */}
         <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-5 py-5 flex items-center justify-between">
           <div>
             <p className="text-pmp-white font-bold text-base">Community</p>
@@ -276,10 +301,7 @@ export default async function ChallengePage() {
                 : totalEntries === 1 ? '1 entry so far' : `${totalEntries.toLocaleString()} entries so far`}
             </p>
           </div>
-          <Link
-            href="/challenge/leaderboard"
-            className="text-pmp-red text-sm font-semibold hover:opacity-80"
-          >
+          <Link href="/challenge/leaderboard" className="text-pmp-red text-sm font-semibold hover:opacity-80">
             View →
           </Link>
         </div>
