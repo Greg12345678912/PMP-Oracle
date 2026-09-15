@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/sync/weekly",
-      "schedule": "0 14 * * 2"
+      "schedule": "0 18 * * 2"
     }
   ]
 }
