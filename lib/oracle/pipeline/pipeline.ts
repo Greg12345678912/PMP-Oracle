@@ -292,13 +292,16 @@ export async function runWeeklyPipeline(opts?: {
   const completedAt = new Date().toISOString()
 
   // ── Stage 5b: Weekly score emails ────────────────────────────────────────────
-  // Fire-and-forget: only sends when scoring + ranking completed with zero errors.
+  // Awaited so Vercel doesn't terminate the function before emails finish.
+  // Only sends when scoring + ranking completed with zero errors.
   // Reads from finalized accuracy_scores — never calculates anything independently.
-  // Failures are swallowed so the pipeline result is never affected.
+  // Failures are logged but never surface as pipeline errors.
   if (!dryRun && !groundTruthFailed && usersScored > 0 && usersFailed === 0) {
-    void sendWeeklyScoreEmails(season.id, currentWeek).catch(err => {
+    try {
+      await sendWeeklyScoreEmails(season.id, currentWeek)
+    } catch (err) {
       console.error('[oracle/emails] Uncaught error in sendWeeklyScoreEmails:', err instanceof Error ? err.message : String(err))
-    })
+    }
   }
 
   // ── Pipeline completion alerts ───────────────────────────────────────────────
