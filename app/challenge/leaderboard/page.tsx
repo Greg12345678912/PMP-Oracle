@@ -27,6 +27,55 @@ function RankMovement({ change }: { change: number | null }) {
   )
 }
 
+function PodiumSlot({ rank, profile, score, isCurrentUser, href }: {
+  rank: number
+  profile: { display_name?: string | null; username?: string | null; avatar_url?: string | null } | null | undefined
+  score: number
+  isCurrentUser: boolean
+  href: string | null
+}) {
+  const isFirst = rank === 1
+  const label = rank === 1 ? '1ST' : rank === 2 ? '2ND' : '3RD'
+  const labelColor = rank === 1 ? 'text-pmp-gray-400' : 'text-pmp-gray-600'
+  const card = (
+    <div className={[
+      'flex flex-col items-center justify-between rounded-xl bg-pmp-gray-900 border px-3 py-4 text-center gap-2',
+      isCurrentUser ? 'border-pmp-red/50' : 'border-pmp-gray-800',
+      isFirst ? 'h-44' : 'h-36',
+    ].join(' ')}>
+      <span className={`text-[9px] font-bold tracking-[0.2em] uppercase ${labelColor}`}>{label}</span>
+      <div className={[
+        'rounded-full bg-pmp-gray-800 overflow-hidden shrink-0',
+        isFirst ? 'w-14 h-14' : 'w-10 h-10',
+      ].join(' ')}>
+        {profile?.avatar_url
+          ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center">
+              <span className={`text-pmp-white font-bold ${isFirst ? 'text-lg' : 'text-sm'}`}>
+                {(profile?.display_name ?? 'U')[0]}
+              </span>
+            </div>
+        }
+      </div>
+      <div className="w-full min-w-0">
+        <p className={`text-pmp-white font-semibold truncate ${isFirst ? 'text-sm' : 'text-xs'}`}>
+          {profile?.display_name ?? 'Anonymous'}
+        </p>
+        <p className={`text-pmp-white font-bold leading-none mt-0.5 ${isFirst ? 'text-xl' : 'text-base'}`}>
+          {score.toFixed(1)}
+        </p>
+      </div>
+    </div>
+  )
+  return (
+    <div className={`flex-1 ${!isFirst ? 'mt-8' : ''}`}>
+      {href
+        ? <Link href={href} className="block hover:opacity-80 transition-opacity">{card}</Link>
+        : card}
+    </div>
+  )
+}
+
 export default async function LeaderboardPage() {
   const previewState = await getPreviewState()
   const [session, rawSeason] = await Promise.all([getSession(), getCurrentSeason()])
@@ -145,6 +194,14 @@ export default async function LeaderboardPage() {
         })
       }
 
+      const top3Preview = displayScores
+        .filter(s => s.global_rank <= 3)
+        .sort((a, b) => a.global_rank - b.global_rank)
+      const restPreview = displayScores.filter(s => s.global_rank > 3)
+      const podiumPreview = top3Preview.length === 3
+        ? [top3Preview[1], top3Preview[0], top3Preview[2]]
+        : []
+
       return (
         <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
           <div className="px-4 py-6 max-w-md mx-auto w-full flex flex-col gap-6">
@@ -168,10 +225,35 @@ export default async function LeaderboardPage() {
                 </p>
               )}
             </div>
+
+            {podiumPreview.length === 3 && (
+              <div className="flex gap-2">
+                {podiumPreview.map(score => {
+                  const profile = profileMap.get(score.user_id)
+                  const profileHref = profile?.username
+                    ? score.previewRank
+                      ? `/u/${profile.username}?preview_rank=${score.previewRank}`
+                      : `/u/${profile.username}`
+                    : null
+                  const isCurrentUser = !!session && score.user_id === session.user.id
+                  return (
+                    <PodiumSlot
+                      key={score.user_id}
+                      rank={score.global_rank}
+                      profile={profile}
+                      score={score.overall_score}
+                      isCurrentUser={isCurrentUser}
+                      href={profileHref}
+                    />
+                  )
+                })}
+              </div>
+            )}
+
             <div className="flex flex-col gap-2">
-              {displayScores.map((score, i) => {
+              {restPreview.map((score, i) => {
                 const profile = profileMap.get(score.user_id)
-                const rank = score.global_rank ?? i + 1
+                const rank = score.global_rank ?? i + 4
                 const rankChange = score.rank_change
                 const profileHref = profile?.username
                   ? score.previewRank
@@ -187,10 +269,7 @@ export default async function LeaderboardPage() {
                 ].join(' ')
                 const inner = (
                   <>
-                    <span className={[
-                      'text-sm font-black w-7 text-right shrink-0',
-                      rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-pmp-gray-400' : rank === 3 ? 'text-amber-600' : 'text-pmp-gray-600',
-                    ].join(' ')}>
+                    <span className="text-sm font-black w-7 text-right shrink-0 text-pmp-gray-600">
                       {rank}
                     </span>
                     <div className="w-8 h-8 rounded-full bg-pmp-gray-800 flex items-center justify-center shrink-0 overflow-hidden">
@@ -222,6 +301,7 @@ export default async function LeaderboardPage() {
                 )
               })}
             </div>
+
             <Link
               href="/challenge/results"
               className="w-full bg-pmp-red text-pmp-white font-bold py-3.5 rounded-xl text-sm text-center hover:opacity-90 transition-opacity"
@@ -385,6 +465,15 @@ export default async function LeaderboardPage() {
 
     const profileMap = new Map((profiles ?? []).map(p => [p.user_id as string, p]))
 
+    const scoreList = scores ?? []
+    const top3Prod = scoreList
+      .filter(s => (s.global_rank as number) <= 3)
+      .sort((a, b) => (a.global_rank as number) - (b.global_rank as number))
+    const restProd = scoreList.filter(s => (s.global_rank as number) > 3)
+    const podiumProd = top3Prod.length === 3
+      ? [top3Prod[1], top3Prod[0], top3Prod[2]]
+      : []
+
     return (
       <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
         <div className="px-4 py-6 max-w-md mx-auto w-full flex flex-col gap-6">
@@ -409,12 +498,32 @@ export default async function LeaderboardPage() {
             )}
           </div>
 
+          {podiumProd.length === 3 && (
+            <div className="flex gap-2">
+              {podiumProd.map(score => {
+                const profile = profileMap.get(score.user_id as string)
+                const profileHref = profile?.username ? `/u/${profile.username as string}` : null
+                const isCurrentUser = !!session && (score.user_id as string) === session.user.id
+                return (
+                  <PodiumSlot
+                    key={score.user_id as string}
+                    rank={score.global_rank as number}
+                    profile={profile as { display_name?: string | null; username?: string | null; avatar_url?: string | null } | null}
+                    score={score.overall_score as number}
+                    isCurrentUser={isCurrentUser}
+                    href={profileHref}
+                  />
+                )
+              })}
+            </div>
+          )}
+
           <div className="flex flex-col gap-2">
-            {(scores ?? []).map((score, i) => {
+            {restProd.map((score, i) => {
               const profile = profileMap.get(score.user_id as string)
-              const rank = (score.global_rank as number) ?? i + 1
+              const rank = (score.global_rank as number) ?? i + 4
               const rankChange = score.rank_change as number | null
-              const profileHref = profile?.username ? `/u/${profile.username}` : null
+              const profileHref = profile?.username ? `/u/${profile.username as string}` : null
               const isCurrentUser = !!session && (score.user_id as string) === session.user.id
               const rowClass = [
                 'flex items-center gap-3 rounded-xl px-4 py-3 transition-colors',
@@ -424,10 +533,7 @@ export default async function LeaderboardPage() {
               ].join(' ')
               const inner = (
                 <>
-                  <span className={[
-                    'text-sm font-black w-7 text-right shrink-0',
-                    rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-pmp-gray-400' : rank === 3 ? 'text-amber-600' : 'text-pmp-gray-600',
-                  ].join(' ')}>
+                  <span className="text-sm font-black w-7 text-right shrink-0 text-pmp-gray-600">
                     {rank}
                   </span>
                   <div className="w-8 h-8 rounded-full bg-pmp-gray-800 flex items-center justify-center shrink-0 overflow-hidden">
