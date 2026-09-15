@@ -90,6 +90,21 @@ export async function sendWeeklyScoreEmails(seasonId: string, week: number): Pro
   const resend = new Resend(process.env.RESEND_API_KEY)
   const db = getServiceClient()
 
+  // Idempotency guard: refuse to re-send if a successful batch already exists for this season+week
+  const { data: existingJob } = await db
+    .from('sync_jobs')
+    .select('id, completed_at')
+    .eq('resource', 'oracle_emails')
+    .eq('status', 'success')
+    .contains('metadata', { seasonId, week })
+    .limit(1)
+    .maybeSingle()
+
+  if (existingJob) {
+    console.log(`[oracle/emails] Week ${week} emails already sent (job ${existingJob.id}, ${existingJob.completed_at}) — skipping`)
+    return
+  }
+
   // Read the finalized accuracy_scores — exact same records powering leaderboard + results page
   const { data: scores, error: scoresError } = await db
     .from('accuracy_scores')
@@ -151,13 +166,29 @@ export async function sendWeeklyScoreEmails(seasonId: string, week: number): Pro
   }
 
   // Send in chunks (Resend batch limit: 100 per call)
+  let anyError = false
   for (let i = 0; i < batch.length; i += BATCH_SIZE) {
     const chunk = batch.slice(i, i + BATCH_SIZE)
     const { error } = await resend.batch.send(chunk)
     if (error) {
       console.error(`[oracle/emails] Batch send failed (chunk ${Math.floor(i / BATCH_SIZE) + 1}):`, error)
+      anyError = true
     }
   }
 
   console.log(`[oracle/emails] Week ${week} — ${batch.length} score emails dispatched`)
+
+  // Record successful send so idempotency guard blocks any future re-sends this week
+  if (!anyError) {
+    const now = new Date().toISOString()
+    await db.from('sync_jobs').insert({
+      resource: 'oracle_emails',
+      provider: 'resend',
+      status: 'success',
+      started_at: now,
+      completed_at: now,
+      records_processed: batch.length,
+      metadata: { seasonId, week },
+    }).throwOnError()
+  }
 }
