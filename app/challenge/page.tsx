@@ -164,7 +164,7 @@ export default async function ChallengePage() {
         <div className="pt-1">
           <h1 className="text-pmp-white font-bold text-2xl">Welcome back, {firstName}.</h1>
           {isSubmitted && entryNumber !== null ? (
-            <p className="text-pmp-gray-600 text-sm mt-0.5">Entry #{entryNumber}</p>
+            <p className="text-pmp-gray-500 text-sm mt-0.5">Entry #{entryNumber}</p>
           ) : !isSubmitted && !locked ? (
             <p className="text-pmp-gray-600 text-sm mt-0.5">Start ranking to enter</p>
           ) : null}
@@ -176,7 +176,7 @@ export default async function ChallengePage() {
             <p className="text-pmp-gray-600 text-[11px] font-bold uppercase tracking-[0.15em]">Your Rank</p>
             <p className="text-pmp-white font-black text-7xl leading-none">#{userRank}</p>
             <p className="text-pmp-gray-500 text-sm">out of 116 · Week {currentWeek} · {userScore.toFixed(1)} pts</p>
-            <p className="text-pmp-gray-400 text-sm mt-1">{getRankMessage(userRank)}</p>
+            <p className="text-pmp-white font-medium text-sm mt-1">{getRankMessage(userRank)}</p>
             <Link
               href="/challenge/results"
               className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm text-center hover:opacity-90 transition-opacity mt-3"
