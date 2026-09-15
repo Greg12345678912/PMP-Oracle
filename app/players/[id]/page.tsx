@@ -218,13 +218,21 @@ export default async function PlayerPage({
       <div className="min-h-[100dvh] bg-pmp-black text-pmp-white">
         <div className="px-4 pt-8 pb-6 max-w-lg mx-auto">
           <Link href="/players" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-500 transition-colors">← Back to Players</Link>
-          <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em] mt-4 mb-2">The Oracle Challenge</p>
+          <p className="text-pmp-red text-xs font-bold uppercase tracking-[0.3em] mt-4 mb-2">
+            {fallbackPlayer!.position ? `${fallbackPlayer!.position} · Oracle Challenge` : 'Oracle Challenge'}
+          </p>
           <h1 className="text-2xl font-bold leading-tight">{fallbackPlayer!.name}</h1>
           <p className="text-pmp-gray-500 text-sm mt-1">Community Rankings</p>
         </div>
-        <div className="px-4 max-w-lg mx-auto pb-16">
+        <div className="px-4 max-w-lg mx-auto flex flex-col gap-4 pb-16">
+          {groundTruthRow && (
+            <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
+              <p className="text-pmp-gray-500 text-xs uppercase tracking-widest">Season Rank</p>
+              <p className="text-pmp-white text-3xl font-bold">{groundTruthRow.position}{groundTruthRow.rank} Overall</p>
+            </div>
+          )}
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-5 text-center">
-            <p className="text-pmp-gray-500 text-sm">No community rankings yet for this player.</p>
+            <p className="text-pmp-gray-500 text-sm">No community rankings for this player — no oracle had them in their top 10.</p>
           </div>
         </div>
       </div>
