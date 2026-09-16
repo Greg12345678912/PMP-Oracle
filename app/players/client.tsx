@@ -21,12 +21,17 @@ const POSITION_COLORS: Record<OraclePosition, string> = {
   TE: 'text-yellow-400',
 }
 
-function PlayerCard({ player }: { player: Player }) {
+const TOP_N = 30
+
+function PlayerCard({ player, rank }: { player: Player; rank?: number }) {
   return (
     <Link
       href={`/players/${player.id}`}
       className="flex items-center gap-3 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-3 hover:border-pmp-gray-600 transition-colors"
     >
+      {rank !== undefined && (
+        <span className="text-pmp-gray-600 text-xs font-bold w-5 text-right shrink-0">{rank}</span>
+      )}
       <div className="w-10 h-10 rounded-full bg-pmp-gray-800 overflow-hidden shrink-0 flex items-center justify-center">
         {player.headshotUrl ? (
           <img src={player.headshotUrl} alt="" className="w-full h-full object-cover" />
@@ -47,31 +52,25 @@ function PlayerCard({ player }: { player: Player }) {
 
 export function PlayersClient({ playersByPosition, isPostLock, hasWeeklyScores, isScored, currentWeek }: PlayersClientProps) {
   const [query, setQuery] = useState('')
-  const [activePos, setActivePos] = useState<OraclePosition | 'ALL'>('ALL')
+  const [activePos, setActivePos] = useState<OraclePosition>('QB')
 
   const allPlayers = useMemo(
     () => POSITIONS.flatMap(pos => playersByPosition[pos] ?? []),
     [playersByPosition],
   )
 
-  /* Top picks across all positions — top 3 per position by ADP rank */
-  const topPicks = useMemo(
-    () => POSITIONS.flatMap(pos => (playersByPosition[pos] ?? []).slice(0, 3)),
-    [playersByPosition],
-  )
-
   const filtered = useMemo(() => {
-    const pool = activePos === 'ALL' ? allPlayers : (playersByPosition[activePos] ?? [])
-    if (!query.trim()) return pool
-    const q = query.toLowerCase()
-    return pool.filter(
+    const q = query.toLowerCase().trim()
+    if (!q) return []
+    return allPlayers.filter(
       p =>
         p.name.toLowerCase().includes(q) ||
         p.team.toLowerCase().includes(q),
     )
-  }, [allPlayers, playersByPosition, activePos, query])
+  }, [allPlayers, query])
 
   const showSearch = query.trim().length > 0
+  const positionPlayers = (playersByPosition[activePos] ?? []).slice(0, TOP_N)
 
   return (
     <div className="flex flex-col gap-0">
@@ -99,7 +98,7 @@ export function PlayersClient({ playersByPosition, isPostLock, hasWeeklyScores, 
 
       {/* Search results */}
       {showSearch ? (
-        <div className="px-4 pt-4 flex flex-col gap-2">
+        <div className="px-4 pt-4 flex flex-col gap-2 pb-4">
           <p className="text-pmp-gray-600 text-xs font-bold uppercase tracking-widest mb-1">
             {filtered.length} result{filtered.length !== 1 ? 's' : ''}
           </p>
@@ -146,23 +145,10 @@ export function PlayersClient({ playersByPosition, isPostLock, hasWeeklyScores, 
             </div>
           )}
 
-          {/* Most Ranked section */}
-          <div className="px-4 pt-6">
-            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest mb-3">
-              {isPostLock ? 'Most Ranked' : 'Consensus Top Picks'}
-            </p>
-            <div className="flex flex-col gap-2">
-              {topPicks.map(p => <PlayerCard key={p.id} player={p} />)}
-            </div>
-          </div>
-
-          {/* Divider + browse by position */}
-          <div className="px-4 pt-6">
-            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest mb-3">Browse by Position</p>
-
-            {/* Position tabs */}
-            <div className="flex gap-2 mb-4">
-              {(['ALL', ...POSITIONS] as const).map(pos => (
+          {/* Position tabs + ranked list */}
+          <div className="px-4 pt-6 pb-4">
+            <div className="flex gap-2 mb-3">
+              {POSITIONS.map(pos => (
                 <button
                   key={pos}
                   onClick={() => setActivePos(pos)}
@@ -178,9 +164,13 @@ export function PlayersClient({ playersByPosition, isPostLock, hasWeeklyScores, 
               ))}
             </div>
 
-            <div className="flex flex-col gap-2 pb-4">
-              {(activePos === 'ALL' ? allPlayers : (playersByPosition[activePos] ?? [])).map(p => (
-                <PlayerCard key={p.id} player={p} />
+            <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest mb-3">
+              Real PPR Rankings · Top 30
+            </p>
+
+            <div className="flex flex-col gap-2">
+              {positionPlayers.map((p, i) => (
+                <PlayerCard key={p.id} player={p} rank={i + 1} />
               ))}
             </div>
           </div>
