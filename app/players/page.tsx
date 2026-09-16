@@ -40,6 +40,8 @@ export default async function PlayersPage() {
     currentWeek = (weekResult.data as Array<{ current_week: number }> | null)?.[0]?.current_week ?? 0
 
     // Re-sort each position pool by actual PPR season rank (rank 1 = best scorer)
+    // ground_truth stores top 10 per position — only those 10 get real ranks,
+    // remaining players in the pool sort to the end (they won't be shown at TOP_N=10)
     const gtRows = gtResult.data as Array<{ player_id: string; rank: number }> | null
     if (gtRows && gtRows.length > 0) {
       const gtRankMap = new Map(gtRows.map(r => [r.player_id, r.rank]))

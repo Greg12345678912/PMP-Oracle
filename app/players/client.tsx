@@ -21,7 +21,7 @@ const POSITION_COLORS: Record<OraclePosition, string> = {
   TE: 'text-yellow-400',
 }
 
-const TOP_N = 30
+const TOP_N = 10
 
 function PlayerCard({ player, rank }: { player: Player; rank?: number }) {
   return (
@@ -165,7 +165,7 @@ export function PlayersClient({ playersByPosition, isPostLock, hasWeeklyScores, 
             </div>
 
             <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest mb-3">
-              Real PPR Rankings · Top 30
+              Real PPR Rankings · Top 10
             </p>
 
             <div className="flex flex-col gap-2">
