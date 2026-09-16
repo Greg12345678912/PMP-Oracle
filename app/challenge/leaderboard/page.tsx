@@ -1,3 +1,4 @@
+import type React from 'react'
 import { getServiceClient } from '@/lib/league/db'
 import { getCurrentSeason, isLocked } from '@/lib/oracle/season'
 import { getSession } from '@/lib/auth/server'
@@ -37,12 +38,19 @@ function PodiumSlot({ rank, profile, score, isCurrentUser, href }: {
   const isFirst = rank === 1
   const label = rank === 1 ? '1ST' : rank === 2 ? '2ND' : '3RD'
   const labelColor = rank === 1 ? 'text-pmp-gray-400' : 'text-pmp-gray-600'
+  const glowStyle: React.CSSProperties = rank === 1
+    ? { borderColor: 'rgba(255, 215, 0, 0.6)', boxShadow: '0 0 20px rgba(255, 215, 0, 0.3)' }
+    : rank === 2
+    ? { borderColor: 'rgba(192, 192, 192, 0.5)', boxShadow: '0 0 16px rgba(192, 192, 192, 0.25)' }
+    : { borderColor: 'rgba(205, 127, 50, 0.5)', boxShadow: '0 0 16px rgba(205, 127, 50, 0.25)' }
   const card = (
-    <div className={[
-      'flex flex-col items-center justify-between rounded-xl bg-pmp-gray-900 border px-3 py-4 text-center gap-2',
-      isCurrentUser ? 'border-pmp-red/50' : 'border-pmp-gray-800',
-      isFirst ? 'h-44' : 'h-36',
-    ].join(' ')}>
+    <div
+      className={[
+        'flex flex-col items-center justify-between rounded-xl bg-pmp-gray-900 border px-3 py-4 text-center gap-2',
+        isFirst ? 'h-44' : 'h-36',
+      ].join(' ')}
+      style={glowStyle}
+    >
       <span className={`text-[9px] font-bold tracking-[0.2em] uppercase ${labelColor}`}>{label}</span>
       <div className={[
         'rounded-full bg-pmp-gray-800 overflow-hidden shrink-0',
