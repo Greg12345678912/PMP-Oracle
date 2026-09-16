@@ -177,6 +177,7 @@ export default async function ChallengePage() {
             <p className="text-pmp-white font-black text-7xl leading-none">#{userRank}</p>
             <p className="text-pmp-gray-500 text-sm">out of 116 · Week {currentWeek} · {userScore.toFixed(1)} pts</p>
             <p className="text-pmp-white font-medium text-sm mt-1">{getRankMessage(userRank)}</p>
+            <p className="text-pmp-gray-600 text-xs mt-1">$500 prize · you need to finish #1</p>
             <Link
               href="/challenge/results"
               className="w-full bg-pmp-red text-pmp-white font-bold py-3 rounded-xl text-sm text-center hover:opacity-90 transition-opacity mt-3"
