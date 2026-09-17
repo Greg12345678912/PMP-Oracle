@@ -212,7 +212,35 @@ export default async function PlayerPage({
   // render a graceful no-data view rather than a 404.
   if (!stats) {
     const pools = await Promise.all(ORACLE_POSITIONS.map(pos => getPlayerPool(pos)))
-    const fallbackPlayer = pools.flat().find(p => p.id === id)
+    let fallbackPlayer = pools.flat().find(p => p.id === id)
+
+    // Players with adp_value = NULL (e.g. Engram, Fant) are excluded from the ADP pool
+    // but may still appear in ground_truth. Try player_cache as a second lookup.
+    if (!fallbackPlayer) {
+      const db = getServiceClient()
+      type CacheRow = { external_id: string; full_name: string; position: string; team: string | null }
+      const { data: cacheRow } = await db
+        .from('player_cache')
+        .select('external_id, full_name, position, team')
+        .eq('external_id', id)
+        .eq('provider', 'sleeper')
+        .maybeSingle()
+      if (cacheRow) {
+        const row = cacheRow as CacheRow
+        fallbackPlayer = {
+          id: row.external_id,
+          name: row.full_name,
+          firstName: row.full_name.split(' ')[0] ?? '',
+          lastName: row.full_name.split(' ').slice(1).join(' ') || row.full_name,
+          team: row.team ?? '',
+          position: row.position as typeof ORACLE_POSITIONS[number],
+          headshotUrl: '',
+          searchRank: 999,
+          byeWeek: null,
+        }
+      }
+    }
+
     if (!fallbackPlayer) notFound()
     return (
       <div className="min-h-[100dvh] bg-pmp-black text-pmp-white">
