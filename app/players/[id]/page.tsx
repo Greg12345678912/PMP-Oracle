@@ -293,12 +293,14 @@ export default async function PlayerPage({
 
       <div className="px-4 max-w-lg mx-auto flex flex-col gap-4 pb-16">
         {/* Season rank — sourced directly from ground_truth, same value used by scoring engine */}
-        {displayGroundTruth && (
-          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
-            <p className="text-pmp-gray-500 text-xs uppercase tracking-widest">Season Rank</p>
+        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
+          <p className="text-pmp-gray-500 text-xs uppercase tracking-widest">Season Rank</p>
+          {displayGroundTruth ? (
             <p className="text-pmp-white text-3xl font-bold">{displayGroundTruth.position}{displayGroundTruth.rank} Overall</p>
-          </div>
-        )}
+          ) : (
+            <p className="text-pmp-gray-500 text-lg font-semibold">Outside Top 10 {position ?? ''}</p>
+          )}
+        </div>
 
         {/* Rank cards */}
         <div className="grid grid-cols-2 gap-3">
