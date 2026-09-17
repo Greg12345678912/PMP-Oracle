@@ -50,6 +50,35 @@ export default async function PlayersPage() {
       for (const pos of ORACLE_POSITIONS) {
         for (const p of playersByPosition[pos] ?? []) poolMap.set(p.id, p)
       }
+
+      // Fetch player_cache rows for any ground_truth player missing from the ADP pool
+      // (e.g. Engram, Fant — in player_cache but adp_value IS NULL so excluded from pool).
+      const missingIds = gtRows.map(r => r.player_id).filter(id => !poolMap.has(id))
+      if (missingIds.length > 0) {
+        type CacheRow = { external_id: string; full_name: string; first_name: string; last_name: string; team: string | null; headshot_url: string | null; bye_week: number | null }
+        const { data: cacheRows } = await db
+          .from('player_cache')
+          .select('external_id, full_name, first_name, last_name, team, headshot_url, bye_week')
+          .in('external_id', missingIds)
+          .eq('provider', 'sleeper')
+        for (const row of (cacheRows as CacheRow[] | null) ?? []) {
+          // Find the ground_truth row to get position
+          const gt = gtRows.find(r => r.player_id === row.external_id)
+          if (!gt) continue
+          poolMap.set(row.external_id, {
+            id: row.external_id,
+            name: row.full_name,
+            firstName: row.first_name,
+            lastName: row.last_name,
+            team: row.team ?? '',
+            position: gt.position as OraclePosition,
+            headshotUrl: row.headshot_url ?? '',
+            searchRank: 999,
+            byeWeek: row.bye_week,
+          })
+        }
+      }
+
       for (const pos of ORACLE_POSITIONS) {
         playersByPosition[pos] = gtRows
           .filter(r => r.position === pos)
