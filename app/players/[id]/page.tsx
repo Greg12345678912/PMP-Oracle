@@ -242,6 +242,29 @@ export default async function PlayerPage({
     }
 
     if (!fallbackPlayer) notFound()
+
+    // Compute positional rank from player_stats when not in ground_truth top 10
+    let noStatsRank: { rank: number; position: string } | null = null
+    if (!groundTruthRow && fallbackPlayer!.position && hasWeeklyScores) {
+      const pos = fallbackPlayer!.position as string
+      const { data: posStats } = await gtDb
+        .from('player_stats')
+        .select('player_id, ppr_points')
+        .eq('season_id', realSeasonId)
+        .eq('position', pos)
+      if (posStats && posStats.length > 0) {
+        type StatsRow = { player_id: string; ppr_points: number }
+        const totals = new Map<string, number>()
+        for (const row of posStats as StatsRow[]) {
+          totals.set(row.player_id, (totals.get(row.player_id) ?? 0) + (row.ppr_points ?? 0))
+        }
+        const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1])
+        const rankIdx = sorted.findIndex(([pid]) => pid === id)
+        if (rankIdx !== -1) noStatsRank = { rank: rankIdx + 1, position: pos }
+      }
+    }
+    const noStatsDisplayRank = groundTruthRow ?? noStatsRank
+
     return (
       <div className="min-h-[100dvh] bg-pmp-black text-pmp-white">
         <div className="px-4 pt-8 pb-6 max-w-lg mx-auto">
@@ -253,10 +276,10 @@ export default async function PlayerPage({
           <p className="text-pmp-gray-500 text-sm mt-1">Community Rankings</p>
         </div>
         <div className="px-4 max-w-lg mx-auto flex flex-col gap-4 pb-16">
-          {groundTruthRow && (
+          {noStatsDisplayRank && (
             <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
               <p className="text-pmp-gray-500 text-xs uppercase tracking-widest">Season Rank</p>
-              <p className="text-pmp-white text-3xl font-bold">{groundTruthRow.position}{groundTruthRow.rank} Overall</p>
+              <p className="text-pmp-white text-3xl font-bold">{noStatsDisplayRank.position}{noStatsDisplayRank.rank} Overall</p>
             </div>
           )}
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-4 py-5 text-center">
