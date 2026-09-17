@@ -51,7 +51,14 @@ function PodiumSlot({ rank, profile, score, isCurrentUser, href }: {
       ].join(' ')}
       style={glowStyle}
     >
-      <span className={`text-[9px] font-bold tracking-[0.2em] uppercase ${labelColor}`}>{label}</span>
+      <div className="flex flex-col items-center gap-0.5">
+        {rank === 1 && (
+          <span style={{ color: '#FFD700', fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em', textShadow: '0 0 8px rgba(255,215,0,0.9), 0 0 20px rgba(255,215,0,0.5), 0 0 40px rgba(255,215,0,0.3)' }}>
+            ✦ $500 ✦
+          </span>
+        )}
+        <span className={`text-[9px] font-bold tracking-[0.2em] uppercase ${labelColor}`}>{label}</span>
+      </div>
       <div className={[
         'rounded-full bg-pmp-gray-800 overflow-hidden shrink-0',
         isFirst ? 'w-14 h-14' : 'w-10 h-10',
