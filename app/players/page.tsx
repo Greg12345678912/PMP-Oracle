@@ -98,13 +98,16 @@ export default async function PlayersPage() {
     }
   }
 
+  // Full ADP pool for search (all positions, no top-10 limit)
+  const searchPool = ORACLE_POSITIONS.flatMap(pos => poolsArr[ORACLE_POSITIONS.indexOf(pos)] ?? [])
+
   return (
     <div className="max-w-md mx-auto">
       <div className="px-4 pt-5 pb-2">
         <h1 className="text-pmp-white font-bold text-xl">Players</h1>
         <p className="text-pmp-gray-600 text-xs mt-0.5">2026 Oracle · PPR</p>
       </div>
-      <PlayersClient playersByPosition={playersByPosition} isPostLock={isPostLock} hasWeeklyScores={hasWeeklyScores} isScored={isScored} currentWeek={currentWeek} />
+      <PlayersClient playersByPosition={playersByPosition} searchPool={searchPool} isPostLock={isPostLock} hasWeeklyScores={hasWeeklyScores} isScored={isScored} currentWeek={currentWeek} />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import type { OraclePosition } from '@/lib/oracle/constants'
 
 interface PlayersClientProps {
   playersByPosition: Record<OraclePosition, Player[]>
+  searchPool: Player[]
   isPostLock: boolean
   hasWeeklyScores: boolean
   isScored: boolean
@@ -50,24 +51,19 @@ function PlayerCard({ player, rank }: { player: Player; rank?: number }) {
   )
 }
 
-export function PlayersClient({ playersByPosition, isPostLock, hasWeeklyScores, isScored, currentWeek }: PlayersClientProps) {
+export function PlayersClient({ playersByPosition, searchPool, isPostLock, hasWeeklyScores, isScored, currentWeek }: PlayersClientProps) {
   const [query, setQuery] = useState('')
   const [activePos, setActivePos] = useState<OraclePosition>('QB')
-
-  const allPlayers = useMemo(
-    () => POSITIONS.flatMap(pos => playersByPosition[pos] ?? []),
-    [playersByPosition],
-  )
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
     if (!q) return []
-    return allPlayers.filter(
+    return searchPool.filter(
       p =>
         p.name.toLowerCase().includes(q) ||
         p.team.toLowerCase().includes(q),
     )
-  }, [allPlayers, query])
+  }, [searchPool, query])
 
   const showSearch = query.trim().length > 0
   const positionPlayers = (playersByPosition[activePos] ?? []).slice(0, TOP_N)
