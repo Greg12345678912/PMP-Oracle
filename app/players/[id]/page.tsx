@@ -269,9 +269,33 @@ export default async function PlayerPage({
 
   const { playerName, position, total, totalSubmissions, communityAvgRank, mostCommonRank, rankDistribution, userRank } = stats
 
+  // For players outside ground_truth top 10, compute their actual positional PPR rank
+  // from player_stats (same data ground_truth is built from). Verified: computed rank
+  // matches ground_truth exactly for top-10 players.
+  let playerStatRank: { rank: number; position: string } | null = null
+  if (!groundTruthRow && !previewState && position && hasWeeklyScores) {
+    const { data: posStats } = await gtDb
+      .from('player_stats')
+      .select('player_id, ppr_points')
+      .eq('season_id', realSeasonId)
+      .eq('position', position)
+    if (posStats && posStats.length > 0) {
+      type StatsRow = { player_id: string; ppr_points: number }
+      const totals = new Map<string, number>()
+      for (const row of posStats as StatsRow[]) {
+        totals.set(row.player_id, (totals.get(row.player_id) ?? 0) + (row.ppr_points ?? 0))
+      }
+      const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1])
+      const rankIdx = sorted.findIndex(([pid]) => pid === id)
+      if (rankIdx !== -1) playerStatRank = { rank: rankIdx + 1, position }
+    }
+  }
+
   // In preview mode the ground_truth table has no real rows — fall back to communityAvgRank
   // so the "Season Rank" card renders during week1/midseason/scored preview states.
-  const displayGroundTruth = groundTruthRow ?? (previewState ? { rank: communityAvgRank, position: position ?? '' } : null)
+  const displayGroundTruth = groundTruthRow
+    ?? (previewState ? { rank: communityAvgRank, position: position ?? '' } : null)
+    ?? playerStatRank
 
   const rankDelta = userRank !== null ? userRank - communityAvgRank : null
   const inclusionPct = totalSubmissions > 0 ? Math.round((total / totalSubmissions) * 100) : 0
@@ -292,15 +316,13 @@ export default async function PlayerPage({
       </div>
 
       <div className="px-4 max-w-lg mx-auto flex flex-col gap-4 pb-16">
-        {/* Season rank — sourced directly from ground_truth, same value used by scoring engine */}
-        <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
-          <p className="text-pmp-gray-500 text-xs uppercase tracking-widest">Season Rank</p>
-          {displayGroundTruth ? (
+        {/* Season rank — ground_truth for top 10, computed from player_stats for all others */}
+        {displayGroundTruth && (
+          <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl p-4 flex flex-col gap-1">
+            <p className="text-pmp-gray-500 text-xs uppercase tracking-widest">Season Rank</p>
             <p className="text-pmp-white text-3xl font-bold">{displayGroundTruth.position}{displayGroundTruth.rank} Overall</p>
-          ) : (
-            <p className="text-pmp-gray-500 text-lg font-semibold">Outside Top 10 {position ?? ''}</p>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Rank cards */}
         <div className="grid grid-cols-2 gap-3">

@@ -98,8 +98,12 @@ export default async function PlayersPage() {
     }
   }
 
-  // Full ADP pool for search (all positions, no top-10 limit)
-  const searchPool = ORACLE_POSITIONS.flatMap(pos => poolsArr[ORACLE_POSITIONS.indexOf(pos)] ?? [])
+  // searchPool = ADP pool + any ground_truth players absent from it (e.g. Engram, Fant).
+  // ADP pool covers ~200 relevant players; gtExtras fills the null-adp_value gap.
+  const adpPlayers = ORACLE_POSITIONS.flatMap(pos => poolsArr[ORACLE_POSITIONS.indexOf(pos)] ?? [])
+  const adpIds = new Set(adpPlayers.map(p => p.id))
+  const gtExtras = ORACLE_POSITIONS.flatMap(pos => (playersByPosition[pos] ?? []).filter(p => !adpIds.has(p.id)))
+  const searchPool = [...adpPlayers, ...gtExtras]
 
   return (
     <div className="max-w-md mx-auto">
