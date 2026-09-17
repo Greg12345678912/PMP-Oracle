@@ -46,11 +46,11 @@ export default async function PlayersPage() {
     if (gtRows && gtRows.length > 0) {
       const gtRankMap = new Map(gtRows.map(r => [r.player_id, r.rank]))
       for (const pos of ORACLE_POSITIONS) {
-        playersByPosition[pos] = [...playersByPosition[pos]].sort((a, b) => {
-          const rankA = gtRankMap.get(a.id) ?? Infinity
-          const rankB = gtRankMap.get(b.id) ?? Infinity
-          return rankA - rankB
-        })
+        // Only show players who actually scored — filter to ground_truth entries only,
+        // then sort by rank. Players not in ground_truth (DNP, 0 pts) are excluded.
+        playersByPosition[pos] = [...playersByPosition[pos]]
+          .filter(p => gtRankMap.has(p.id))
+          .sort((a, b) => (gtRankMap.get(a.id) ?? Infinity) - (gtRankMap.get(b.id) ?? Infinity))
       }
     }
   }

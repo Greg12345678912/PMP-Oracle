@@ -165,7 +165,7 @@ export function PlayersClient({ playersByPosition, isPostLock, hasWeeklyScores, 
             </div>
 
             <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest mb-3">
-              Real PPR Rankings · Top 10
+              Real PPR Rankings · Top {positionPlayers.length}
             </p>
 
             <div className="flex flex-col gap-2">
