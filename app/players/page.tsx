@@ -35,22 +35,36 @@ export default async function PlayersPage() {
     const db = getServiceClient()
     const [weekResult, gtResult] = await Promise.all([
       db.from('accuracy_scores').select('current_week').eq('season_id', rawSeason.id).gt('current_week', 0).limit(1),
-      db.from('ground_truth').select('player_id, rank').eq('season_id', rawSeason.id),
+      db.from('ground_truth').select('player_id, rank, position, player_name').eq('season_id', rawSeason.id),
     ])
     currentWeek = (weekResult.data as Array<{ current_week: number }> | null)?.[0]?.current_week ?? 0
 
-    // Re-sort each position pool by actual PPR season rank (rank 1 = best scorer)
-    // ground_truth stores top 10 per position — only those 10 get real ranks,
-    // remaining players in the pool sort to the end (they won't be shown at TOP_N=10)
-    const gtRows = gtResult.data as Array<{ player_id: string; rank: number }> | null
+    // Build playersByPosition directly from ground_truth (ranked by actual PPR points).
+    // Cross-reference the ADP pool for headshot/team metadata.
+    // Players not in the pool (e.g. Engram, Fant missing from player_cache) get a
+    // minimal stub — they still show with correct name, rank, and position.
+    type GtRow = { player_id: string; rank: number; position: string; player_name: string }
+    const gtRows = gtResult.data as GtRow[] | null
     if (gtRows && gtRows.length > 0) {
-      const gtRankMap = new Map(gtRows.map(r => [r.player_id, r.rank]))
+      const poolMap = new Map<string, Player>()
       for (const pos of ORACLE_POSITIONS) {
-        // Only show players who actually scored — filter to ground_truth entries only,
-        // then sort by rank. Players not in ground_truth (DNP, 0 pts) are excluded.
-        playersByPosition[pos] = [...playersByPosition[pos]]
-          .filter(p => gtRankMap.has(p.id))
-          .sort((a, b) => (gtRankMap.get(a.id) ?? Infinity) - (gtRankMap.get(b.id) ?? Infinity))
+        for (const p of playersByPosition[pos] ?? []) poolMap.set(p.id, p)
+      }
+      for (const pos of ORACLE_POSITIONS) {
+        playersByPosition[pos] = gtRows
+          .filter(r => r.position === pos)
+          .sort((a, b) => a.rank - b.rank)
+          .map(r => poolMap.get(r.player_id) ?? {
+            id: r.player_id,
+            name: r.player_name,
+            firstName: r.player_name.split(' ')[0] ?? '',
+            lastName: r.player_name.split(' ').slice(1).join(' ') || r.player_name,
+            team: '',
+            position: pos,
+            headshotUrl: '',
+            searchRank: 999,
+            byeWeek: null,
+          })
       }
     }
   }
