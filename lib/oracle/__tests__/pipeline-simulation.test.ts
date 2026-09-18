@@ -996,3 +996,24 @@ describe('Pipeline Guard — concurrent-run lock', () => {
     expect(db.scores.size).toBe(5)
   })
 })
+
+// ─── resolveTargetWeek ────────────────────────────────────────────────────────
+
+import { resolveTargetWeek } from '../pipeline/pipeline'
+
+describe('resolveTargetWeek', () => {
+  it('returns 1 when no weeks have been scored yet (season start)', () => {
+    expect(resolveTargetWeek(0)).toBe(1)
+  })
+
+  it('returns 2 when Week 1 has been scored (Sep 22 scenario)', () => {
+    // Sep 22: Sleeper reports nfl_week=3, but accuracy_scores.current_week=1
+    // Pipeline must process Week 2, not Week 3.
+    expect(resolveTargetWeek(1)).toBe(2)
+  })
+
+  it('returns the next sequential week for mid-season', () => {
+    expect(resolveTargetWeek(8)).toBe(9)
+    expect(resolveTargetWeek(17)).toBe(18)
+  })
+})

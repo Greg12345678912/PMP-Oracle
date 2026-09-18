@@ -43,6 +43,22 @@ async function sendOracleAlert(message: string): Promise<void> {
 const SLEEPER_STATE_URL = 'https://api.sleeper.app/v1/state/nfl'
 const RETRY_DELAYS = [500, 1000, 2000]
 
+/**
+ * Derives the target week to score from the last successfully-scored week.
+ * Returns lastScoredWeek + 1.
+ *
+ * This ensures the pipeline always processes the NEXT unscored week rather
+ * than blindly trusting Sleeper's nfl_week, which can advance before the
+ * previous week's stats are finalized.
+ *
+ * Examples:
+ *   lastScoredWeek = 0 → target = 1  (first run of the season)
+ *   lastScoredWeek = 1 → target = 2  (Sep 22 scenario: Sleeper may report 3)
+ */
+export function resolveTargetWeek(lastScoredWeek: number): number {
+  return lastScoredWeek + 1
+}
+
 export interface PipelineResult {
   pipelineRunId: string
   seasonId: string
@@ -151,7 +167,18 @@ export async function runWeeklyPipeline(opts?: {
       )
     }
 
-    currentWeek = state.week
+    // Derive target week from accuracy_scores rather than Sleeper's nfl_week.
+    // Sleeper can advance nfl_week before the previous week's stats are finalized
+    // (e.g. Sep 15: Sleeper reported week=2 but Week 1 stats weren't ready yet).
+    const { data: weekRows } = await db
+      .from('accuracy_scores')
+      .select('current_week')
+      .eq('season_id', season.id)
+      .gt('current_week', 0)
+      .order('current_week', { ascending: false })
+      .limit(1)
+    const lastScoredWeek = (weekRows as Array<{ current_week: number }> | null)?.[0]?.current_week ?? 0
+    currentWeek = resolveTargetWeek(lastScoredWeek)
 
     if (!dryRun) {
       await db.from('league_state').upsert(
@@ -159,7 +186,7 @@ export async function runWeeklyPipeline(opts?: {
           season_id: season.id,
           current_week: currentWeek,
           nfl_season: state.season,
-          nfl_week: state.week,
+          nfl_week: state.week,          // Sleeper's reported week (may differ from currentWeek)
           nfl_season_type: state.season_type,
           last_synced_at: new Date().toISOString(),
         },
