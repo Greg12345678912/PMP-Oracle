@@ -37,7 +37,7 @@ function RiserFallerBanner({
           href={riser.username ? `/u/${riser.username}` : '#'}
           className="flex-1 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-3 py-2.5 hover:border-pmp-gray-600 transition-colors"
         >
-          <p className="text-green-400 text-[10px] font-bold uppercase tracking-widest">📈 Biggest Riser</p>
+          <p className="text-green-400 text-[10px] font-bold uppercase tracking-widest">⚡ Oracle of the Week</p>
           <p className="text-pmp-white text-sm font-semibold truncate mt-0.5">{riser.displayName ?? riser.username ?? 'Unknown'}</p>
           <p className="text-green-400 text-xs font-bold">▲{riser.change} spots</p>
         </Link>
@@ -47,7 +47,7 @@ function RiserFallerBanner({
           href={faller.username ? `/u/${faller.username}` : '#'}
           className="flex-1 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-3 py-2.5 hover:border-pmp-gray-600 transition-colors"
         >
-          <p className="text-pmp-red text-[10px] font-bold uppercase tracking-widest">📉 Biggest Faller</p>
+          <p className="text-pmp-red text-[10px] font-bold uppercase tracking-widest">📉 Faller of the Week</p>
           <p className="text-pmp-white text-sm font-semibold truncate mt-0.5">{faller.displayName ?? faller.username ?? 'Unknown'}</p>
           <p className="text-pmp-red text-xs font-bold">▼{Math.abs(faller.change)} spots</p>
         </Link>
@@ -552,6 +552,8 @@ export default async function LeaderboardPage() {
     // ── Riser / Faller (derived from existing rank_change, zero extra queries) ──
     let riserEntry: RiserFallerEntry | null = null
     let fallerEntry: RiserFallerEntry | null = null
+    let riserUserId: string | undefined
+    let fallerUserId: string | undefined
     if (!isScored) {
       const risers = [...scoreList]
         .filter(s => ((s.rank_change as number | null) ?? 0) > 0)
@@ -562,10 +564,12 @@ export default async function LeaderboardPage() {
       if (risers[0]) {
         const p = profileMap.get(risers[0].user_id as string)
         riserEntry = { username: (p?.username as string | null) ?? null, displayName: (p?.display_name as string | null) ?? null, change: risers[0].rank_change as number }
+        riserUserId = risers[0].user_id as string
       }
       if (fallers[0]) {
         const p = profileMap.get(fallers[0].user_id as string)
         fallerEntry = { username: (p?.username as string | null) ?? null, displayName: (p?.display_name as string | null) ?? null, change: fallers[0].rank_change as number }
+        fallerUserId = fallers[0].user_id as string
       }
     }
 
@@ -628,6 +632,9 @@ export default async function LeaderboardPage() {
               const rankChange = score.rank_change as number | null
               const profileHref = profile?.username ? `/u/${profile.username as string}` : null
               const isCurrentUser = !!session && (score.user_id as string) === session.user.id
+              const uid = score.user_id as string
+              const isOracle = uid === riserUserId
+              const isFallerRow = uid === fallerUserId
               const cardClass = [
                 'rounded-xl px-4 pt-3 transition-colors',
                 hasWeeklyScores ? 'pb-2.5' : 'pb-3',
@@ -649,6 +656,16 @@ export default async function LeaderboardPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-pmp-white text-sm font-semibold truncate">{(profile?.display_name as string) ?? 'Anonymous'}</p>
                     {profile?.username && <p className="text-pmp-gray-600 text-xs">@{profile.username as string}</p>}
+                    {isOracle && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/40 text-yellow-400 text-[10px] font-semibold leading-none mt-0.5">
+                        ⚡ Oracle of the Week
+                      </span>
+                    )}
+                    {isFallerRow && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/40 text-orange-400 text-[10px] font-semibold leading-none mt-0.5">
+                        📉 Faller of the Week
+                      </span>
+                    )}
                     {rank === maxGlobalRank && lastPlaceCurse && (
                       <p className="text-pmp-red text-[10px] font-semibold leading-none mt-0.5">💀 {lastPlaceCurse}</p>
                     )}
@@ -661,7 +678,6 @@ export default async function LeaderboardPage() {
                   </div>
                 </>
               )
-              const uid = score.user_id as string
               return (
                 <div key={uid} className={cardClass}>
                   {profileHref ? (
