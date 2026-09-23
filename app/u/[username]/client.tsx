@@ -38,6 +38,7 @@ interface ProfileClientProps {
   summary: string | null
   rankingPreview: Record<string, RankingPickPreview[]>
   lockDateLabel: string
+  lastPlaceCurse?: string | null
 }
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
@@ -120,6 +121,7 @@ export function ProfileClient({
   summary,
   rankingPreview,
   lockDateLabel,
+  lastPlaceCurse,
 }: ProfileClientProps) {
   const [activeTab, setActiveTab] = useState<OraclePosition>('QB')
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl)
@@ -247,6 +249,11 @@ export function ProfileClient({
                 <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">{isSeasonComplete ? 'Final Rank' : 'Current Rank'}</p>
                 <p className="text-pmp-white font-bold text-2xl">#{rank.toLocaleString()} of {totalParticipants.toLocaleString()}</p>
               </div>
+            )}
+            {lastPlaceCurse && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-pmp-gray-900 border border-pmp-red/40 text-pmp-red text-xs font-semibold">
+                💀 {lastPlaceCurse}
+              </span>
             )}
             {percentile !== null && (
               <span className="text-pmp-gray-500 text-sm">Top {percentile}%</span>

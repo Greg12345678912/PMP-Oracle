@@ -8,6 +8,7 @@ import { isLocked } from '@/lib/oracle/season'
 import { generateSummary } from '@/lib/oracle/scoring'
 import type { OracleResult, PositionResult, PlayerScore } from '@/lib/oracle/scoring'
 import { ProfileClient } from './client'
+import { getLastPlaceCurse } from '@/lib/oracle/curses'
 import {
   getPreviewState,
   mockSeason,
@@ -207,6 +208,10 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
     const percentile = overallScore !== null && rank !== null
       ? computePercentile(rank, totalParticipants)
       : null
+    const lastPlaceCurse =
+      showScores && rank !== null && rank === totalParticipants
+        ? getLastPlaceCurse(previewScore?.current_week ?? 0)
+        : null
 
     const oracleResult: OracleResult | null =
       showScores && previewScore
@@ -240,6 +245,7 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
         summary={summary}
         rankingPreview={rankingPreview}
         lockDateLabel={lockDateLabel}
+        lastPlaceCurse={lastPlaceCurse}
       />
     )
   }
@@ -342,6 +348,10 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
   // Show scores if: season fully scored OR pipeline has run at least 1 week
   const hasInSeasonScores = (scoreData?.current_week ?? 0) > 0
   const showScores = isScored || hasInSeasonScores
+  const lastPlaceCurse =
+    showScores && rank !== null && totalParticipants > 0 && rank === totalParticipants
+      ? getLastPlaceCurse(scoreData!.current_week ?? 0)
+      : null
 
   const oracleResult: OracleResult | null =
     showScores && scoreData
@@ -372,6 +382,7 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
       summary={summary}
       rankingPreview={rankingPreview}
       lockDateLabel={lockDateLabel}
+      lastPlaceCurse={lastPlaceCurse}
     />
   )
 }

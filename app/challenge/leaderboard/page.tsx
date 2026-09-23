@@ -15,8 +15,45 @@ import {
   PREVIEW_USERNAME,
   type PreviewState,
 } from '@/lib/oracle/dev-preview'
+import { getLastPlaceCurse } from '@/lib/oracle/curses'
 
 export const dynamic = 'force-dynamic'
+
+type RiserFallerEntry = { username: string | null; displayName: string | null; change: number }
+
+function RiserFallerBanner({
+  riser,
+  faller,
+}: {
+  riser: RiserFallerEntry | null
+  faller: RiserFallerEntry | null
+}) {
+  if (!riser && !faller) return null
+  return (
+    <div className="flex gap-2">
+      {riser && (
+        <Link
+          href={riser.username ? `/u/${riser.username}` : '#'}
+          className="flex-1 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-3 py-2.5 hover:border-pmp-gray-600 transition-colors"
+        >
+          <p className="text-green-400 text-[10px] font-bold uppercase tracking-widest">📈 Biggest Riser</p>
+          <p className="text-pmp-white text-sm font-semibold truncate mt-0.5">{riser.displayName ?? riser.username ?? 'Unknown'}</p>
+          <p className="text-green-400 text-xs font-bold">▲{riser.change} spots</p>
+        </Link>
+      )}
+      {faller && (
+        <Link
+          href={faller.username ? `/u/${faller.username}` : '#'}
+          className="flex-1 bg-pmp-gray-900 border border-pmp-gray-800 rounded-xl px-3 py-2.5 hover:border-pmp-gray-600 transition-colors"
+        >
+          <p className="text-pmp-red text-[10px] font-bold uppercase tracking-widest">📉 Biggest Faller</p>
+          <p className="text-pmp-white text-sm font-semibold truncate mt-0.5">{faller.displayName ?? faller.username ?? 'Unknown'}</p>
+          <p className="text-pmp-red text-xs font-bold">▼{Math.abs(faller.change)} spots</p>
+        </Link>
+      )}
+    </div>
+  )
+}
 
 function RankMovement({ change }: { change: number | null }) {
   if (change == null || change === 0) return null
@@ -489,6 +526,30 @@ export default async function LeaderboardPage() {
       ? [top3Prod[1], top3Prod[0], top3Prod[2]]
       : []
 
+    // ── Riser / Faller (derived from existing rank_change, zero extra queries) ──
+    let riserEntry: RiserFallerEntry | null = null
+    let fallerEntry: RiserFallerEntry | null = null
+    if (!isScored) {
+      const risers = [...scoreList]
+        .filter(s => ((s.rank_change as number | null) ?? 0) > 0)
+        .sort((a, b) => (b.rank_change as number) - (a.rank_change as number))
+      const fallers = [...scoreList]
+        .filter(s => ((s.rank_change as number | null) ?? 0) < 0)
+        .sort((a, b) => (a.rank_change as number) - (b.rank_change as number))
+      if (risers[0]) {
+        const p = profileMap.get(risers[0].user_id as string)
+        riserEntry = { username: (p?.username as string | null) ?? null, displayName: (p?.display_name as string | null) ?? null, change: risers[0].rank_change as number }
+      }
+      if (fallers[0]) {
+        const p = profileMap.get(fallers[0].user_id as string)
+        fallerEntry = { username: (p?.username as string | null) ?? null, displayName: (p?.display_name as string | null) ?? null, change: fallers[0].rank_change as number }
+      }
+    }
+
+    // ── Last place curse ─────────────────────────────────────────────────────
+    const maxGlobalRank = scoreList.reduce((m, s) => Math.max(m, (s.global_rank as number) ?? 0), 0)
+    const lastPlaceCurse = hasWeeklyScores ? getLastPlaceCurse(currentWeek) : null
+
     return (
       <div className="min-h-[100dvh] bg-pmp-black flex flex-col">
         <div className="px-4 py-6 max-w-md mx-auto w-full flex flex-col gap-6">
@@ -512,6 +573,10 @@ export default async function LeaderboardPage() {
               </p>
             )}
           </div>
+
+          {(riserEntry || fallerEntry) && (
+            <RiserFallerBanner riser={riserEntry} faller={fallerEntry} />
+          )}
 
           {podiumProd.length === 3 && (
             <div className="flex gap-2">
@@ -560,6 +625,9 @@ export default async function LeaderboardPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-pmp-white text-sm font-semibold truncate">{(profile?.display_name as string) ?? 'Anonymous'}</p>
                     {profile?.username && <p className="text-pmp-gray-600 text-xs">@{profile.username as string}</p>}
+                    {rank === maxGlobalRank && lastPlaceCurse && (
+                      <p className="text-pmp-red text-[10px] font-semibold leading-none mt-0.5">💀 {lastPlaceCurse}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <RankMovement change={rankChange} />
