@@ -16,6 +16,7 @@ import {
   type PreviewState,
 } from '@/lib/oracle/dev-preview'
 import { getLastPlaceCurse } from '@/lib/oracle/curses'
+import { ReactionBar } from '@/components/oracle/ReactionBar'
 
 export const dynamic = 'force-dynamic'
 
@@ -517,6 +518,28 @@ export default async function LeaderboardPage() {
 
     const profileMap = new Map((profiles ?? []).map(p => [p.user_id as string, p]))
 
+    // ── Reactions — single query for current week, built into maps server-side ──
+    const { data: reactionRows } = hasWeeklyScores
+      ? await db
+          .from('reactions')
+          .select('reactor_id, target_id, emoji')
+          .eq('season_id', season!.id)
+          .eq('week', currentWeek)
+      : { data: [] }
+
+    const reactionCountsMap = new Map<string, Record<string, number>>()
+    const myReactionSet = new Set<string>()
+    for (const r of reactionRows ?? []) {
+      const tid = r.target_id as string
+      const emoji = r.emoji as string
+      const counts = reactionCountsMap.get(tid) ?? {}
+      counts[emoji] = (counts[emoji] ?? 0) + 1
+      reactionCountsMap.set(tid, counts)
+      if (session && (r.reactor_id as string) === session.user.id) {
+        myReactionSet.add(`${tid}:${emoji}`)
+      }
+    }
+
     const scoreList = scores ?? []
     const top3Prod = scoreList
       .filter(s => (s.global_rank as number) <= 3)
@@ -605,13 +628,14 @@ export default async function LeaderboardPage() {
               const rankChange = score.rank_change as number | null
               const profileHref = profile?.username ? `/u/${profile.username as string}` : null
               const isCurrentUser = !!session && (score.user_id as string) === session.user.id
-              const rowClass = [
-                'flex items-center gap-3 rounded-xl px-4 py-3 transition-colors',
+              const cardClass = [
+                'rounded-xl px-4 pt-3 transition-colors',
+                hasWeeklyScores ? 'pb-2.5' : 'pb-3',
                 isCurrentUser
                   ? 'bg-pmp-gray-800 border border-pmp-red/50'
-                  : 'bg-pmp-gray-900 border border-pmp-gray-800',
+                  : 'bg-pmp-gray-900 border border-pmp-gray-800 hover:border-pmp-gray-600',
               ].join(' ')
-              const inner = (
+              const rowInner = (
                 <>
                   <span className="text-sm font-black w-7 text-right shrink-0 text-pmp-gray-600">
                     {rank}
@@ -637,13 +661,28 @@ export default async function LeaderboardPage() {
                   </div>
                 </>
               )
-              return profileHref ? (
-                <Link key={score.user_id as string} href={profileHref} className={`${rowClass} hover:border-pmp-gray-600`}>
-                  {inner}
-                </Link>
-              ) : (
-                <div key={score.user_id as string} className={rowClass}>
-                  {inner}
+              const uid = score.user_id as string
+              return (
+                <div key={uid} className={cardClass}>
+                  {profileHref ? (
+                    <Link href={profileHref} className="flex items-center gap-3">
+                      {rowInner}
+                    </Link>
+                  ) : (
+                    <div className="flex items-center gap-3">{rowInner}</div>
+                  )}
+                  {hasWeeklyScores && (
+                    <ReactionBar
+                      targetUserId={uid}
+                      seasonId={season!.id}
+                      week={currentWeek}
+                      initialCounts={reactionCountsMap.get(uid) ?? {}}
+                      myReactions={Object.fromEntries(
+                        (['🔥', '😂', '💀', '👀'] as const).map(e => [e, myReactionSet.has(`${uid}:${e}`)])
+                      )}
+                      isLoggedIn={!!session}
+                    />
+                  )}
                 </div>
               )
             })}
