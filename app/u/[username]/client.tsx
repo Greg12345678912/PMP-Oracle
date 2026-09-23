@@ -39,6 +39,8 @@ interface ProfileClientProps {
   rankingPreview: Record<string, RankingPickPreview[]>
   lockDateLabel: string
   lastPlaceCurse?: string | null
+  isOracleOfWeek?: boolean
+  isFallerOfWeek?: boolean
 }
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
@@ -122,6 +124,8 @@ export function ProfileClient({
   rankingPreview,
   lockDateLabel,
   lastPlaceCurse,
+  isOracleOfWeek,
+  isFallerOfWeek,
 }: ProfileClientProps) {
   const [activeTab, setActiveTab] = useState<OraclePosition>('QB')
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl)
@@ -249,6 +253,16 @@ export function ProfileClient({
                 <p className="text-pmp-gray-500 text-xs font-bold uppercase tracking-widest">{isSeasonComplete ? 'Final Rank' : 'Current Rank'}</p>
                 <p className="text-pmp-white font-bold text-2xl">#{rank.toLocaleString()} of {totalParticipants.toLocaleString()}</p>
               </div>
+            )}
+            {isOracleOfWeek && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/40 text-yellow-400 text-xs font-semibold">
+                ⚡ Oracle of the Week
+              </span>
+            )}
+            {isFallerOfWeek && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/40 text-orange-400 text-xs font-semibold">
+                📉 Faller of the Week
+              </span>
             )}
             {lastPlaceCurse && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-pmp-gray-900 border border-pmp-red/40 text-pmp-red text-xs font-semibold">

@@ -252,7 +252,7 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
   // ── End preview mode ─────────────────────────────────────────────────────
 
   // Fetch all data in parallel
-  const [accResult, detailResult, rankingRowsResult, totalCountResult] =
+  const [accResult, detailResult, rankingRowsResult, totalCountResult, riserResult, fallerResult] =
     await Promise.all([
       // Accuracy scores — always fetch if season exists; display gated on current_week > 0
       season
@@ -289,12 +289,36 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
             .select('*', { count: 'exact', head: true })
             .eq('season_id', season.id)
         : Promise.resolve({ count: 0 }),
+
+      // Biggest riser this season (Oracle of the Week)
+      season
+        ? db
+            .from('accuracy_scores')
+            .select('user_id')
+            .eq('season_id', season.id)
+            .gt('rank_change', 0)
+            .order('rank_change', { ascending: false })
+            .limit(1)
+        : Promise.resolve({ data: [] }),
+
+      // Biggest faller this season (Faller of the Week)
+      season
+        ? db
+            .from('accuracy_scores')
+            .select('user_id')
+            .eq('season_id', season.id)
+            .lt('rank_change', 0)
+            .order('rank_change', { ascending: true })
+            .limit(1)
+        : Promise.resolve({ data: [] }),
     ])
 
   const scoreData = (accResult.data as AccuracyScoreRow | null) ?? null
   const allDetail = ((detailResult.data ?? []) as RankingScoreDetailRow[])
   const rawRankingRows = ((rankingRowsResult.data ?? []) as ChallengeRankingRow[])
   const totalParticipants = (totalCountResult as { count: number | null }).count ?? 0
+  const riserRows = ((riserResult.data ?? []) as { user_id: string }[])
+  const fallerRows = ((fallerResult.data ?? []) as { user_id: string }[])
 
   // Build position results from score detail (scored view)
   const positionResults: PositionResult[] = ORACLE_POSITIONS.map(pos => {
@@ -360,6 +384,9 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
 
   const summary = oracleResult ? generateSummary(oracleResult) : null
 
+  const isOracleOfWeek = showScores && riserRows[0]?.user_id === profile.user_id
+  const isFallerOfWeek = showScores && fallerRows[0]?.user_id === profile.user_id
+
   return (
     <ProfileClient
       profile={{
@@ -383,6 +410,8 @@ export default async function UserProfilePage({ params, searchParams }: PageProp
       rankingPreview={rankingPreview}
       lockDateLabel={lockDateLabel}
       lastPlaceCurse={lastPlaceCurse}
+      isOracleOfWeek={isOracleOfWeek}
+      isFallerOfWeek={isFallerOfWeek}
     />
   )
 }
