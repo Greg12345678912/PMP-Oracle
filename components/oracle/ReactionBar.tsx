@@ -25,10 +25,12 @@ export function ReactionBar({
   const [counts, setCounts] = useState<Record<string, number>>(initialCounts)
   const [mine, setMine] = useState<Record<string, boolean>>(myReactions)
   const [pending, setPending] = useState<string | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const toggle = async (emoji: Emoji) => {
     if (!isLoggedIn || pending) return
 
+    setPickerOpen(false)
     setPending(emoji)
     const wasOn = mine[emoji] ?? false
 
@@ -52,39 +54,76 @@ export function ReactionBar({
     }
   }
 
-  const hasAny = EMOJIS.some(e => (counts[e] ?? 0) > 0)
+  const activeReactions = EMOJIS.filter(e => (counts[e] ?? 0) > 0)
+  const hasAny = activeReactions.length > 0
 
-  // Always render all four buttons; hide zero-count buttons when logged out
-  // so the bar stays compact for users who can't react yet.
-  const visibleEmojis = isLoggedIn ? EMOJIS : EMOJIS.filter(e => (counts[e] ?? 0) > 0)
-
+  // Nothing to show if logged out and no reactions yet
   if (!isLoggedIn && !hasAny) return null
 
   return (
-    <div className="flex gap-1.5 mt-2 flex-wrap">
-      {visibleEmojis.map(emoji => {
-        const count = counts[emoji] ?? 0
-        const active = mine[emoji] ?? false
-        const isPending = pending === emoji
-        return (
+    <div className="flex items-center justify-between mt-2 min-h-[22px]">
+      {/* Left: REACT button or inline emoji picker */}
+      <div className="flex items-center gap-1">
+        {isLoggedIn && !pickerOpen && (
           <button
-            key={emoji}
             type="button"
-            onClick={() => { void toggle(emoji) }}
-            disabled={isPending}
-            title={!isLoggedIn ? 'Sign in to react' : undefined}
-            className={[
-              'flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold transition-colors disabled:opacity-60',
-              active
-                ? 'bg-pmp-red/20 border border-pmp-red/60 text-pmp-white'
-                : 'bg-pmp-gray-800 border border-pmp-gray-700 text-pmp-gray-400 hover:border-pmp-gray-500 hover:text-pmp-gray-300',
-            ].join(' ')}
+            onClick={() => setPickerOpen(true)}
+            className="text-pmp-gray-600 text-[10px] font-bold uppercase tracking-widest hover:text-pmp-gray-400 transition-colors px-1"
           >
-            <span>{emoji}</span>
-            {count > 0 && <span>{count}</span>}
+            + React
           </button>
-        )
-      })}
+        )}
+        {isLoggedIn && pickerOpen && (
+          <>
+            {EMOJIS.map(emoji => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => { void toggle(emoji) }}
+                disabled={pending === emoji}
+                className="text-base leading-none px-1 py-0.5 rounded hover:bg-pmp-gray-700 transition-colors disabled:opacity-50"
+              >
+                {emoji}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setPickerOpen(false)}
+              className="text-pmp-gray-600 text-[10px] font-bold px-1 hover:text-pmp-gray-400 transition-colors"
+            >
+              ✕
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Right: active reactions with counts (clickable to toggle off) */}
+      {hasAny && (
+        <div className="flex items-center gap-1">
+          {activeReactions.map(emoji => {
+            const count = counts[emoji] ?? 0
+            const active = mine[emoji] ?? false
+            return (
+              <button
+                key={emoji}
+                type="button"
+                onClick={isLoggedIn ? () => { void toggle(emoji) } : undefined}
+                disabled={pending === emoji}
+                className={[
+                  'flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-semibold transition-colors disabled:opacity-50',
+                  active
+                    ? 'bg-pmp-red/20 border border-pmp-red/50 text-pmp-white'
+                    : 'bg-pmp-gray-800 border border-pmp-gray-700 text-pmp-gray-400',
+                  isLoggedIn ? 'cursor-pointer hover:border-pmp-gray-500' : 'cursor-default',
+                ].join(' ')}
+              >
+                <span>{emoji}</span>
+                <span>{count}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
