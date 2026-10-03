@@ -66,12 +66,13 @@ function RankMovement({ change }: { change: number | null }) {
   )
 }
 
-function PodiumSlot({ rank, profile, score, isCurrentUser, href }: {
+function PodiumSlot({ rank, profile, score, isCurrentUser, href, rankChange }: {
   rank: number
   profile: { display_name?: string | null; username?: string | null; avatar_url?: string | null } | null | undefined
   score: number
   isCurrentUser: boolean
   href: string | null
+  rankChange?: number | null
 }) {
   const isFirst = rank === 1
   const label = rank === 1 ? '1ST' : rank === 2 ? '2ND' : '3RD'
@@ -114,9 +115,16 @@ function PodiumSlot({ rank, profile, score, isCurrentUser, href }: {
         <p className={`text-pmp-white font-semibold truncate ${isFirst ? 'text-xs' : 'text-[10px]'}`}>
           {profile?.display_name ?? 'Anonymous'}
         </p>
-        <p className={`text-pmp-white font-bold leading-none mt-0.5 ${isFirst ? 'text-xl' : 'text-base'}`}>
-          {score.toFixed(1)}
-        </p>
+        <div className="flex items-end justify-between gap-1">
+          <p className={`text-pmp-white font-bold leading-none mt-0.5 ${isFirst ? 'text-xl' : 'text-base'}`}>
+            {score.toFixed(1)}
+          </p>
+          {rankChange != null && rankChange !== 0 && (
+            <span className={`text-[9px] font-bold leading-none mb-0.5 shrink-0 ${rankChange > 0 ? 'text-green-400' : 'text-pmp-red'}`}>
+              {rankChange > 0 ? `▲${rankChange}` : `▼${Math.abs(rankChange)}`}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -297,6 +305,7 @@ export default async function LeaderboardPage() {
                       score={score.overall_score}
                       isCurrentUser={isCurrentUser}
                       href={profileHref}
+                      rankChange={score.rank_change}
                     />
                   )
                 })}
@@ -619,6 +628,7 @@ export default async function LeaderboardPage() {
                     score={score.overall_score as number}
                     isCurrentUser={isCurrentUser}
                     href={profileHref}
+                    rankChange={score.rank_change as number | null}
                   />
                 )
               })}
