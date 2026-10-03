@@ -121,7 +121,7 @@ function PodiumSlot({ rank, profile, score, isCurrentUser, href }: {
     </div>
   )
   return (
-    <div className={`flex-1 min-w-0 ${!isFirst ? 'mt-8' : ''}`}>
+    <div className={`min-w-0 ${isFirst ? 'flex-[1.4]' : 'flex-[0.8]'} ${!isFirst ? 'mt-8' : ''}`}>
       {href
         ? <Link href={href} className="block hover:opacity-80 transition-opacity">{card}</Link>
         : card}
