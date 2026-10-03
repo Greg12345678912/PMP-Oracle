@@ -186,7 +186,7 @@ function WeeklyRankPage({
 
         <Link
           href="/challenge/scoring"
-          className="text-pmp-gray-700 text-xs text-center hover:text-pmp-gray-500 transition-colors"
+          className="text-pmp-gray-400 text-xs text-center hover:text-pmp-white transition-colors"
         >
           How was my score calculated? →
         </Link>
