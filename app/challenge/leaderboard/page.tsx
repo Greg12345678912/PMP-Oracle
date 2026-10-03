@@ -271,17 +271,17 @@ export default async function LeaderboardPage() {
                 <h1 className="text-pmp-white font-bold text-xl">
                   {isScored ? '🏆 2026 Oracle Challenge' : '📊 Weekly Standings'}
                 </h1>
-                <Link href="/challenge/scoring" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-400 transition-colors shrink-0">
+                <Link href="/challenge/scoring" className="text-pmp-gray-400 text-xs hover:text-pmp-white transition-colors shrink-0">
                   Scoring rules →
                 </Link>
               </div>
-              <p className="text-pmp-gray-500 text-sm">
+              <p className="text-pmp-gray-400 text-sm">
                 {isScored
                   ? `${MOCK_TOTAL_PARTICIPANTS.toLocaleString()} entries · Final standings`
                   : `${MOCK_TOTAL_PARTICIPANTS.toLocaleString()} entries · Week ${currentWeek} standings`}
               </p>
               {!isScored && (
-                <p className="text-pmp-gray-700 text-xs mt-0.5">
+                <p className="text-pmp-gray-500 text-xs mt-0.5">
                   Scores are recalculated every Tuesday
                 </p>
               )}
@@ -406,7 +406,7 @@ export default async function LeaderboardPage() {
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-6 py-8 flex flex-col items-center gap-2 text-center">
             <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge</p>
             <p className="text-pmp-white text-5xl font-black">{MOCK_TOTAL_PARTICIPANTS.toLocaleString()}</p>
-            <p className="text-pmp-gray-500 text-sm">participants so far</p>
+            <p className="text-pmp-gray-400 text-sm">participants so far</p>
             <div className="mt-3 flex flex-col gap-1 text-center">
               <p className="text-pmp-white text-sm font-semibold">🏆 Official standings begin after Week 1</p>
               <p className="text-pmp-gray-600 text-xs">Updated every Tuesday throughout the NFL season.</p>
@@ -594,11 +594,11 @@ export default async function LeaderboardPage() {
               <h1 className="text-pmp-white font-bold text-xl">
                 {isScored ? '🏆 2026 Oracle Challenge' : '📊 Weekly Standings'}
               </h1>
-              <Link href="/challenge/scoring" className="text-pmp-gray-600 text-xs hover:text-pmp-gray-400 transition-colors shrink-0">
+              <Link href="/challenge/scoring" className="text-pmp-gray-400 text-xs hover:text-pmp-white transition-colors shrink-0">
                 Scoring rules →
               </Link>
             </div>
-            <p className="text-pmp-gray-500 text-sm">
+            <p className="text-pmp-gray-400 text-sm">
               {isScored
                 ? `${totalEntries.toLocaleString()} entries · Final standings`
                 : `${totalEntries.toLocaleString()} entries · Week ${currentWeek} standings`}
@@ -764,13 +764,13 @@ export default async function LeaderboardPage() {
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-6 py-10 flex flex-col items-center gap-2 text-center">
             <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge</p>
             <p className="text-pmp-white font-bold text-xl">No one has entered yet.</p>
-            <p className="text-pmp-gray-500 text-sm">Be Entry #1.</p>
+            <p className="text-pmp-gray-400 text-sm">Be Entry #1.</p>
           </div>
         ) : (
           <div className="bg-pmp-gray-900 border border-pmp-gray-800 rounded-2xl px-6 py-8 flex flex-col items-center gap-2 text-center">
             <p className="text-pmp-red text-xs font-bold uppercase tracking-widest">2026 Oracle Challenge</p>
             <p className="text-pmp-white text-5xl font-black">{totalEntries.toLocaleString()}</p>
-            <p className="text-pmp-gray-500 text-sm">
+            <p className="text-pmp-gray-400 text-sm">
               {totalEntries === 1 ? 'participant so far' : 'participants so far'}
             </p>
             <div className="mt-3 flex flex-col gap-1 text-center">
