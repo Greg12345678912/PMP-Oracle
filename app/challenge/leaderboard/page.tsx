@@ -111,7 +111,7 @@ function PodiumSlot({ rank, profile, score, isCurrentUser, href }: {
         }
       </div>
       <div className="w-full min-w-0">
-        <p className={`text-pmp-white font-semibold truncate ${isFirst ? 'text-sm' : 'text-xs'}`}>
+        <p className={`text-pmp-white font-semibold truncate ${isFirst ? 'text-xs' : 'text-[10px]'}`}>
           {profile?.display_name ?? 'Anonymous'}
         </p>
         <p className={`text-pmp-white font-bold leading-none mt-0.5 ${isFirst ? 'text-xl' : 'text-base'}`}>
