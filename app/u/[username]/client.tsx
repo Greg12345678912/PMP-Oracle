@@ -266,7 +266,7 @@ export function ProfileClient({
             )}
             {lastPlaceCurse && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-pmp-gray-900 border border-pmp-red/40 text-pmp-red text-xs font-semibold">
-                💀 {lastPlaceCurse}
+                😹 Last Place 😹
               </span>
             )}
             {percentile !== null && (
