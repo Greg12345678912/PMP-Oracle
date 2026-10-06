@@ -676,8 +676,8 @@ export default async function LeaderboardPage() {
                         📉 Faller of the Week
                       </span>
                     )}
-                    {rank === maxGlobalRank && lastPlaceCurse && (
-                      <p className="text-pmp-red text-[10px] font-semibold leading-none mt-0.5">💀 {lastPlaceCurse}</p>
+                    {rank === maxGlobalRank && hasWeeklyScores && (
+                      <p className="text-pmp-red text-[10px] font-semibold leading-none mt-0.5">😹 Last Place 😹</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
