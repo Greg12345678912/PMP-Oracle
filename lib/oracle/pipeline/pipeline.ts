@@ -262,6 +262,36 @@ export async function runWeeklyPipeline(opts?: {
     }
   }
 
+  // ── Read-after-write guard ────────────────────────────────────────────────────
+  // Confirms week-N stats are visible before building ground truth.
+  // Supabase connection pooling can serve a brief read-replica lag (~350ms) where
+  // a fresh query misses rows that were just committed by the stats upsert.
+  // Poll up to 4× with 1.5s gaps — total wait ≤ 4.5s in the degenerate case.
+  if (!dryRun) {
+    const VERIFY_ATTEMPTS = 4
+    const VERIFY_DELAY_MS = 1500
+    let statsVisible = false
+    for (let attempt = 0; attempt < VERIFY_ATTEMPTS; attempt++) {
+      if (attempt > 0) {
+        await new Promise(resolve => setTimeout(resolve, VERIFY_DELAY_MS))
+      }
+      const { count } = await db
+        .from('player_stats')
+        .select('*', { count: 'exact', head: true })
+        .eq('season_id', season.id)
+        .eq('week', currentWeek)
+      if ((count ?? 0) > 0) {
+        statsVisible = true
+        break
+      }
+    }
+    if (!statsVisible) {
+      const msg = `read-after-write guard: week ${currentWeek} stats not visible after ${VERIFY_ATTEMPTS} attempts — ground truth may be stale`
+      errors.push(msg)
+      void sendOracleAlert(msg)
+    }
+  }
+
   // ── Stage 3: Build ground truth ──────────────────────────────────────────────
   let groundTruthResults: Awaited<ReturnType<typeof buildGroundTruth>> = []
   let groundTruthFailed = false
