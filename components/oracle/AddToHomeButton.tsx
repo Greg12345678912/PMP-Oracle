@@ -73,8 +73,16 @@ export function AddToHomeButton() {
               <span className="w-6 h-6 rounded-full bg-pmp-red text-pmp-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
               <div>
                 <p className="text-pmp-white text-sm font-semibold">Tap the Share button</p>
-                <p className="text-pmp-gray-500 text-xs mt-0.5">
-                  Tap the share icon at the bottom of Safari (the box with the arrow pointing up)
+                <p className="text-pmp-gray-500 text-xs mt-0.5 flex items-center gap-1 flex-wrap">
+                  Tap the
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded border border-pmp-gray-600 bg-pmp-gray-800 shrink-0">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="12" y1="2" x2="12" y2="15" />
+                      <polyline points="8 6 12 2 16 6" />
+                      <path d="M8 12H5a2 2 0 00-2 2v5a2 2 0 002 2h14a2 2 0 002-2v-5a2 2 0 00-2-2h-3" />
+                    </svg>
+                  </span>
+                  button at the bottom of Safari
                 </p>
               </div>
             </div>
