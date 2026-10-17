@@ -30,6 +30,10 @@ export const metadata: Metadata = {
     title: 'Pretty Much Picks — Oracle Challenge',
     description: 'Rank every NFL player before Week 1. Prove your fantasy knowledge. Win $500. Free.',
   },
+  appleWebApp: {
+    title: 'Pretty Much Picks',
+    statusBarStyle: 'black-translucent',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

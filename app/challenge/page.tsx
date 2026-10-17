@@ -12,6 +12,7 @@ import { SignOutButton } from '@/components/oracle/SignOutButton'
 import { Countdown } from '@/components/oracle/Countdown'
 import { getPreviewState, mockSeason, mockAccuracyScore, PREVIEW_USERNAME } from '@/lib/oracle/dev-preview'
 import { AutoEnroll2027 } from '@/components/oracle/AutoEnroll2027'
+import { AddToHomeButton } from '@/components/oracle/AddToHomeButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -161,13 +162,16 @@ export default async function ChallengePage() {
       <div className="px-4 py-6 max-w-md mx-auto flex flex-col gap-4">
 
         {/* Header */}
-        <div className="pt-1">
-          <h1 className="text-pmp-white font-bold text-2xl">Welcome back, {firstName}.</h1>
-          {isSubmitted && entryNumber !== null ? (
-            <p className="text-pmp-gray-500 text-sm mt-0.5">Entry #{entryNumber}</p>
-          ) : !isSubmitted && !locked ? (
-            <p className="text-pmp-gray-600 text-sm mt-0.5">Start ranking to enter</p>
-          ) : null}
+        <div className="pt-1 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-pmp-white font-bold text-2xl">Welcome back, {firstName}.</h1>
+            {isSubmitted && entryNumber !== null ? (
+              <p className="text-pmp-gray-500 text-sm mt-0.5">Entry #{entryNumber}</p>
+            ) : !isSubmitted && !locked ? (
+              <p className="text-pmp-gray-600 text-sm mt-0.5">Start ranking to enter</p>
+            ) : null}
+          </div>
+          <AddToHomeButton />
         </div>
 
         {/* ── Live rank card (scoring has started) ── */}
