@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  let body: { week?: number } = {}
+  let body: { week?: number; isCorrection?: boolean } = {}
   try {
     const text = await request.text()
     if (text) body = JSON.parse(text)
@@ -35,8 +35,8 @@ export async function POST(request: Request) {
   if (!week) return Response.json({ error: 'week is required' }, { status: 400 })
 
   try {
-    await sendWeeklyScoreEmails(season.id, week)
-    return Response.json({ ok: true, seasonId: season.id, week })
+    await sendWeeklyScoreEmails(season.id, week, { isCorrection: body.isCorrection })
+    return Response.json({ ok: true, seasonId: season.id, week, isCorrection: body.isCorrection ?? false })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return Response.json({ ok: false, error: message }, { status: 500 })

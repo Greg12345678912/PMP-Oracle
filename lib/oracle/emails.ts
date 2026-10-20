@@ -38,8 +38,9 @@ function buildHtml(params: {
   totalParticipants: number
   overallScore: number
   rankChange: number | null
+  isCorrection?: boolean
 }): string {
-  const { firstName, week, rank, totalParticipants, overallScore, rankChange } = params
+  const { firstName, week, rank, totalParticipants, overallScore, rankChange, isCorrection } = params
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -54,7 +55,10 @@ function buildHtml(params: {
     <p style="color:#555;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin:0 0 32px;">2026 Oracle Challenge</p>
 
     <p style="color:#fff;font-size:18px;font-weight:600;margin:0 0 8px;">Hey ${firstName},</p>
-    <p style="color:#888;font-size:16px;margin:0 0 32px;">Week ${week} scores are live.</p>
+    ${isCorrection
+      ? `<p style="color:#888;font-size:16px;margin:0 0 16px;">We sent an incorrect Week ${week} email earlier today due to a data error. Here are your corrected results — sorry about that.</p>`
+      : `<p style="color:#888;font-size:16px;margin:0 0 32px;">Week ${week} scores are live.</p>`
+    }
 
     <div style="background:#111;border:1px solid #222;border-radius:16px;padding:32px;text-align:center;margin-bottom:16px;">
       <p style="color:#555;font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin:0 0 8px;">Your Rank</p>
@@ -86,7 +90,8 @@ function buildHtml(params: {
 </html>`
 }
 
-export async function sendWeeklyScoreEmails(seasonId: string, week: number): Promise<void> {
+export async function sendWeeklyScoreEmails(seasonId: string, week: number, opts?: { isCorrection?: boolean }): Promise<void> {
+  const isCorrection = opts?.isCorrection ?? false
   const resend = new Resend(process.env.RESEND_API_KEY)
   const db = getServiceClient()
   const startedAt = new Date().toISOString()
@@ -176,7 +181,7 @@ export async function sendWeeklyScoreEmails(seasonId: string, week: number): Pro
     return [{
       from: FROM,
       to: email,
-      subject: `Week ${week} Oracle results are in`,
+      subject: isCorrection ? `Week ${week} Oracle results — correction` : `Week ${week} Oracle results are in`,
       html: buildHtml({
         firstName: getFirstName(profileMap.get(userId) ?? null),
         week,
@@ -184,6 +189,7 @@ export async function sendWeeklyScoreEmails(seasonId: string, week: number): Pro
         totalParticipants,
         overallScore: score.overall_score as number,
         rankChange: score.rank_change as number | null,
+        isCorrection,
       }),
     }]
   })
