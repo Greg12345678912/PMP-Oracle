@@ -33,16 +33,24 @@ export async function buildGroundTruth(
   const db = getServiceClient()
   const dryRun = opts?.dryRun ?? false
 
-  // Fetch all stat rows for season up to current week
-  const { data, error } = await db
-    .from('player_stats')
-    .select('player_id, player_name, position, ppr_points')
-    .eq('season_id', seasonId)
-    .lte('week', upToWeek)
+  // Fetch all stat rows for season up to current week (paginated to bypass 1000-row PostgREST default)
+  const rows: PlayerStatRow[] = []
+  const PAGE_SIZE = 1000
+  let from = 0
+  while (true) {
+    const { data, error } = await db
+      .from('player_stats')
+      .select('player_id, player_name, position, ppr_points')
+      .eq('season_id', seasonId)
+      .lte('week', upToWeek)
+      .range(from, from + PAGE_SIZE - 1)
 
-  if (error) throw new Error(`player_stats fetch failed: ${error.message}`)
-
-  const rows = (data ?? []) as PlayerStatRow[]
+    if (error) throw new Error(`player_stats fetch failed: ${error.message}`)
+    const page = (data ?? []) as PlayerStatRow[]
+    rows.push(...page)
+    if (page.length < PAGE_SIZE) break
+    from += PAGE_SIZE
+  }
 
   // Aggregate cumulative PPR per player
   const totals = new Map<string, { total: number; name: string; position: string }>()
